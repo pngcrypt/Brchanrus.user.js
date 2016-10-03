@@ -1,6 +1,6 @@
 ﻿// ==UserScript==
 // @name            Brchan Rusifikator
-// @version         3.1
+// @version         3.2
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -24,10 +24,10 @@ const TYPE_LASTNODE = 1;
 
 	[.....]
 ]
-	
-	url-regexp: regexp for url match (search in path, not domain), root url is: / 
 
-	replacer_type: 
+	url-regexp: regexp for url match (search in path, not domain), root url is: /
+
+	replacer_type:
 		css
 		txt - inner text
 		reg - regexp
@@ -65,7 +65,7 @@ cfg = [
 		// Диалог настроек
 		['att', 'div.options_tab > input[value="Salvar Javascript personalizado"]', 'value', 'Сохранить'],
 		['att', 'div.options_tab > input[value="Salvar CSS personalizado"]', 'value', 'Сохранить'],
-		
+
 		['reg', 'div#options_tablist > div.options_tab_icon > div', 'Geral', 'Главная'],
 		['txt', 'div > label#show_top_boards', TYPE_LASTNODE, 'Показывать ТОП досок'],
 		['txt', 'div > span#inline-expand-max', TYPE_FIRSTNODE, 'Количество одновременных загрузок (0 для отключения)'],
@@ -193,21 +193,21 @@ cfg = [
 		['reg', 'table.modlog > tbody > tr > th', 'Subtítulo', 'Описание'],
 		['reg', 'table.modlog > tbody > tr > th', 'Usuário', 'Логин'],
 		['reg', 'table.modlog > tbody > tr > th', 'Senha', 'Пароль'],
-		
+
 		['reg', 'table.modlog > tbody > tr > td > span', /letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов'],
 		['reg', 'table.modlog > tbody > tr > td > span', /até (\d+) caracteres/, 'до $1 символов'],
 		['reg', 'table.modlog > tbody > tr > td > span', 'letras, numeros, pontos e sublinhados', 'буквы, цифры, точки и подчеркивание'],
 		['reg', 'table.modlog > tbody > tr > td > span', 'senha para moderar a board, copie-a', 'пароль для модерирования, сохраните его'],
 		['reg', 'table.modlog > tbody > tr > td > span', 'opcional,serve para recuperar sua board', 'по желанию, служит для восстановления доски'],
 
-		['att', 'input[type="submit"]', 'value', 'Создать доску'],		
+		['att', 'input[type="submit"]', 'value', 'Создать доску'],
 
 		// Ошибки создания / сообщения
 		['reg', 'body > div > h2', 'URI inválida', 'Неверный URL'],
 		['reg', 'body > div > h2', 'Usuário inválido', 'Недействительный пользователь'],
 		['reg', 'body > div > h2', 'A board já existe', 'Доска уже существует'],
 		['reg', 'body > div > h2', 'Você errou o codigo de verificação', 'Неверный код подтверждения'],
-		
+
 		['reg', 'body > div > p > a', 'Voltar', 'Назад'],
 
 		['reg', 'body > p', 'Sua board foi criada e está disponível em', 'Ваша доска была создана и доступна по адресу', true],
@@ -226,7 +226,7 @@ cfg = [
 		['reg', 'fieldset > ul > li > ul > li > a', 'Comunicado', 'Коммуникация'],
 		['reg', 'fieldset > ul > li > a', 'Ver todas as noticias do quadro de noticias', 'Просмотр всех новостей'],
 		['reg', 'fieldset > ul > li > a', /Caixa de entrada \((\d+) unread\)/, 'Входящие (непрочитанных: $1)'],
-		
+
 		['reg', 'fieldset > legend', 'Administração', 'Администрирование'],
 		['reg', 'fieldset > ul > li > a', /Fila de denuncias \((\d+)\)/, 'Очередь отчетов ($1)'],
 		['reg', 'fieldset > ul > li > a', 'Lista de bans', 'Список банов'],
@@ -235,13 +235,13 @@ cfg = [
 		['reg', 'fieldset > ul > li > span', 'nome de usuário, email, senha', 'имя пользователя, адрес электронной почты, пароль'],
 		['reg', 'fieldset > ul > li > a', 'Histórico da board', 'История доски'],
 		['reg', 'fieldset > ul > li > a', 'Mensagens recentes', 'Последние сообщения'],
-		
+
 		['reg', 'fieldset > legend', 'Boards', 'Доски'],
 		['reg', 'fieldset > ul > li > a', 'configurações', 'настройки'],
 
 		['reg', 'fieldset > legend', 'Conta de usuário', 'Учетная запись'],
 		['reg', 'fieldset > ul > li > a', 'Logout', 'Выход'],
-		
+
 		[]
 	]],
 
@@ -342,7 +342,7 @@ var get_correct_str = function(num, str1, str2, str3) {
 	}
 }
 
-if(!(new String(localStorage.user_js)).match('var l10n = {'))
+if(!localStorage.getItem('user_js').match('var l10n = {'))
 localStorage.user_js += '\n/* l10n v1 user */\nvar l10n = { \
 	"Watch Thread": "В избранное", \
 	"Show post options &amp; limits": "Показать опции", \
@@ -448,7 +448,7 @@ var doIt = function() {
 		r.replace();
 	}
 	console.debug('Replace: ', performance.now() - i, "ms");
-}
+};
 
 document.onreadystatechange = function () {
 	switch (document.readyState) {
@@ -469,4 +469,4 @@ document.onreadystatechange = function () {
 			doIt();
 			break;
 	}
-}
+};
