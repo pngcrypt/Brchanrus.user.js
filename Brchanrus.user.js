@@ -265,19 +265,10 @@ class CSSReplace {
 	constructor(query, text) {
 		this.query = query;
 		this.text = text;
-		this.found = false;
 	}
-	replace() {
-		if(this.found) {
-			return false;
-		}
-
-		for(let el of document.querySelectorAll(this.query)) {
+	replace(element) {
+		for(let el of (element ? element : document).querySelectorAll(this.query)) {
 			el.textContent = this.text;
-			this.found = true;
-		}
-		if(!this.found) {
-			console.debug('** CSSReplace not found: ', this.query, this.text);
 		}
 	}
 }
@@ -287,18 +278,10 @@ class AttributeReplace {
 		this.query = query;
 		this.attr = attr;
 		this.text = text;
-		this.found = false;
 	}
-	replace() {
-		if(this.found) {
-			return false;
-		}
-		for(let el of document.querySelectorAll(this.query)) {
+	replace(element) {
+		for(let el of (element ? element : document).querySelectorAll(this.query)) {
 			el.setAttribute(this.attr, this.text);
-			this.found = true;
-		}
-		if(!this.found) {
-			console.debug('** AttributeReplace not found: ', this.query, this.attr, this.text);
 		}
 	}
 }
@@ -308,13 +291,9 @@ class InnerTextReplace {
 		this.query = query;
 		this.type = type;
 		this.text = text;
-		this.found = false;
 	}
-	replace() {
-		if(this.found) {
-			return false;
-		}
-		for(let el of document.querySelectorAll(this.query)) {
+	replace(element) {
+		for(let el of (element ? element : document).querySelectorAll(this.query)) {
 			let node;
 			switch(this.type) {
 			case 0: node = el.firstChild; break;
@@ -322,11 +301,7 @@ class InnerTextReplace {
 			}
 			if(node) {
 				node.textContent = this.text;
-				this.found = true;
 			}
-		}
-		if(!this.found) {
-			console.debug('** InnerTextReplace not found: ', this.query, this.type, this.text);
 		}
 	}
 }
@@ -337,20 +312,12 @@ class RegexReplace {
 		this.regex = regex;
 		this.text = text;
 		this.prop = html ? "innerHTML" : "textContent";
-		this.found = false;
 	}
-	replace() {
-		if(this.found) {
-			return false;
-		}
-		for(let el of document.querySelectorAll(this.query)) {
+	replace(element) {
+		for(let el of (element ? element : document).querySelectorAll(this.query)) {
 			if(el[this.prop].match(this.regex)) { // проверка, чтобы не ломать html если исходный текст не найден
 				el[this.prop] = el[this.prop].replace(this.regex, this.text);
-				this.found = true;
 			}
-		}
-		if(!this.found) {
-			console.debug('** RegexReplace not found: ', this.query, this.regex, this.text, this.prop);
 		}
 	}
 }
@@ -408,6 +375,17 @@ localStorage.user_js += '\n/* l10n v1 user */\nvar l10n = { \
 };/* /l10n v1 user */';
 
 let replacers = [];
+let new_posts_replacers = [
+	new CSSReplace('span.name', 'Аноним'),
+	new InnerTextReplace('p.fileinfo', TYPE_FIRSTNODE, 'Файл: '),
+	new RegexReplace('time', '(Seg)', '(Пнд)'),
+	new RegexReplace('time', '(Ter)', '(Втр)'),
+	new RegexReplace('time', '(Qua)', '(Срд)'),
+	new RegexReplace('time', '(Qui)', '(Чтв)'),
+	new RegexReplace('time', '(Sex)', '(Птн)'),
+	new RegexReplace('time', '(Sáb)', '(Сбт)'),
+	new RegexReplace('time', '(Dom)', '(Вск)')
+];
 
 //console.debug(cfg);
 
@@ -472,10 +450,6 @@ var doIt = function() {
 	console.debug('Replace: ', performance.now() - i, "ms");
 }
 
-$(document).on('new_post', function(e, post) {
-console.debug('new_post');
-});
-
 document.onreadystatechange = function () {
 	switch (document.readyState) {
 		case "loading":
@@ -485,6 +459,13 @@ document.onreadystatechange = function () {
 			doIt();
 			break;
 		case "complete":
+			$(document).on('new_post', function(e, post) {
+				let i = performance.now();
+				for(let r of new_posts_replacers) {
+					r.replace(post);
+				}
+				console.debug('Replace: ', performance.now() - i, "ms");
+			});
 			doIt();
 			break;
 	}
