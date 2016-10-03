@@ -1,6 +1,6 @@
 ﻿// ==UserScript==
 // @name            Brchan Rusifikator
-// @version         3.2.1
+// @version         3.2.2
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -380,6 +380,7 @@ localStorage.user_js += '\n/* l10n v1 user */\nvar l10n = { \
 	"Delete file": "Удалить файл", \
 	"Report": "Сообщить модераторам доски", \
 	"Global report": "Сообщить админам brchan", \
+	"No new posts found": "Нет новых постов", \
 	"Shrink all images": "Свернуть все изображения" \
 };/* /l10n v1 user */';
 
