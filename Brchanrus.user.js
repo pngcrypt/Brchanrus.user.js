@@ -81,7 +81,7 @@ cfg = [
 	]],
 
 	// Любая доска + тред (url вида: /слово/* )
-	[/^\w+\/[^/]*/, [
+	[/^mod\.php\?|^\w+\/[^/]*/, [
 		['css', 'div.subtitle > p > a', 'Каталог тредов'],
 		['css', 'div#expand-all-images > a', 'Развернуть все изображения'],
 
@@ -122,7 +122,7 @@ cfg = [
 	]],
 
 	// Главная страница доски (url вида: /слово/* )
-	[/^\w+\/[^/]*$/, [
+	[/^mod\.php\?|^\w+\/[^/]*$/, [
 		// Навигация по страницам
 		['reg', 'body > div.pages', /Anterior/, 'Предыдущая', true],
 		['reg', 'body > div.pages', /Próxima/, 'Следующая', true],
@@ -139,7 +139,7 @@ cfg = [
 	]],
 
 	// Страница треда
-	[/^\w+\/res\/(\d+)\.html/, [
+	[/^mod\.php\?|^\w+\/res\/(\d+)\.html/, [
 		['css',	'a#thread-return',	'[Назад]'],
 		['css',	'a#thread-top',		'[Вверх]'],
 		['css',	'a#thread-catalog',	'[Каталог]'],
@@ -252,7 +252,15 @@ cfg = [
 		['css', 'body > p', 'Внимание: Некоторые изменения не вступят в силу до тех пор, пока не будет написан новый пост на доске.'],
 
 		['reg', 'table > tbody > tr > th', 'URI', 'URL'],
+		['reg', 'table > tbody > tr > th', 'Título', 'Название'],
+		['reg', 'table > tbody > tr > th', 'Subtítulo', 'Описание'],
 		['reg', 'table > tbody > tr > td', 'não pode ser alterado', 'не может быть изменен'],
+		['reg', 'table > tbody > tr > th', 'Tipo de board', 'Тип доски'],
+		['reg', 'table > tbody > tr > th', 'Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
+		['reg', 'table > tbody > tr > th', 'Exigir que o OP poste uma imagem.', 'При создании нового треда изображение обязательно'],
+		['reg', 'table > tbody > tr > th', 'Exigir que o OP crie um assunto.', 'При создании нового треда поле "Тема" обязательно'],
+		['reg', 'table > tbody > tr > th', 'Mostrar IDs dos usuários', 'Показать идентификаторы пользователей'],
+		
 
 		[]
 	]],
