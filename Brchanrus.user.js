@@ -93,8 +93,8 @@ cfg = [
 		['reg', 'time', '(Sáb)', '(Сбт)'],
 		['reg', 'time', '(Dom)', '(Вск)'],
 
-		// Посты
-		['css', 'span.name', 'Аноним'],
+		// Посты,
+		['txt', 'span.name', TYPE_FIRSTNODE, 'Аноним '],
 		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: '],
 		['css', 'a.watchThread', '[В избранное]'],
 		['css', 'a#link-quick-reply', '[Ответить]'],
@@ -132,7 +132,7 @@ cfg = [
 		['reg', 'p.intro > a', /Últimas (\d+) Mensagens/, 'Последние $1 сообщений'],
 
 		['reg', 'span.toolong', /Mensagem muito longa. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', true],
-		['reg', 'div.post > span.omitted', /(\d+) mensagens e (\d+) resposta. com imagem omitida.(.*)/, function(original, str1, str2){return ' Пропущен' +get_correct_str(str1, '', 'о', 'о')+ ' ' +str1+ ' ответ' +get_correct_str(str1, '', 'а', 'ов') + ' из них ' +str2+ ' ответ' +get_correct_str(str2, '', 'а', 'ов')+ ' с изображениями. Нажмите ответить, чтобы посмотреть.';}, true],
+		['reg', 'div.post > span.omitted', /(\d+) mensagens e (\d+) resposta. com imagem omitida.(.*)/, function(original, str1, str2){return ' Пропущен' +get_correct_str(str1, '', 'о', 'о')+ ' ' +str1+ ' ответ' +get_correct_str(str1, '', 'а', 'ов') + ' из них ' +str2+ ' с изображениями. Нажмите ответить, чтобы посмотреть.';}, true],
 		['reg', 'div.post > span.omitted', /(\d+) mensagens omitidas?(.*)/, function(original, str1){return ' Пропущен' +get_correct_str(str1, '', 'о', 'о')+ ' ' +str1+ ' ответ' +get_correct_str(str1, '', 'а', 'ов')+ '. Нажмите ответить, чтобы посмотреть.';}, true],
 
 		[]
@@ -385,7 +385,7 @@ localStorage.user_js += '\n/* l10n v1 user */\nvar l10n = { \
 
 let replacers = [];
 let new_posts_replacers = [
-	new CSSReplace('span.name', 'Аноним'),
+	new InnerTextReplace('span.name', TYPE_FIRSTNODE, 'Аноним '),
 	new InnerTextReplace('p.fileinfo', TYPE_FIRSTNODE, 'Файл: '),
 	new RegexReplace('time', '(Seg)', '(Пнд)'),
 	new RegexReplace('time', '(Ter)', '(Втр)'),
@@ -469,11 +469,9 @@ document.onreadystatechange = function () {
 			break;
 		case "complete":
 			$(document).on('new_post', function(e, post) {
-				let i = performance.now();
 				for(let r of new_posts_replacers) {
 					r.replace(post);
 				}
-				console.debug('Replace: ', performance.now() - i, "ms");
 			});
 			doIt();
 			break;
