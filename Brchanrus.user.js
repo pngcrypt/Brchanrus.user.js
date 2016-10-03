@@ -340,9 +340,10 @@ var get_correct_str = function(num, str1, str2, str3) {
 			return str3;
 		}
 	}
-}
+};
 
-if(!localStorage.getItem('user_js').match('var l10n = {'))
+var user_js = localStorage.getItem('user_js') || "";
+if(!user_js.match('var l10n = {'))
 localStorage.user_js += '\n/* l10n v1 user */\nvar l10n = { \
 	"Watch Thread": "В избранное", \
 	"Show post options &amp; limits": "Показать опции", \
