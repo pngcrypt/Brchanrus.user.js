@@ -472,6 +472,10 @@ var doIt = function() {
 	console.debug('Replace: ', performance.now() - i, "ms");
 }
 
+$(document).on('new_post', function(e, post) {
+console.debug('new_post');
+});
+
 document.onreadystatechange = function () {
 	switch (document.readyState) {
 		case "loading":
