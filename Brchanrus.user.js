@@ -523,7 +523,6 @@ var l10n_rus = {
 	"Add filter": "Добавить фильтр",
 	"Delete post": "Удалить пост",
 	"Delete file": "Удалить файл",
-	"Global report": "Global report",
 	"Enable inlining": "При клике на ответы разворачивать их в посте",
 	"Formatting Options": "Настройки форматирования",
 	"Add Rule": "Добавить правило",
@@ -550,7 +549,6 @@ var l10n_rus = {
 	"Add": "Добавить",
 	"Tripcode": "Трипкод",
 	"Subject": "Тема",
-	"Comment": "Комментарий",
 	"watchlist": "уведомления",
 	"Unhide post": "Не скрывать пост",
 	"Post +": "Пост +",
@@ -640,6 +638,19 @@ class RegexReplace {
 	}
 }
 
+class PostingReplace {
+	constructor(regex, text) {
+		this.regex = regex;
+		this.text = text;
+	}
+	replace(obj) {
+		if(obj.text.match(this.regex)) {
+			obj.text = obj.text.replace(this.regex, this.text);
+			return true;
+		}
+	}
+}
+
 let replacers = [];
 let new_posts_replacers = [
 	new CSSReplace('span.name', 'Аноним'),
@@ -651,6 +662,11 @@ let new_posts_replacers = [
 	new RegexReplace('time', '(Sex)', '(Птн)'),
 	new RegexReplace('time', '(Sáb)', '(Сбт)'),
 	new RegexReplace('time', '(Dom)', '(Вск)')
+];
+let posting_replacers = [
+	new PostingReplace('Você errou o codigo de verificação', 'Не верно введен код капчи'),
+	new PostingReplace('Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'),
+	new PostingReplace('Você errou o codigo de verificação', 'Текст слишком мал или отсутствует')
 ];
 
 // ==============================================================================================
@@ -734,6 +750,17 @@ document.onreadystatechange = function () {
 					r.replace(post);
 				}
 			});
+
+			window.alert_orig = window.alert;
+
+			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action) {
+				console.debug(msg, do_confirm, confirm_ok_action, confirm_cancel_action);
+				msg = {text: msg};
+				for(let r of posting_replacers) {
+					if(r.replace(msg)) break;
+				}
+				window.alert_orig(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+			};
 			doIt();
 			break;
 	}
