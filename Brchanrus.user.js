@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Brchan Rusifikator
-// @version         3.2.3
+// @version         3.2.4
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
