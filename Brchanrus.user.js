@@ -1,16 +1,16 @@
 // ==UserScript==
-// @name			Brchan Rusifikator
-// @version		 3.2.3
-// @namespace	   https://brchan.org/*
-// @author		  Y0ba, Isset, pngcrypt
-// @updateURL	   https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
-// @run-at		  document-start
-// @grant		   none
-// @include		 https://brchan.org/*
-// @include		 http://brchan.org/*
-// @include		 https://www.brchan.org/*
-// @include		 http://www.brchan.org/*
-// @nocompat		Chrome
+// @name            Brchan Rusifikator
+// @version         3.2.3
+// @namespace       https://brchan.org/*
+// @author          Y0ba, Isset, pngcrypt
+// @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
+// @run-at          document-start
+// @grant           none
+// @include         https://brchan.org/*
+// @include         http://brchan.org/*
+// @include         https://www.brchan.org/*
+// @include         http://www.brchan.org/*
+// @nocompat        Chrome
 // ==/UserScript==
 
 const TYPE_FIRSTNODE = 0;
@@ -88,7 +88,8 @@ cfg = [
 		['reg', 'table.post-table > tbody > tr > th', 'Opções', 'Опции'],
 		['reg', 'table.post-table > tbody > tr > th', 'Assunto', 'Тема/Имя'],
 		['reg', 'table.post-table > tbody > tr > th', 'Mensagem', 'Сообщение'],
-		['reg', 'table.post-table > tbody > tr > th', 'Verificação', 'Капча(кликните на поле для показа)'],
+		['reg', 'table.post-table > tbody > tr > th', 'Verificação', 'Капча'],
+		['css', 'table.post-table > tbody > tr > td > div.captcha_html', 'кликните на поле для показа'],
 		['reg', 'table.post-table > tbody > tr > th', 'Arquivo', 'Файл'],
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
