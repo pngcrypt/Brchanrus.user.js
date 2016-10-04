@@ -47,8 +47,6 @@ const TYPE_LASTNODE = 1;
 
 	true
 		required for regex replace, true = replace as html
-
-	test
 */
 
 cfg = [
