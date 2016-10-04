@@ -70,7 +70,7 @@ cfg = [
 		['reg', 'div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
 		['reg', 'p.intro > a', /Últimas (\d+) Mensagens/, 'Последние $1 сообщений'],
 		['reg', 'div.options_tab > div > fieldset > legend', 'Formatting Options', 'Опции форматирования'],
-		['reg', 'div.options_tab > div > fieldset > legend', 'Image hover', 'Всплывающие озображения'],
+		['reg', 'div.options_tab > div > fieldset > legend', 'Image hover', 'Всплывающие изображения'],
 
 		['reg', 'time', '(Seg)', '(Пнд)'],
 		['reg', 'time', '(Ter)', '(Втр)'],
@@ -555,8 +555,9 @@ var l10n_rus = {
 	"Tripcode": "Трипкод",
 	"Subject": "Тема",
 	"watchlist": "уведомления",
-	"Unhide post": "Не скрывать пост",
-	"Post +": "Пост +",
+	"Unhide post": "Показать скрытый поста",
+	"Hide post and all replies" : "Скрыть пост и все ответы на него",
+	"Post +": "Пост и все ответы на него",
 
 	"":""
 };
