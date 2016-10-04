@@ -62,6 +62,9 @@ cfg = [
 		['txt', 'div.boardlist > span > a[href="/bugs.php"]', TYPE_LASTNODE, ' Сообщить об ошибке'],
 		['css', 'body > div > a[title="Opções"]', '[Настройки]'],
 
+		['reg', 'div.options_tab > div > fieldset > legend', 'Formatting Options', 'Опции форматирования'],
+		['reg', 'div.options_tab > div > fieldset > legend', 'Image hover', 'Всплывающие озображения'],
+
 		[]
 	]],
 
@@ -89,7 +92,7 @@ cfg = [
 		['reg', 'table.post-table > tbody > tr > th', 'Assunto', 'Тема/Имя'],
 		['reg', 'table.post-table > tbody > tr > th', 'Mensagem', 'Сообщение'],
 		['reg', 'table.post-table > tbody > tr > th', 'Verificação', 'Капча'],
-		['css', 'table.post-table > tbody > tr > td > div.captcha_html', 'кликните на поле для показа'],
+		['css', 'table.post-table > tbody > tr > td > div.captcha_html', 'кликните сюда для показа'],
 		['reg', 'table.post-table > tbody > tr > th', 'Arquivo', 'Файл'],
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
@@ -664,7 +667,7 @@ let new_posts_replacers = [
 	new RegexReplace('time', '(Dom)', '(Вск)')
 ];
 let posting_replacers = [
-	new PostingReplace('Você errou o codigo de verificação', 'Не верно введен код капчи'),
+	new PostingReplace('Você errou o codigo de verificação', 'Неверно введен код капчи'),
 	new PostingReplace('Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'),
 	new PostingReplace('Você errou o codigo de verificação', 'Текст слишком мал или отсутствует')
 ];
