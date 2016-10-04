@@ -11,4 +11,4 @@
 // @include         https://www.brchan.org/*
 // @include         http://www.brchan.org/*
 // @nocompat        Chrome
-// =
+// ==/UserScript==
