@@ -62,9 +62,6 @@ cfg = [
 		['txt', 'div.boardlist > span > a[href="/bugs.php"]', TYPE_LASTNODE, ' Сообщить об ошибке'],
 		['css', 'body > div > a[title="Opções"]', '[Настройки]'],
 
-		['reg', 'div.options_tab > div > fieldset > legend', 'Formatting Options', 'Опции форматирования'],
-		['reg', 'div.options_tab > div > fieldset > legend', 'Image hover', 'Всплывающие озображения'],
-
 		[]
 	]],
 
@@ -72,6 +69,8 @@ cfg = [
 	[/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/, [
 		['reg', 'div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
 		['reg', 'p.intro > a', /Últimas (\d+) Mensagens/, 'Последние $1 сообщений'],
+		['reg', 'div.options_tab > div > fieldset > legend', 'Formatting Options', 'Опции форматирования'],
+		['reg', 'div.options_tab > div > fieldset > legend', 'Image hover', 'Всплывающие озображения'],
 
 		['reg', 'time', '(Seg)', '(Пнд)'],
 		['reg', 'time', '(Ter)', '(Втр)'],
@@ -97,7 +96,8 @@ cfg = [
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
 		['css', 'a.show-post-table-options', '[Показать опции]'],
-		['att', 'input[name="post"]', 'value', 'Отправить'],
+		['att', 'table.post-table > tbody > tr > td > input[value="Responder"]', 'value', 'Отправить'],
+		['att', 'table.post-table > tbody > tr > td > input[value="Novo tópico"]', 'value', 'Создать тред'],
 		['css', 'tr#oekaki > th', 'Рисовать'],
 		['css', 'tr#upload_embed > th', 'Ссылка на YouTube'],
 		['css', 'tr#options-row > th', 'Опции'],
@@ -116,7 +116,7 @@ cfg = [
 		['reg', 'p.intro > a', 'Responder', 'Ответить'],
 
 		['reg', 'span.toolong', /Mensagem muito longa. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', true],
-		['reg', 'div.post > span.omitted', /(\d+) mensagens e (\d+) resposta. com imagem omitida.+/, 'Пропущено ответов: $1 (с изображениями: $2). Нажмите ответить, чтобы посмотреть.'],
+		['reg', 'div.post > span.omitted', /(\d+) mensagens e (\d+) resposta. com imagem omitida.+/, 'Пропущено ответов: $1, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 		['reg', 'div.post > span.omitted', /(\d+) mensagens omitidas?.*/, ' Пропущено ответов: $1. Нажмите ответить, чтобы посмотреть.'],
 
 		['css',	'a#thread-return',	'[Назад]'],
@@ -132,6 +132,8 @@ cfg = [
 		['reg', 'header > h1', 'Erro', 'Ошибка', true],
 		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
 		['reg', 'body > div > h2', 'IP detectado como proxy, proxies nao sao permitidos nessa board\. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, что произошла ошибка, свяжитесь с администрацией'],
+		['reg', 'body > div > h2', 'Senha incorreta', 'Неверный пароль'],
+		['css', 'body > div > p> a', 'Назад'],
 
 		[]
 	]],
@@ -669,7 +671,8 @@ let new_posts_replacers = [
 let posting_replacers = [
 	new PostingReplace('Você errou o codigo de verificação', 'Неверно введен код капчи'),
 	new PostingReplace('Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'),
-	new PostingReplace('Você errou o codigo de verificação', 'Текст слишком мал или отсутствует')
+	new PostingReplace('O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'),
+	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение')
 ];
 
 // ==============================================================================================
