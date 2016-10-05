@@ -258,6 +258,12 @@ cfg = [
 		[]
 	]],
 
+	// Жалоба
+	[/^report\.php/, [
+		['reg', 'p', [/^Enter reason below/, 'Введите причину жалобы']]
+	]],
+
+
 	// Любая доска / тред под модеркой
 	[/^mod\.php\?\/\w+(|\/|\/.+\.html)$/, [
 		// кнопки модерирования
@@ -353,29 +359,29 @@ cfg = [
 			['Título', 'Название'],
 			['Subtítulo', 'Описание'],
 			['Tipo de board', 'Тип доски'],
-			[/Imagens personalizadas(.+)Marcando essa opção você poderá usar imagens spoiler\/sem-arquivo\/deletado customizadas.+Certifique-se de fazer upload das imagens na página \'imagens customizadas\' ou você terá.+erros 404 na sua board/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', 'innerHTML'],
+			[/^Imagens personalizadas(.+)Marcando essa.+/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', 'innerHTML'],
 			['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
 			['Exigir que o OP poste uma imagem', 'При создании нового треда изображение обязательно'],
 			['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательна'],
 			['Mostrar IDs dos usuários', 'Показать идентификаторы пользователей'],
 			['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
-			[/Desabilitar caracteres compostos \("Zalgo", texto vietnamita\)/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
-			[/Ocultar board(.+)Marcando essa opção sua board não aparecer na página de boards/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', 'innerHTML'],
-			[/Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Такие как', 'innerHTML'],
-			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить рисовать пользователю во время поста', 'innerHTML'],
+			[/^Desabilitar caracteres compostos.+/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
+			[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', 'innerHTML'],
+			[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', 'innerHTML'],
+			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', 'innerHTML'],
 			['Permitir upload de SWF', 'Разрешить загружать SWF'],
 			['Permitir upload de PDF', 'Разрешить загружать PDF'],
 			['Proibir usuários de repostar imagens repetidas', 'Запретить пользователям отправлять повторяющиеся изображения'],
 			['(em toda a board)', '(в по всей доске)'],
 			['(no mesmo thread)', '(в том же треде)'],
 			['Permitir usuário deletar seu própro post', 'Разрешить пользователю удалить свой пост'],
-			[/Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
+			[/^Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
 			['Habilitar CAPTCHA apenas para criação de threads', 'Включить CAPTCHA, только для создания тредов'],
-			[/Bans públicos(.+)Mostrar usuários banidos aos outros usuários/, 'Публичные баны$1Показывать пользователей которых забанили другим пользователям', 'innerHTML'],
+			[/^Bans públicos(.+)Mostrar.+/, 'Публичные баны$1Показывать пользователей которых забанили другие пользователи', 'innerHTML'],
 			['Número máximo de linhas por post', 'Максимальное количество строк на пост'],
-			[/Contador de páginas(.+)Número máximo de páginas(.+)Passando do limite os threads antigo serão deletados/, 'Счетчик страниц$1Максимальное количество страниц$2Переходя за этот предел старые треды будут удалены', 'innerHTML'],
+			[/^Contador de páginas(.+)Número.+/, 'Счетчик страниц$1Максимальное количество страниц<br>Переходя за этот предел старые треды будут удалены', 'innerHTML'],
 			['Limite de bumps', 'Бамплимит'],
-			[/Tamanho mínimo do texto do OP(.+)\(número entre 0 e 1024, 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до 1024, 0 для отключения )', 'innerHTML'],
+			[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', 'innerHTML'],
 			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
 			['Manter o nome original do arquivo', 'Показывать оригинальное имя файла'],
 			['Limite de imagens por post', 'Максимальное количество изображений в посте'],
@@ -850,6 +856,9 @@ document.onreadystatechange = function () {
 
 				$('#watchlist').css('width', '20%');
 			}
+
+			// TODO
+			// (function(){var f=function(u,t){[].forEach.call(t.querySelectorAll('a'),(e) =>void(e.href=e.href.replace(/^http(s)?:\/\/privatelink\.de\/\?/,'')))};$(document).on('new_post',f);f(null,document)})();
 
 			// перевод сообщений
 			window.alert_orig = window.alert;
