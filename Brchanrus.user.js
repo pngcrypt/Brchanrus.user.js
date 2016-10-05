@@ -686,7 +686,9 @@ let posting_replacers = [
 	new PostingReplace('Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'),
 	new PostingReplace('O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'),
 	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение'),
-	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:')
+	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:'),
+	new PostingReplace('Click on any image on this site to load it into oekaki applet', 'Кликните на любое изображение на сайте, чтобы добавить его в редактор'),
+	new PostingReplace('O corpo do texto é pequeno demais ou inexistente', 'Текст сообщения слишком короткий или отсутствует')
 ];
 
 // ==============================================================================================
