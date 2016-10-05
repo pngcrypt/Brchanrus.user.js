@@ -692,9 +692,8 @@ let posting_replacers = [
 // ==============================================================================================
 // загрузка конфига
 // ==============================================================================================
+var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url path
 (function(){
-	//return;
-	let url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url path
 	console.debug("URL: ", url);
 	let i = performance.now();
 	for(let u of cfg)
@@ -745,7 +744,6 @@ let posting_replacers = [
 	console.debug("Cfg Loaded: ", performance.now() - i, "ms");
 })();
 
-
 // ==============================================================================================
 // ==============================================================================================
 var doIt = function() {
@@ -766,11 +764,23 @@ document.onreadystatechange = function () {
 			break;
 		case "complete":
 			if(window.jQuery)
-				$(document).on('new_post', function(e, post) { // переаод новых постов
+			{
+				// переаод новых постов
+				$(document).on('new_post', function(e, post) 
+				{ 
 					for(let r of new_posts_replacers) {
 						r.replace(post);
 					}
 				});
+
+				// добавить дату создания треда в каталоге
+				if(url.match(/^\w+\/catalog\.html/)) $("div.mix").each(function()
+				{
+					// дата создания в аттрибуте data-time, дата последнего поста - в data-bump
+					var t = new Date(this.getAttribute("data-time")*1000); 
+					$("strong", this).first().append("<br><small>["+t.toLocaleString()+"]</small>");
+				});
+			}
 
 			window.alert_orig = window.alert;
 
