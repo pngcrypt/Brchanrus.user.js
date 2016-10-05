@@ -107,6 +107,7 @@ cfg = [
 			['Verificação', 'Капча'],
 			['Arquivo', 'Файл']
 		]],
+		['css', 'table.post-table > tbody > tr > td > div.format-text > a', 'ВСТАВИТЬ'],
 		['css', 'table.post-table > tbody > tr > td > div.captcha_html', 'кликните сюда для показа'],
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
@@ -128,6 +129,8 @@ cfg = [
 		['reg', 'tr#options-row > td > div.no-bump-option > label', ['Não bumpar', 'Не поднимать тред (сажа)', 'innerHTML']],
 		['reg', 'tr#options-row > td > div.spoiler-images-option > label', ['Imagem spoiler', 'Скрыть превью изображения', 'innerHTML']],
 
+		['reg', 'table.post-table-options  p.unimportant', [/Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', 'innerHTML']],
+
 		// Навигация по страницам
 		['reg', 'body > div.pages', [
 			['Anterior', 'Предыдущая', 'innerHTML'],
@@ -137,8 +140,8 @@ cfg = [
 
 		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', 'innerHTML']],
 		['reg', 'div.post > span.omitted', [
-			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, 'Пропущено ответов: $1, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
-			[/(\d+) mensagens omitida.*/, ' Пропущено ответов: $1. Нажмите ответить, чтобы посмотреть.']
+			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
+			[/(\d+) mensagens? omitida.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
 		]],
 
 		['css',	'a#thread-return',	'[Назад]'],
@@ -271,10 +274,10 @@ cfg = [
 		['att', 'input[name="login"]', 'value', 'Войти'],		
 
 		// Ошибки
-		['reg', 'header > h1', [/Erro/, 'Ошибка', 'innerHTML']],
-		['reg', 'body > h2', ['Login e/ou senha inválido(s).', 'Неверный логин или пароль']],
-		['reg', 'header > div.subtitle', [/Um erro ocorreu/, 'Произошла ошибка']],
-		['reg', 'body > div > h2', [/Pagina não encontrada/, 'Страница не найдена']],
+		['reg', 'header > h1', ['Erro', 'Ошибка', 'innerHTML']],
+		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
+		['reg', 'body > div > h2', ['Pagina não encontrada', 'Страница не найдена']],
+		['reg', 'body > h2', ['Login e/ou senha inválido', 'Неверный логин или пароль']],
 
 		['reg', 'div.subtitle > p > a', ['Voltar à dashboard', 'Назад к панели управления']],
 
@@ -363,7 +366,7 @@ cfg = [
 			['Permitir upload de SWF', 'Разрешить загружать SWF'],
 			['Permitir upload de PDF', 'Разрешить загружать PDF'],
 			['Proibir usuários de repostar imagens repetidas', 'Запретить пользователям отправлять повторяющиеся изображения'],
-			['(em toda a board)', '(в том же треде)'],
+			['(em toda a board)', '(в по всей доске)'],
 			['(no mesmo thread)', '(в том же треде)'],
 			['Permitir usuário deletar seu própro post', 'Разрешить пользователю удалить свой пост'],
 			[/Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
@@ -375,7 +378,7 @@ cfg = [
 			[/Tamanho mínimo do texto do OP(.+)\(número entre 0 e 1024, 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до 1024, 0 для отключения )', 'innerHTML'],
 			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
 			['Manter o nome original do arquivo', 'Показывать оригинальное имя файла'],
-			['Limite de imagens por post', 'Максимальное количеств изображений в посте'],
+			['Limite de imagens por post', 'Максимальное количество изображений в посте'],
 		]],
 
 		['att', 'input#wf_add', 'value', 'Добавить еще фильтр'],
@@ -468,7 +471,7 @@ var l10n_rus = {
 	"Pin this board": "Pin this board",
 	"Stop watching this board": "Stop watching this board",
 	"Watch this board": "Watch this board",
-	"Click on any image on this site to load it into oekaki applet": "Click on any image on this site to load it into oekaki applet",
+	"Click on any image on this site to load it into oekaki applet": "Нажмите на любое изображение на этом сайте, чтобы загрузить его в oekaki апплет",
 	"Sunday": "Воскресенье",
 	"Monday": "Понедельник",
 	"Tuesday": "Вторник",
@@ -542,12 +545,12 @@ var l10n_rus = {
 	"Message:": "Сообщение:",
 	"Board": "Доска",
 	"all": "все",
-	"Set": "Set",
-	" ago": " ago",
+	"Set": "Установлен",
+	" ago": " тому назад",
 	"Expires": "Истекает",
 	"never": "никогда",
 	"in ": "в ",
-	"Staff": "Staff",
+	"Staff": "Сотрудник",
 	"system": "system",
 	"Auto": "Автообновление",
 	"Updating...": "Обновление...",
@@ -633,7 +636,7 @@ var l10n_rus = {
 	"Add": "Добавить",
 	"Tripcode": "Трипкод",
 	"Subject": "Тема",
-	"watchlist": "уведомления",
+	"watchlist": "Избранное",
 	"Unhide post": "Показать скрытый пост",
 	"Hide post and all replies" : "Скрыть пост и все ответы на него",
 	"Post +": "Пост и все ответы на него",
@@ -842,6 +845,8 @@ document.onreadystatechange = function () {
 					var t = new Date(this.getAttribute("data-time")*1000);
 					$("strong", this).first().append("<br><small>["+t.toLocaleString()+"]</small>");
 				});
+
+				$('#watchlist').css('width', '20%');
 			}
 
 			// перевод сообщений
@@ -854,8 +859,6 @@ document.onreadystatechange = function () {
 				console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 				window.alert_orig(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 			};
-
-			//eval('window.watchlist.add = ' + watchlist.add.toString().replace(/\[0\]/, '[2]'));
 
 			doIt();
 			break;
