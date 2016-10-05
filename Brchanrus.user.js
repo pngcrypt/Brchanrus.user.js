@@ -71,6 +71,9 @@ cfg = [
 		['reg', 'p.intro > a', /Últimas (\d+) Mensagens/, 'Последние $1 сообщений'],
 		['reg', 'div.options_tab > div > fieldset > legend', 'Formatting Options', 'Опции форматирования'],
 		['reg', 'div.options_tab > div > fieldset > legend', 'Image hover', 'Всплывающие изображения'],
+		['reg', 'div.banner', 'Modo de postagem: Resposta', 'Форма ответа', true], // ???
+		['reg', 'div.banner > a', 'Voltar', 'Назад'], // к списку тредов
+		['reg', 'div.banner > a', 'Ir ao rodapé', 'Вниз страницы'],
 
 		['reg', 'time', '(Seg)', '(Пнд)'],
 		['reg', 'time', '(Ter)', '(Втр)'],
@@ -102,7 +105,7 @@ cfg = [
 		['css', 'tr#upload_embed > th', 'Ссылка на YouTube'],
 		['css', 'tr#options-row > th', 'Опции'],
 
-		['reg', 'tr#oekaki > td > a', 'Mostrar oekaki', 'Начать'],
+		['reg', 'tr#oekaki > td > a', 'Mostrar oekaki', 'Рисовать'],
 		['reg', 'tr#oekaki > td > span.unimportant', 'substitui arquivos', 'заменяет файл'],
 		['reg', 'tr#upload_embed > td > span.unimportant', 'substitui arquivos', 'заменяет файл'],
 		['reg', 'tr#options-row > td > div.no-bump-option > label', 'Não bumpar', 'Не поднимать тред (сажа)', true],
@@ -142,10 +145,17 @@ cfg = [
 	[/^\w+\/catalog\.html$/, [
 		['reg', 'head > title', 'Catalog', 'Каталог'],
 		['txt', 'header > h1', TYPE_FIRSTNODE, 'Каталог тредов ('],
-		['reg', 'span', 'Ordenar por: ', 'Сортировка по: ', true],
+		['reg', 'body > span', 'Ordenar por', 'Сортировка по'],
+		['reg', 'body > span', 'Tamanho da imagem', 'Размер изображений'],
 		['css', 'select#sort_by > option[value="bump:desc"]', 'Активности'],
+		['css', 'select#sort_by > option[value="time:desc"]', 'Дате создания'],
+		['css', 'select#sort_by > option[value="reply:desc"]', 'Кол-ву ответов'],
+		['css', 'select#sort_by > option[value="random:desc"]', 'Случайная'],
 
-		['css', 'select#sort_by > option[value="bump:desc"]', 'Активности'],
+		['css', 'select#image_size > option[value="vsmall"]', 'Крошечные'],
+		['css', 'select#image_size > option[value="small"]', 'Маленькие'],
+		['css', 'select#image_size > option[value="medium"]', 'Средние'],
+		['css', 'select#image_size > option[value="large"]', 'Большие'],
 
 		[]
 	]],
@@ -675,7 +685,8 @@ let posting_replacers = [
 	new PostingReplace('Você errou o codigo de verificação', 'Неверно введен код капчи'),
 	new PostingReplace('Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'),
 	new PostingReplace('O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'),
-	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение')
+	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение'),
+	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:')
 ];
 
 // ==============================================================================================
@@ -754,15 +765,16 @@ document.onreadystatechange = function () {
 			doIt();
 			break;
 		case "complete":
-			$(document).on('new_post', function(e, post) {
-				for(let r of new_posts_replacers) {
-					r.replace(post);
-				}
-			});
+			if(window.jQuery)
+				$(document).on('new_post', function(e, post) { // переаод новых постов
+					for(let r of new_posts_replacers) {
+						r.replace(post);
+					}
+				});
 
 			window.alert_orig = window.alert;
 
-			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action) {
+			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action) { // перевод сообщений
 				console.debug(msg, do_confirm, confirm_ok_action, confirm_cancel_action);
 				msg = {text: msg};
 				for(let r of posting_replacers) {
