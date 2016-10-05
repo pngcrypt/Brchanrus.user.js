@@ -25,6 +25,9 @@ const RE_OUTER = 'outerHTML'; // hmtl код, включая найденный 
 const RE_SINGLE = 1; // однократный [по умолчанию] (заменяет первый удовлетворяющий элемент, после замены строка исключается из поиска)
 const RE_MULTI = 2; // многократый (поиск во всех элементах)
 
+const RE_BREAK = 1; // прерывать перебор на первом найденном regex [по умолчанию] (для текущего селектора)
+const RE_NOBREAK = 2; // перебирать все regex независимо от результата (для текущего селектора)
+
 /* cfg = [
 	[ /url-regexp/, [
 		["replacer_type", "selector", <params>],
@@ -50,14 +53,14 @@ const RE_MULTI = 2; // многократый (поиск во всех элем
 	["txt", "selector", "search_text", "replace_text"]
 	["att", "selector", "attr_name", "replace_text"]
 	
-	["reg", "selector", [regex, "replace_text", replace_type, replace_multi]]
+	["reg", "selector", [regex, "replace_text", replace_type, replace_multi, break_type,]]
 
-	["reg", "selector", [regex, "replace_text"], default_replace_type, default_replace_multi]
+	["reg", "selector", [regex, "replace_text"], default_replace_type, default_replace_multi, break_type]
 
 	["reg", "selector", [
-		[regex, "replace_text"], replace_type, replace_multi],
+		[regex, "replace_text"], replace_type, replace_multi, break_type],
 		...
-		[regex, "replace_text"], replace_type, replace_multi]
+		[regex, "replace_text"], replace_type, replace_multi, break_type]
 	], default_replace_type, default_replace_multi]
 
 	replace_text - текст замены
@@ -68,9 +71,11 @@ const RE_MULTI = 2; // многократый (поиск во всех элем
 	default_replace_type - тип замены по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_TEXT)
 	default_replace_multi - режим поиска по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_SINGLE)
 
+	break_type - прерывать перебор regex при первом совпадении [не обязательный] (RE_BREAK [по умолчанию], RE_NOBREAK)
+
 */
 
-cfg = [
+var cfg = [
 
 	// Общие переводы (для всех url)
 	[/^/, [
@@ -92,7 +97,7 @@ cfg = [
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
 			['Responder', 'Ответить']
-		]],
+		], RE_TEXT, RE_MULTI],
 		['reg', 'div.options_tab > div > fieldset > legend', [
 			['Formatting Options', 'Опции форматирования'],
 			['Image hover', 'Всплывающие изображения']
@@ -154,16 +159,16 @@ cfg = [
 
 		// Навигация по страницам
 		['reg', 'body > div.pages', [
-			['Anterior', 'Предыдущая', RE_INNER],
-			['Próxima', 'Следующая', RE_INNER],
-			['Catálogo', 'Каталог тредов', RE_INNER]
-		]],
+			['Anterior', 'Предыдущая'],
+			['Próxima', 'Следующая'],
+			['Catálogo', 'Каталог тредов']
+		], RE_INNER, RE_SINGLE, RE_NOBREAK],
 
 		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', RE_INNER]],
 		['reg', 'div.post > span.omitted', [
 			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 			[/(\d+) mensagens? omitida.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
-		]],
+		], RE_TEXT, RE_MULTI],
 
 		['css',	'a#thread-return',	'[Назад]'],
 		['css',	'a#thread-top',		'[Вверх]'],
@@ -294,7 +299,7 @@ cfg = [
 	// Админка - логин / ошибки
 	[/^mod\.php\b/, [
 		['reg', 'header > h1', ['Login', 'Вход']],
-		['reg', 'table > tbody > tr > th', [
+		['reg', 'table:nth-child(1) > tbody > tr > th', [
 			['Usuário', 'Логин'],
 			['Senha', 'Пароль']
 		]],
@@ -394,7 +399,7 @@ cfg = [
 			['Permitir upload de SWF', 'Разрешить загружать SWF'],
 			['Permitir upload de PDF', 'Разрешить загружать PDF'],
 			[/^Permitir rolar dados\(roll\)/, 'Разрешить бросить кости (roll)'],
-			['Proibir usuários de repostar imagens repetidas', 'Запретить отправлять повторяющиеся изображения'],
+			['Proibir usuários de repostar imagens repetidas', 'Запретить отправлять повторяющиеся изображения', RE_TEXT, RE_MULTI, RE_NOBREAK],
 			['(em toda a board)', '(по всей доске)'],
 			['(no mesmo thread)', '(в том же треде)'],
 			['Permitir usuário deletar seu própro post', 'Разрешить пользователю удалить свой пост'],
@@ -735,13 +740,13 @@ class InnerTextReplace {
 }
 
 class RegexReplace {
-	constructor(query, array, prop, multi) {
+	constructor(query, array, prop, multi, dobreak) {
 		this.query = query;
 		this.array = array;
 		this.prop = prop ? prop : RE_TEXT; // тип замещения по умолчанию 
 		this.multi = multi ? multi : RE_SINGLE; // режим поиска по умолчанию
+		this.dobreak = dobreak ? dobreak : RE_BREAK; // прерывать перебор при первом совпадении или нет
 		this.cnt = 0; // счетчик активных regex
-
 		this.debug = 0; // 1 - показывает процесс поиска-замены в консоли
 	}
 	replace(element) {
@@ -758,16 +763,21 @@ class RegexReplace {
 			this.cnt = 0; // сбрасываем счетчик активных regex
 			if(this.array[0].constructor.name == 'Array') {
 				for(let i in this.array) {
-					this.do(el, this.array[i], i);
+					if(this.do(el, this.array[i], i) < 0)
+					{
+						if(this.debug) console.debug("REG_BREAK");
+						this.cnt=1;
+						break;
+					}
 				}
 			}
 			else
 				this.do(el, this.array, -1);
 
-			if(!this.cnt)
+			if(this.cnt<1)
 			{
 				// больше нет ни одного активного regex для данного селектора
-				if(this.debug) console.debug("* BREAK * :: no more regex");
+				if(this.debug) console.debug("REG_STOP");
 				break;
 			}
 		}
@@ -776,12 +786,13 @@ class RegexReplace {
 	do(el, array, i) 
 	{
 		if(!array.length)
-			return -1;
+			return 0;
 
 		this.cnt++; // кол-во активных regex
 
 		let prop = array.length > 2 ? array[2] : this.prop; // тип замещения (индивидуальный или по умолчанию)
 		let multi = array.length > 3 ? array[3] : this.multi; // режим поиска (индивидуальный или по умолчанию)
+		let dobreak = array.length > 4 ? array[4] : this.dobreak; // прерывать перебор при совпадении
 		if(el[prop].match(array[0])) 
 		{
 			el[prop] = el[prop].replace(array[0], array[1]);
@@ -797,7 +808,10 @@ class RegexReplace {
 				if(this.debug) prop += " :: REMOVED";
 			}
 			if(this.debug) console.debug("REG_FND:", array, prop);
-			return 1;
+			if(dobreak == RE_BREAK)
+				return -1;
+			else
+				return 1;
 		}
 		if(this.debug) console.debug("REG_FND:", array, ":: NOT FOUND");
 		return 0;
@@ -873,7 +887,7 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 					}
 				case "reg":
 					if(cl > 2) {
-						replacers.push(new RegexReplace(c[1], c[2], cl>3 ? c[3] : 0, cl>4 ? c[4] : 0));
+						replacers.push(new RegexReplace(c[1], c[2], cl>3 ? c[3] : 0, cl>4 ? c[4] : 0, cl>5 ? c[5] : 0));
 						continue;
 					}
 
@@ -886,6 +900,7 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 			console.debug('** Cfg Error: ', c);
 		} // for c
 	} // for u
+	cfg = [];
 	console.debug("Cfg Loaded: ", performance.now() - i, "ms");
 })();
 
