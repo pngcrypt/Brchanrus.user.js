@@ -683,7 +683,9 @@ class RegexReplace {
 		for(let el of (element ? element : document).querySelectorAll(this.query)) {
 			if(this.array[0].constructor.name == 'Array') {
 				for(let i in this.array) {
-					this.do(el, this.array[i]);
+					if(this.do(el, this.array[i])) {
+						break;
+					}
 				}
 				continue;
 			}
@@ -731,7 +733,8 @@ let posting_replacers = [
 	new PostingReplace('Você errou o codigo de verificação', 'Неверно введен код капчи'),
 	new PostingReplace('Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'),
 	new PostingReplace('O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'),
-	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение')
+	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение'),
+	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:')
 ];
 
 // ==============================================================================================
@@ -797,31 +800,31 @@ var doIt = function() {
 document.onreadystatechange = function () {
 	switch (document.readyState) {
 
-		case 'interactive':
-			// перевод новых постов
+		case 'complete':
 			if(window.jQuery) {
+				// перевод новых постов
 				jQuery(document).on('new_post', function(e, post) {
 					for(let r of new_posts_replacers) {
 						r.replace(post);
 					}
+				});
 
-					// добавить дату создания треда в каталоге
-					if(url.match(/^\w+\/catalog\.html/)) $("div.mix").each(function() {
-						// дата создания в аттрибуте data-time, дата последнего поста - в data-bump
-						var t = new Date(this.getAttribute("data-time")*1000);
-						$("strong", this).first().append("<br><small>["+t.toLocaleString()+"]</small>");
-					});
+				// добавить дату создания треда в каталоге
+				if(url.match(/^\w+\/catalog\.html/)) $("div.mix").each(function() {
+					// дата создания в аттрибуте data-time, дата последнего поста - в data-bump
+					var t = new Date(this.getAttribute("data-time")*1000);
+					$("strong", this).first().append("<br><small>["+t.toLocaleString()+"]</small>");
 				});
 			}
 
 			// перевод сообщений
 			window.alert_orig = window.alert;
 			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action) {
-				console.debug(msg, do_confirm, confirm_ok_action, confirm_cancel_action);
 				msg = {text: msg};
 				for(let r of posting_replacers) {
 					if(r.replace(msg)) break;
 				}
+				console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 				window.alert_orig(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 			};
 			doIt();
