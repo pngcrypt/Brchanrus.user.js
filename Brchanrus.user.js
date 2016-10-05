@@ -77,7 +77,7 @@ cfg = [
 			['Image hover', 'Всплывающие изображения']
 		]],
 
-		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', true]], // ???
+		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', 'innerHTML']], // ???
 		['reg', 'div.banner > a', [
 			['Voltar', 'Назад'],
 			['Ir ao rodapé', 'Вниз страницы']
@@ -255,7 +255,6 @@ cfg = [
 		// кнопки модерирования
 		[]
 	]],
-
 
 	// Админка - логин / ошибки
 	[/^mod\.php\b/, [
@@ -695,7 +694,7 @@ class RegexReplace {
 
 	do(el, array) {
 		let prop = array.length == 3 ? array[2] : 'textContent';
-
+		//if(typeof el[prop] == 'undefined') console.debug(array);
 		if(el[prop].match(array[0])) {
 			el[prop] = el[prop].replace(array[0], array[1]);
 		}
