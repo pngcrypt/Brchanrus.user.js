@@ -764,6 +764,8 @@ let posting_replacers = [
 	new PostingReplace('Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'),
 	new PostingReplace('O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'),
 	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение'),
+	new PostingReplace('Flood detectado; Sua mensagem foi descartada', 'Ошибка постинга: Вы постите слишком быстро'),
+	new PostingReplace('Seu browser enviou uma referência HTTP inválida ou inexistente', 'Ваш браузер послал неверный referer или он отсутствует в заголовке HTTP'),
 	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:')
 ];
 
