@@ -16,37 +16,58 @@
 const TYPE_FIRSTNODE = 0;
 const TYPE_LASTNODE = 1;
 
+// типы замены для regex
+const RE_TEXT = 'textContent'; // текст внутри элемента [по умолчанию] (все тэги будут удалены)
+const RE_INNER = 'innerHTML'; // html код внутри элемента
+const RE_OUTER = 'outerHTML'; // hmtl код, включая найденный элемент
+
+// режимы поиска строк для regex
+const RE_SINGLE = 1; // однократный [по умолчанию] (заменяет первый удовлетворяющий элемент, после замены строка исключается из поиска)
+const RE_MULTI = 2; // многократый (поиск во всех элементах)
+
 /* cfg = [
 	[ /url-regexp/, [
-		["replacer_type", "selector", "search-text", "replace-text", true],
+		["replacer_type", "selector", <params>],
 		[.....]
 	]],
 
 	[.....]
 ]
 
-	url-regexp: regexp for url match (search in path, not domain), root url is: /
+	url-regexp: regex для проверки текущего url
 
-	replacer_type:
-		css
+	replacer_type: тип поиска/замены:
+		css 
 		txt - inner text
-		reg - regexp
 		att - attribute
+		reg - regexp
 
-	selector: css selector
+	selector: css-селектор
 
-	search-text:
-		for css: is replace-text
-		for txt: type of node (TYPE_FIRSTNODE or TYPE_LASTNODE without quotes!)
-		for reg: regexp for search
-		for att: name of tag's attribute
+	<params> - дополнительные параметры, в зависимости от replacer_type
 
-	replace-text:
-		for css: - (not needed)
-		for txt,reg,att: text for replace
+	["css", "selector", "replace_text"]
+	["txt", "selector", "search_text", "replace_text"]
+	["att", "selector", "attr_name", "replace_text"]
+	
+	["reg", "selector", [regex, "replace_text", replace_type, replace_multi]]
 
-	true
-		required for regex replace, true = replace as html
+	["reg", "selector", [regex, "replace_text"], default_replace_type, default_replace_multi]
+
+	["reg", "selector", [
+		[regex, "replace_text"], replace_type, replace_multi],
+		...
+		[regex, "replace_text"], replace_type, replace_multi]
+	], default_replace_type, default_replace_multi]
+
+	replace_text - текст замены
+	
+	replace_type - тип замены для текущего правила [не обязательный]: (RE_TEXT [по умолчанию], RE_INNER, RE_OUTER), переопределяет default_replace_type
+	replace_multi - режим поиска для текущего правила [не обязательный]: (RE_SINGLE [по умолчанию] или RE_MULTI), переопределяет default_replace_multi
+
+	default_replace_type - тип замены по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_TEXT)
+	default_replace_multi - режим поиска по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_SINGLE)
+
 */
 
 cfg = [
@@ -68,8 +89,8 @@ cfg = [
 	// Любая доска / тред 
 	[/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/, [
 		['reg', 'header > div.subtitle > p > a', [/Catálogo|Catalog/, 'Каталог тредов']],
-		['reg', 'p.intro > a', [
-			[/Últimas (\d+) Mensagens/, 'Последние $1 сообщений'],
+		['reg', 'p.intro > a:not([class])', [
+			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
 			['Responder', 'Ответить']
 		]],
 		['reg', 'div.options_tab > div > fieldset > legend', [
@@ -77,7 +98,7 @@ cfg = [
 			['Image hover', 'Всплывающие изображения']
 		]],
 
-		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', 'innerHTML']], // ???
+		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', RE_INNER]], // ???
 		['reg', 'div.banner > a', [
 			['Voltar', 'Назад'],
 			['Ir ao rodapé', 'Вниз страницы']
@@ -91,7 +112,7 @@ cfg = [
 			['(Sex)', '(Птн)'],
 			['(Sáb)', '(Сбт)'],
 			['(Dom)', '(Вск)']
-		]],
+		], RE_TEXT, RE_MULTI],
 
 		// Посты
 		['txt', 'p.intro > label > span.name', TYPE_FIRSTNODE, 'Аноним'],
@@ -126,19 +147,19 @@ cfg = [
 			['(você também pode escrever sage no e-mail)', '(Вы также можете писать sage в поле Опции)'],
 			['(isso substitui a miniatura da sua imagem por uma interrogação)', '(Это заменяет превью вашего изображения знаком вопроса)']
 		]],
-		['reg', 'tr#options-row > td > div.no-bump-option > label', ['Não bumpar', 'Не поднимать тред (сажа)', 'innerHTML']],
-		['reg', 'tr#options-row > td > div.spoiler-images-option > label', ['Imagem spoiler', 'Скрыть превью изображения', 'innerHTML']],
+		['reg', 'tr#options-row > td > div.no-bump-option > label', ['Não bumpar', 'Не поднимать тред (сажа)', RE_INNER]],
+		['reg', 'tr#options-row > td > div.spoiler-images-option > label', ['Imagem spoiler', 'Скрыть превью изображения', RE_INNER]],
 
-		['reg', 'table.post-table-options  p.unimportant', [/Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', 'innerHTML']],
+		['reg', 'table.post-table-options  p.unimportant', [/Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', RE_INNER]],
 
 		// Навигация по страницам
 		['reg', 'body > div.pages', [
-			['Anterior', 'Предыдущая', 'innerHTML'],
-			['Próxima', 'Следующая', 'innerHTML'],
-			['Catálogo', 'Каталог тредов', 'innerHTML']
+			['Anterior', 'Предыдущая', RE_INNER],
+			['Próxima', 'Следующая', RE_INNER],
+			['Catálogo', 'Каталог тредов', RE_INNER]
 		]],
 
-		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', 'innerHTML']],
+		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', RE_INNER]],
 		['reg', 'div.post > span.omitted', [
 			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 			[/(\d+) mensagens? omitida.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
@@ -154,7 +175,7 @@ cfg = [
 	// Ошибки постинга
 	[/^post\.php/, [
 		['reg', 'head > title', ['Erro', 'Ошибка']],
-		['reg', 'header > h1', ['Erro', 'Ошибка', 'innerHTML']],
+		['reg', 'header > h1', ['Erro', 'Ошибка', RE_INNER]],
 		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
 		['reg', 'body > div > h2', [
 			['IP detectado como proxy, proxies nao sao permitidos nessa board. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, [что произошла ошибка, свяжитесь с администрацией'],
@@ -190,13 +211,13 @@ cfg = [
 		// Статистика
 		['css', 'main > section > h2', 'Статистика'],
 		['reg', 'main > section > p', [
-			[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', 'innerHTML'],
+			[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', RE_INNER],
 			['Última atualização desta página', 'Последнее обновление страницы']
 		]],
 
 		// Панель поиска
 		['css', 'aside > form > h2', 'Поиск'],
-		['reg', 'aside > form label.search-item.search-sfw', ['Ocultar', 'Скрыть', 'innerHTML']],
+		['reg', 'aside > form label.search-item.search-sfw', ['Ocultar', 'Скрыть', RE_INNER]],
 		['att', 'input#search-title-input', 'placeholder', 'Поиск названия...'],
 		['att', 'input#search-tag-input', 'placeholder', 'Поиск тэгов...'],
 		['css', 'button#search-submit', 'Искать'],
@@ -250,9 +271,9 @@ cfg = [
 		['reg', 'body > div > p > a', ['Voltar', 'Назад']],
 
 		['reg', 'body > p', [
-			['Sua board foi criada e está disponível em', 'Ваша доска была создана и доступна по адресу', 'innerHTML'],
-			['Certifique-se de não esquecer a senha de sua board', 'Убедитесь в том, чтобы не забыть пароль к доске', 'innerHTML'],
-			['Você pode gerenciar sua board nessa página', 'Вы можете управлять вашей доской на этой странице', 'innerHTML']
+			['Sua board foi criada e está disponível em', 'Ваша доска была создана и доступна по адресу', RE_INNER],
+			['Certifique-se de não esquecer a senha de sua board', 'Убедитесь в том, чтобы не забыть пароль к доске', RE_INNER],
+			['Você pode gerenciar sua board nessa página', 'Вы можете управлять вашей доской на этой странице', RE_INNER]
 		]],
 
 		[]
@@ -280,7 +301,7 @@ cfg = [
 		['att', 'input[name="login"]', 'value', 'Войти'],		
 
 		// Ошибки
-		['reg', 'header > h1', ['Erro', 'Ошибка', 'innerHTML']],
+		['reg', 'header > h1', ['Erro', 'Ошибка', RE_INNER]],
 		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
 		['reg', 'body > div > h2', ['Pagina não encontrada', 'Страница не найдена']],
 		['reg', 'body > h2', ['Login e/ou senha inválido', 'Неверный логин или пароль']],
@@ -299,7 +320,7 @@ cfg = [
 			['Boards', 'Доски'],
 			['Conta de usuário', 'Учетная запись']
 		]],
-		['reg', 'fieldset > ul > li', ['Quadro de noticias', 'Доска объявлений', 'innerHTML']],
+		['reg', 'fieldset > ul > li', ['Quadro de noticias', 'Доска объявлений', RE_INNER]],
 		['reg', 'fieldset > ul > li > ul > li > a', ['Comunicado', 'Коммуникация']],
 		['reg', 'fieldset > ul > li > a', [
 			['Ver todas as noticias do quadro de noticias', 'Просмотр всех новостей'],
@@ -328,8 +349,8 @@ cfg = [
 		['reg', 'header > h1', [/Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)']],
 		['att', 'h2.report-header > a', 'title', 'Перейти в тред'],
 		['reg', 'h2.report-header', [
-			[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1', 'innerHTML'],
-			[/thread repotado (\d+) vez\(es\)/, 'жалоб на тред: $1', 'innerHTML']
+			[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1', RE_INNER],
+			[/thread repotado (\d+) vez\(es\)/, 'жалоб на тред: $1', RE_INNER]
 		]],
 
 		['reg', 'ul.report-actions > li.report-action > a', [
@@ -337,9 +358,9 @@ cfg = [
 			['Promote', 'Принять']
 		]],
 
-		['reg', 'ul.report-content-actions > li.report-content-action', [/Descartar todas denúncias a esse conteúdo(.+)Dismiss All/, 'Отклонить все жалобы к этому посту$1Отклонить все', 'innerHTML']],
-		['reg', 'ul.report-content-actions > li.report-action', [/Promover todas denúncias locais para globais(.+>)Promote All/, 'Передать все жалобы к этому посту в глобальные$1Принять все', 'innerHTML']],
-		['reg', 'ul.report-content-actions > li.report-content-action', [/Clean(.+")Ignorar e descartar denúncias locais dessa mensagem nessa board/, 'Очистить$1Игнорировать и удалить все местные жалобы в этом треде', 'innerHTML']], // "
+		['reg', 'ul.report-content-actions > li.report-content-action', [/Descartar todas denúncias a esse conteúdo(.+)Dismiss All/, 'Отклонить все жалобы к этому посту$1Отклонить все', RE_INNER]],
+		['reg', 'ul.report-content-actions > li.report-action', [/Promover todas denúncias locais para globais(.+>)Promote All/, 'Передать все жалобы к этому посту в глобальные$1Принять все', RE_INNER]],
+		['reg', 'ul.report-content-actions > li.report-content-action', [/Clean(.+")Ignorar e descartar denúncias locais dessa mensagem nessa board/, 'Очистить$1Игнорировать и удалить все местные жалобы в этом треде', RE_INNER]], // "
 
 		['reg', 'body > p.unimportant', ['Não há denúncias no momento', 'На данный момент никаких жалоб нет']],
 
@@ -359,29 +380,32 @@ cfg = [
 			['Título', 'Название'],
 			['Subtítulo', 'Описание'],
 			['Tipo de board', 'Тип доски'],
-			[/^Imagens personalizadas(.+)Marcando essa.+/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', 'innerHTML'],
+			[/^Imagens personalizadas(.+)Marcando essa.+/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', RE_INNER],
 			['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
 			['Exigir que o OP poste uma imagem', 'При создании нового треда изображение обязательно'],
 			['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательна'],
 			['Mostrar IDs dos usuários', 'Показать идентификаторы пользователей'],
 			['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
 			[/^Desabilitar caracteres compostos.+/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
-			[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', 'innerHTML'],
-			[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', 'innerHTML'],
-			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', 'innerHTML'],
+			[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', RE_INNER],
+			[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', RE_INNER],
+			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', RE_INNER],
+			['Formatação matemática entre', 'Форматировать математику между'],
 			['Permitir upload de SWF', 'Разрешить загружать SWF'],
 			['Permitir upload de PDF', 'Разрешить загружать PDF'],
-			['Proibir usuários de repostar imagens repetidas', 'Запретить пользователям отправлять повторяющиеся изображения'],
-			['(em toda a board)', '(в по всей доске)'],
+			[/^Permitir rolar dados\(roll\)/, 'Разрешить бросить кости (roll)'],
+			['Proibir usuários de repostar imagens repetidas', 'Запретить отправлять повторяющиеся изображения'],
+			['(em toda a board)', '(по всей доске)'],
 			['(no mesmo thread)', '(в том же треде)'],
 			['Permitir usuário deletar seu própro post', 'Разрешить пользователю удалить свой пост'],
+			['Permitir aos usuários ver se a thread está com o bump bloqueado', 'Разрешить просмотр треда после бамплимита'],
 			[/^Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
 			['Habilitar CAPTCHA apenas para criação de threads', 'Включить CAPTCHA, только для создания тредов'],
-			[/^Bans públicos(.+)Mostrar.+/, 'Публичные баны$1Показывать пользователей которых забанили другие пользователи', 'innerHTML'],
+			[/^Bans públicos(.+)Mostrar.+/, 'Публичные баны$1Показывать пользователей которых забанили другие пользователи', RE_INNER],
 			['Número máximo de linhas por post', 'Максимальное количество строк на пост'],
-			[/^Contador de páginas(.+)Número.+/, 'Счетчик страниц$1Максимальное количество страниц<br>Переходя за этот предел старые треды будут удалены', 'innerHTML'],
+			[/^Contador de páginas(.+)Número.+/, 'Счетчик страниц$1Максимальное количество страниц<br>Переходя за этот предел старые треды будут удалены', RE_INNER],
 			['Limite de bumps', 'Бамплимит'],
-			[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', 'innerHTML'],
+			[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', RE_INNER],
 			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
 			['Manter o nome original do arquivo', 'Показывать оригинальное имя файла'],
 			['Limite de imagens por post', 'Максимальное количество изображений в посте'],
@@ -711,33 +735,75 @@ class InnerTextReplace {
 }
 
 class RegexReplace {
-	constructor(query, array) {
+	constructor(query, array, prop, multi) {
 		this.query = query;
 		this.array = array;
+		this.prop = prop ? prop : RE_TEXT; // тип замещения по умолчанию 
+		this.multi = multi ? multi : RE_SINGLE; // режим поиска по умолчанию
+		this.cnt = 0; // счетчик активных regex
+
+		this.debug = 0; // 1 - показывает процесс поиска-замены в консоли
 	}
 	replace(element) {
+		if(this.debug) var cnt=0;
+
 		for(let el of (element ? element : document).querySelectorAll(this.query)) {
-			if(this.array[0].constructor.name == 'Array') {
-				for(let i in this.array) {
-					if(this.do(el, this.array[i])) {
-						break;
-					}
-				}
-				continue;
+			
+			if(this.debug) {
+				if(!cnt++)
+					console.debug("-------\nREG_SEL:", this.query);
+				console.debug(" \nREG_ELM:", el);
 			}
 
-			this.do(el, this.array);
+			this.cnt = 0; // сбрасываем счетчик активных regex
+			if(this.array[0].constructor.name == 'Array') {
+				for(let i in this.array) {
+					this.do(el, this.array[i], i);
+				}
+			}
+			else
+				this.do(el, this.array, -1);
+
+			if(!this.cnt)
+			{
+				// больше нет ни одного активного regex для данного селектора
+				if(this.debug) console.debug("* BREAK * :: no more regex");
+				break;
+			}
 		}
 	}
 
-	do(el, array) {
-		let prop = array.length == 3 ? array[2] : 'textContent';
-		//if(typeof el[prop] == 'undefined') console.debug(array);
-		if(el[prop].match(array[0])) {
+	do(el, array, i) 
+	{
+		if(!array.length)
+			return -1;
+
+		this.cnt++; // кол-во активных regex
+
+		let prop = array.length > 2 ? array[2] : this.prop; // тип замещения (индивидуальный или по умолчанию)
+		let multi = array.length > 3 ? array[3] : this.multi; // режим поиска (индивидуальный или по умолчанию)
+		if(el[prop].match(array[0])) 
+		{
 			el[prop] = el[prop].replace(array[0], array[1]);
+			if(this.debug) prop = ":: FOUND"; 
+			if(multi == RE_SINGLE)
+			{
+				// удаляем сработавший regex
+				this.cnt--;
+				if(i>=0)
+					this.array[i] = [];
+				else
+					this.array = [];
+				if(this.debug) prop += " :: REMOVED";
+			}
+			if(this.debug) console.debug("REG_FND:", array, prop);
+			return 1;
 		}
+		if(this.debug) console.debug("REG_FND:", array, ":: NOT FOUND");
+		return 0;
 	}
 }
+
 class PostingReplace {
 	constructor(regex, text) {
 		this.regex = regex;
@@ -806,9 +872,8 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 						continue;
 					}
 				case "reg":
-					if(cl == 3) {
-
-						replacers.push(new RegexReplace(c[1], c[2]));
+					if(cl > 2) {
+						replacers.push(new RegexReplace(c[1], c[2], cl>3 ? c[3] : 0, cl>4 ? c[4] : 0));
 						continue;
 					}
 
