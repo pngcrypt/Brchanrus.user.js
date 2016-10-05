@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Brchan Rusifikator
-// @version         3.2.5
+// @version         3.2.6
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -116,10 +116,15 @@ cfg = [
 		['css', 'tr#oekaki > th', 'Рисовать'],
 		['css', 'tr#upload_embed > th', 'Ссылка на YouTube'],
 		['css', 'tr#options-row > th', 'Опции'],
+		['reg', 'form > table.post-table-options > tbody > tr > th', ['Senha', 'Пароль']],
 
 		['reg', 'tr#oekaki > td > a', ['Mostrar oekaki', 'Начать']],
-		['reg', 'tr#oekaki > td > span.unimportant', ['substitui arquivos', 'заменяет файл']],
-		['reg', 'tr#upload_embed > td > span.unimportant', ['substitui arquivos', 'заменяет файл']],
+		['reg', 'table.post-table-options  span.unimportant', [
+			['substitui arquivos', 'заменяет файл'],
+			['(para remover arquivos e mensagens)', '(Для удаления файлов и сообщений)'],
+			['(você também pode escrever sage no e-mail)', '(Вы также можете писать sage в поле Опции)'],
+			['(isso substitui a miniatura da sua imagem por uma interrogação)', '(Это заменяет превью вашего изображения знаком вопроса)']
+		]],
 		['reg', 'tr#options-row > td > div.no-bump-option > label', ['Não bumpar', 'Не поднимать тред (сажа)', 'innerHTML']],
 		['reg', 'tr#options-row > td > div.spoiler-images-option > label', ['Imagem spoiler', 'Скрыть превью изображения', 'innerHTML']],
 
@@ -338,20 +343,39 @@ cfg = [
 		['reg', 'header > h1', ['Configuração da board', 'Настройки доски']],
 		['css', 'body > p', 'Внимание: Некоторые изменения не вступят в силу до тех пор, пока не будет написан новый пост на доске.'],
 
+		['reg', 'table > tbody > tr > td', ['não pode ser alterado', 'нельзя изменить']],
+
 		['reg', 'table > tbody > tr > th', [
 			['URI', 'URL'],
 			['Título', 'Название'],
 			['Subtítulo', 'Описание'],
-			['não pode ser alterado', 'не может быть изменен'],
 			['Tipo de board', 'Тип доски'],
 			[/Imagens personalizadas(.+)Marcando essa opção você poderá usar imagens spoiler\/sem-arquivo\/deletado customizadas.+Certifique-se de fazer upload das imagens na página \'imagens customizadas\' ou você terá.+erros 404 na sua board/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', 'innerHTML'],
 			['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
 			['Exigir que o OP poste uma imagem', 'При создании нового треда изображение обязательно'],
-			['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательно'],
+			['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательна'],
 			['Mostrar IDs dos usuários', 'Показать идентификаторы пользователей'],
 			['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
 			[/Desabilitar caracteres compostos \("Zalgo", texto vietnamita\)/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
-			[/Ocultar board(.+)Marcando essa opção sua board não aparecer na página de boards/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', 'innerHTML']
+			[/Ocultar board(.+)Marcando essa opção sua board não aparecer na página de boards/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', 'innerHTML'],
+			[/Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Такие как', 'innerHTML'],
+			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить рисовать пользователю во время поста', 'innerHTML'],
+			['Permitir upload de SWF', 'Разрешить загружать SWF'],
+			['Permitir upload de PDF', 'Разрешить загружать PDF'],
+			['Proibir usuários de repostar imagens repetidas', 'Запретить пользователям отправлять повторяющиеся изображения'],
+			['(em toda a board)', '(в том же треде)'],
+			['(no mesmo thread)', '(в том же треде)'],
+			['Permitir usuário deletar seu própro post', 'Разрешить пользователю удалить свой пост'],
+			[/Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
+			['Habilitar CAPTCHA apenas para criação de threads', 'Включить CAPTCHA, только для создания тредов'],
+			[/Bans públicos(.+)Mostrar usuários banidos aos outros usuários/, 'Публичные баны$1Показывать пользователей которых забанили другим пользователям', 'innerHTML'],
+			['Número máximo de linhas por post', 'Максимальное количество строк на пост'],
+			[/Contador de páginas(.+)Número máximo de páginas(.+)Passando do limite os threads antigo serão deletados/, 'Счетчик страниц$1Максимальное количество страниц$2Переходя за этот предел старые треды будут удалены', 'innerHTML'],
+			['Limite de bumps', 'Бамплимит'],
+			[/Tamanho mínimo do texto do OP(.+)\(número entre 0 e 1024, 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до 1024, 0 для отключения )', 'innerHTML'],
+			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
+			['Manter o nome original do arquivo', 'Показывать оригинальное имя файла'],
+			['Limite de imagens por post', 'Максимальное количеств изображений в посте'],
 		]],
 
 		['att', 'input#wf_add', 'value', 'Добавить еще фильтр'],
@@ -613,6 +637,9 @@ var l10n_rus = {
 	"Unhide post": "Показать скрытый пост",
 	"Hide post and all replies" : "Скрыть пост и все ответы на него",
 	"Post +": "Пост и все ответы на него",
+	"Clear List": "Удалить все",
+	"Clear Ghosts": "Удалить несуществующие",
+	"Reply": "Ответить",
 
 	"":""
 };
@@ -827,6 +854,9 @@ document.onreadystatechange = function () {
 				console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 				window.alert_orig(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 			};
+
+			//eval('window.watchlist.add = ' + watchlist.add.toString().replace(/\[0\]/, '[2]'));
+
 			doIt();
 			break;
 	}
