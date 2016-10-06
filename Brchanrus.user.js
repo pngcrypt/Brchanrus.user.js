@@ -301,7 +301,7 @@ var cfg = [
 	// Админка - логин / ошибки
 	[/^mod\.php\b/, [
 		['reg', 'header > h1', ['Login', 'Вход']],
-		['reg', 'table:nth-child(1) > tbody > tr > th', [
+		['reg', 'table > tbody > tr > th', [
 			['Usuário', 'Логин'],
 			['Senha', 'Пароль']
 		]],
@@ -310,10 +310,17 @@ var cfg = [
 		// Ошибки
 		['reg', 'header > h1', ['Erro', 'Ошибка', RE_INNER]],
 		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
-		['reg', 'body > div > h2', ['Pagina não encontrada', 'Страница не найдена']],
-		['reg', 'body > h2', ['Login e/ou senha inválido', 'Неверный логин или пароль']],
+		['reg', 'body > div > h2', [
+			['Pagina não encontrada', 'Страница не найдена'],
+			['Login e/ou senha inválido', 'Неверный логин или пароль'],
+			['Banner editing is currently disabled. Please check back later', 'Редактирование баннера отключено. Попробуйте позже'],
+			['Usuário inválido', 'Неверное имя пользователя'],
+			['Board inválida', 'Доска не существует'],
+			[]
+		]],
 
 		['reg', 'div.subtitle > p > a', ['Voltar à dashboard', 'Назад к панели управления']],
+		['reg', 'body > div > p > a', ['Voltar', 'Назад']],
 
 		[]
 	]],
@@ -339,7 +346,7 @@ var cfg = [
 			['Editar conta', 'Изменить учетную запись'],
 		
 			['Histórico da board', 'История доски'],
-			['Mensagens recentes', 'Последние сообщения'],
+			['Mensagens recentes', 'Последние сообщения в тредах'],
 
 			['configurações', 'настройки'],
 
@@ -382,7 +389,7 @@ var cfg = [
 
 		['reg', 'table > tbody > tr > td', ['não pode ser alterado', 'нельзя изменить']],
 
-		['reg', 'table > tbody > tr > th', [
+		['reg', 'form > table > tbody > tr > th', [
 			['URI', 'URL'],
 			['Título', 'Название'],
 			['Subtítulo', 'Описание'],
@@ -409,18 +416,102 @@ var cfg = [
 			[/^Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
 			['Habilitar CAPTCHA apenas para criação de threads', 'Включить CAPTCHA, только для создания тредов'],
 			[/^Bans públicos(.+)Mostrar.+/, 'Публичные баны$1Показывать пользователей которых забанили другие пользователи', RE_INNER],
+			[/^Histórico de ações público(.+)Mostrar todas as ações ao público/, 'История общественных действий$1Показать все действия общественности', RE_INNER], // ???
 			['Número máximo de linhas por post', 'Максимальное количество строк на пост'],
 			[/^Contador de páginas(.+)Número.+/, 'Счетчик страниц$1Максимальное количество страниц<br>Переходя за этот предел старые треды будут удалены', RE_INNER],
 			['Limite de bumps', 'Бамплимит'],
 			[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', RE_INNER],
 			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
+			[/^Permitir que o OP poste arquivos(.+)Não se aplica a imagens/, 'Разрешить прикреплять файлы к ОП-посту$1Не относится к изображениям', RE_INNER],
 			['Manter o nome original do arquivo', 'Показывать оригинальное имя файла'],
 			['Limite de imagens por post', 'Максимальное количество изображений в посте'],
+
+			['Configurações de spam', 'Настройки антиспама', RE_INNER],
+			[/^Deletar threads sem movimento antecipadamente(.+)Com isso ativo\D+(\d+)\D+(\d+)\D+(\d+).+/, 'Фиксированный список тредов$1При включении этой опции треды, в которых меньше $2 постов при достижении $3 страницы<br>будут перемещены на $4 страницу', RE_INNER],
+			[/^Limitar números de threads por hora(.+)Serão permitidos.+/, 'Лимит тредов в час$1Количество создаваемых тредов в час, не влияет на количество постов', RE_INNER],
+
+			['Nome padrão nas postagens', 'Имя по умолчанию'],
+			['Anúncio da board', 'Доска объявлений'],
+
+			[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', RE_INNER],
+
+			['Filtros', 'Фильтры'],
+			['Substituir', 'Замещать:'],
+			['Por', 'На:'],
+
+			['Tags', 'Тэги'],
+			['Descrição', 'Описание'],
+
+			[]
 		]],
 
+		// Тип доски
+		['reg', 'select#board_type > option', [
+			['Board de imagens', 'Имиджборд'],
+			['Board de textos', 'Текстовая'],
+			['Board de arquivos', 'Файловая']
+		]],
+
+		// Регистрация событий
+		['reg', 'select[name="public_logs"] > option', [
+			['Desativar', 'Отключено'],
+			['Registro completo mas sem o usuário', 'Полная запись, без пользователя'],
+			['Registro completo', 'Полная запись']
+		]],
+
+		['css', 'select[name="max_newlines"] > option[value="0"]', 'Неограничено'], // Строк на пост
+		['css', 'select[name="hour_max_threads"] > option[value="none"]', 'Неограничено'], // Кол-во тредов в час
+
 		['att', 'input#wf_add', 'value', 'Добавить еще фильтр'],
-		['att', 'input[value="Salvar alterações"]', 'value', 'Сохранить изменения'],
+		['att', 'input#tag_add', 'value', 'Добавить еще тэг'],
+		['att', 'input[value="Salvar alterações"]', 'value', 'Сохранить изменения'],		
+
+		['reg', 'body > form > p > a', [
+			['Editar banners da board', 'Редактировать баннер доски'],
+			['Editar imagens customizadas da board', 'Редактировать пользовательские изображения'],
+			['Editar voluntários', 'Редактировать модераторов'],
+			['Editar tags', 'Редактировать тэги']
+		]],
+		['reg', 'body > form > p', [/A criação ou edição do seu tema.+/, 'После создания и редактирования вашей темы может потребоваться несколько часов, чтобы изменения вступили в силу (из-за cloudflare)']],
 		
+		[]
+	]],
+
+	// Админка - Настройки доски - Пользовательские изображения
+	[/^mod\.php\?\/assets\//, [
+		['css', 'head > title', 'Редактирование изображений'],
+		['reg', 'header > h1', ['Edit board assets', 'Редактирование изображений']],
+
+		['reg', 'form > p > small', [
+			[/^Todas as imagens padrões.+/, 'Все изображения должны быть в формате PNG или GIF и иметь размер файла не более 500 Кб'],
+			[/A imagem deve conter a resolução/, 'Изображение должно иметь разрешение', RE_TEXT, RE_MULTI]
+		]],
+
+		['reg', 'form > h2', [
+			['Enviar nova imagem de', 'Выбрать изображение для', RE_TEXT, RE_MULTI, RE_NOBREAK],
+			['spoiler', 'спойлер'],
+			['arquivo deletado', 'файл удален'],
+			['arquivo deletado', 'нет файла']
+		]],
+		['reg', 'body > div > form > p', [/Imagem de .+ atual/, 'Текущее изображение', RE_INNER, RE_MULTI]],
+		['att', 'input[type="submit"]', 'value', 'Сохранить изображения'],
+
+		[]
+	]],
+
+	// Админка - Настройки доски - Модераторы
+	[/^mod\.php\?\/volunteers\//, [
+		['css', 'head > title', 'Редактирование модераторов'],
+		['reg', 'header > h1', ['Editar voluntários', 'Редактирование модераторов']],
+		['reg', 'form > h2', ['Novo usuário', 'Новый модератор']],
+		['reg', 'body > div > h2', ['Voluntários atuais', 'Текущие модераторы']],
+		['reg', 'form > p > span.unimportant', [/Limite de (\d+) voluntários.+/, 'Лимит пользователей: $1. Убедитесь, что используете надежные пароли. Модератор может делать то же, что и админ, за исключением просмотра этой страницы, страницы банеров и страницы настройки доски.']],
+		
+		['reg', 'input[type="submit"]', [
+			['Criar usuário', 'Добавить'],
+			['Deletar selecionados', 'Удалить выделенных']
+		],RE_OUTER],
+
 		[]
 	]],
 
@@ -854,7 +945,9 @@ let posting_replacers = [
 	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение'),
 	new PostingReplace('Flood detectado; Sua mensagem foi descartada', 'Ошибка постинга: Вы постите слишком быстро'),
 	new PostingReplace('Seu browser enviou uma referência HTTP inválida ou inexistente', 'Ваш браузер послал неверный referer или он отсутствует в заголовке HTTP'),
-	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:')
+	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:'),
+	new PostingReplace('Extensão de arquivo desconhecida', 'Неизвестный тип файла')
+
 ];
 
 // ==============================================================================================
