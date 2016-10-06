@@ -616,11 +616,58 @@ var cfg = [
 	[/^mod\.php\?\/inbox$/, [
 		['reg', 'head > title', [/Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)']],
 		['reg', 'header > h1', [/Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)']],
-		['reg', 'table.modlog > tbody > tr:first-child > th', [
+		['reg', 'table.modlog > tbody > tr > th', [
 			['De', 'От'],
 			['Data', 'Дата'],
 			['Message snippet', 'Первью сообщения']
 		]],
+	]],
+
+	// Админка - Редактирование поста
+	[/^mod\.php\?\/\w+\/edit\//, [
+		['reg', 'head > title', ['Editar mensagem', 'Редактирование сообщения']],
+		['reg', 'header > h1', ['Editar mensagem', 'Редактирование сообщения']],
+		['reg', 'table > tbody > tr > th', [
+			['Nome', 'Имя'],
+			['Tripcode', 'Трипкод'],
+			['Assunto', 'Тема'],
+			['Mensagem', 'Сообщение'],
+			['Embutir', 'Вставка'] // ???
+		]],
+		['reg', 'table > tbody > tr:nth-child(2) > td', ['Remove tripcode', 'Удалить трипкод', RE_INNER]],
+		['att', 'input[name="post"]', 'value', 'Сохранить'],
+		['reg', 'form > h2', ['Existing post', 'Существующий пост']],
+		[]
+	]],
+
+
+	// Админка - История событий
+	[/^mod\.php\?\/log[:]/, [
+		['reg', 'head > title', ['Histórico da board', 'История событий']],
+		['reg', 'header > h1', ['Histórico da board', 'История событий доски']],
+		['reg', 'table.modlog > tbody > tr > th', [
+			['Endereço de IP', 'IP-адрес'],
+			['Tempo', 'Время'],
+			['Board', 'Доска'],
+			['Ação', 'Действие']
+		]],
+		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', ['hidden', 'скрыт'], RE_INNER, RE_MULTI], // ip
+		['reg', 'table.modlog > tbody > tr > td:nth-child(3)', [ // время
+			['segundos', 'сек.'],
+			['minutos', 'мин.'],
+			['horas', 'час.']
+		], RE_INNER, RE_MULTI],
+		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия. хз надо ???
+			[/^Edited post/, 'Редактирование поста'],
+			[/^Deleted post/, 'Удаление поста'],
+			[/^Edited board settings/, 'Редактирование настроек доски'],
+			[/^Removed ban (#\d+) for/, 'Разбан $1 для'],
+			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
+			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)?reason:?/, "Новый '$1' бан на доске $2 для $3. Причина: $4"],
+			[/^Created a new volunteer/, 'Добавлен новый модератор'],
+			[]
+		], RE_TEXT, RE_MULTI],
+		[]
 	]],
 
 	[]
