@@ -296,7 +296,8 @@ var cfg = [
 	[/^mod\.php\?\/\w+(|\/|\/.+\.html)/, [
 		// кнопки модерирования
 		['reg', 'span.controls', [
-			['Spoiler em tudo', 'Спрятать превью изображений'],
+			['Spoiler em tudo', 'Скрыть превью всех изображений'],
+			['Arquivo spoiler', 'Скрыть превью изображения'],
 			['Apagar todos os posts do IP', 'Удалить все сообщения этого IP'],
 			['"Apagar"', '"Удалить пост"'],
 			['"Banir"', '"Забанить"'],
@@ -312,7 +313,8 @@ var cfg = [
 			['Editar mensagem', 'Редактировать'],
 			['Apagar arquivo', 'Удалить файл'],
 
-			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите спрятать все превью изображений?'],
+			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений?'],
+			['Tem certeza que desejar tornar o arquivo spoiler?', 'Вы уверены, что хотите скрыть превью изображеня?'],
 			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
 			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
 			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
