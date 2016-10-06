@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Brchan Rusifikator
-// @version         3.2.7
+// @version         3.2.8
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -311,7 +311,7 @@ var cfg = [
 			['Make thread not cycle', 'Убрать циклическую очистку треда'],
 			['Editar mensagem', 'Редактировать'],
 
-			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите пометить все изображения как спойлер?'],
+			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите спрятать все превью изображений?'],
 			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
 			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
 		], RE_INNER, RE_MULTI, RE_NOBREAK],
