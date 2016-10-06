@@ -310,10 +310,12 @@ var cfg = [
 			['Make thread cycle', 'Циклический тред(при достижении бамп лимита тред будет очищен)'],
 			['Make thread not cycle', 'Убрать циклическую очистку треда'],
 			['Editar mensagem', 'Редактировать'],
+			['Apagar arquivo', 'Удалить файл'],
 
 			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите спрятать все превью изображений?'],
 			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
 			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
+			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
 		], RE_INNER, RE_MULTI, RE_NOBREAK],
 
 		[]
@@ -419,7 +421,7 @@ var cfg = [
 			['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
 			['Exigir que o OP poste uma imagem', 'При создании нового треда изображение обязательно'],
 			['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательна'],
-			['Mostrar IDs dos usuários', 'Показать идентификаторы пользователей'],
+			['Mostrar IDs dos usuários', 'Показать ID пользователей'],
 			['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
 			[/^Desabilitar caracteres compostos.+/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
 			[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', RE_INNER],
@@ -749,7 +751,7 @@ var l10n_rus = {
 	"Enable formatting keybinds": "Включить горячие клавиши",
 	"Show formatting toolbar": "Показать панель форматирования",
 	"Download All": "Скачать всеl",
-	"Hide IDs": "Скрыть все ID",
+	"Hide IDs": "Скрыть ID пользователей",
 	"Image hover": "При наведении курсора",
 	"Image hover on catalog": "При наведении курсора в каталоге тредов",
 	"Image hover should follow cursor": "Всплывать возле курсора",
