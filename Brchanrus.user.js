@@ -168,8 +168,8 @@ var cfg = [
 
 		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', RE_INNER, RE_MULTI]],
 		['reg', 'div.post > span.omitted', [
-			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
-			[/(\d+) mensagens? omitida.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
+			[/(\d+) mensagens e (\d+) resposta. com imagem omitida..*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
+			[/(\d+) mensage.. omitida.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
 		], RE_TEXT, RE_MULTI],
 
 		['css',	'a#thread-return',	'[Назад]'],
@@ -1256,7 +1256,7 @@ var doIt = function() {
 };
 
 if (document.addEventListener) {
-        document.addEventListener("DOMContentLoaded", doIt, false);
+	document.addEventListener("DOMContentLoaded", doIt, false);
 } else if (document.attachEvent) {
-        document.attachEvent("onreadystatechange", doIt);
+	document.attachEvent("onreadystatechange", doIt);
 }
