@@ -554,7 +554,7 @@ var cfg = [
 	]],
 
 	// Админка - Новый бан
-	[/^mod\.php\?\/\w+\/ban\//, [
+	[/^mod\.php\?\/\w+\/ban.+/, [
 		['reg', 'head > title', ['Novo ban', 'Новый бан']],
 		['reg', 'header > h1', ['Novo ban', 'Новый бан']],
 		['reg', 'table > tbody > tr > th > label', [
