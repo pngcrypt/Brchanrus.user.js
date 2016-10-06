@@ -328,7 +328,12 @@ var cfg = [
 			['Usuário', 'Логин'],
 			['Senha', 'Пароль']
 		]],
-		['att', 'input[name="login"]', 'value', 'Войти'],		
+		['att', 'input[name="login"]', 'value', 'Войти'],
+
+		// Панель уведомлений
+		['reg', 'body > div.top_notice:first-child', [
+			[/You have(.+)an unread PM/, 'У вас есть$1Новые сообщения', RE_INNER]
+		]],
 
 		// Ошибки
 		['reg', 'head > title', ['Erro', 'Ошибка']],
@@ -576,6 +581,46 @@ var cfg = [
 		['att', 'input#message', 'value', 'Автор этого поста был ЗАБАНЕН'],
 		['att', 'input[name="new_ban"]', 'value', 'Забанить']
 	]],
+
+	// Админка - PM: создание/ответ
+	[/^mod\.php\?\/(new_PM\/|PM\/\d+\/reply)/, [
+		['reg', 'head > title', [/Nova MP para (.+)/, 'Cообщение для $1']],
+		['reg', 'header > h1', [/Nova MP para (.+)/, 'Личное сообщение для $1']],
+		['reg', 'table > tbody > tr > th', [
+			['To', 'Кому'],
+			['Message', 'Сообщение']
+		]],
+		['reg', 'input[type="submit"]', ['Enviar mensagem', 'Отправить'], RE_OUTER]
+	]],
+
+	// Админка - PM: просмотр
+	[/^mod\.php\?\/PM\/\d+$/, [
+		['reg', 'head > title', [/Mensagem privada (.+)/, 'Личное cообщение $1']],
+		['reg', 'header > h1', [/Mensagem privada (.+)/, 'Личное сообщение $1']],
+		['reg', 'table > tbody > tr > th', [
+			['De', 'От'],
+			['Data', 'Дата'],
+			['Mensagem', 'Текст']
+		]],
+		['reg', 'table > tbody > tr:nth-child(2) > td', [
+			['minutos', 'мин'],
+			['ago', 'назад']
+		], RE_INNER, RE_SINGLE, RE_NOBREAK],
+		['att', 'input[name="delete"]', 'value', 'Удалить'],
+		['reg', 'form > ul > li > a', ['Responder com citação', 'Ответить с цитированием']],
+	]],
+
+	// Админка - PM: входящие
+	[/^mod\.php\?\/inbox$/, [
+		['reg', 'head > title', [/Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)']],
+		['reg', 'header > h1', [/Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)']],
+		['reg', 'table.modlog > tbody > tr:first-child > th', [
+			['De', 'От'],
+			['Data', 'Дата'],
+			['Message snippet', 'Первью сообщения']
+		]],
+	]],
+
 	[]
 ];
 
