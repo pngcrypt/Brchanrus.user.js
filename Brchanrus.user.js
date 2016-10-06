@@ -293,7 +293,7 @@ var cfg = [
 
 
 	// Любая доска / тред под модеркой
-	[/^mod\.php\?\/\w+(|\/|\/.+\.html)$/, [
+	[/^mod\.php\?\/\w+(|\/|\/.+\.html(\#.+)?)$/, [
 		// кнопки модерирования
 		['reg', 'span.controls', [
 			['Spoiler em tudo', 'Спрятать превью изображений'],
@@ -554,7 +554,7 @@ var cfg = [
 	]],
 
 	// Админка - Бан
-	[/^mod\.php\?\/\w+\/ban\//, [
+	[/^mod\.php\?\/\w+\/ban.+/, [
 		['reg', 'head > title', ['Novo ban', 'Новый бан']],
 		['reg', 'header > h1', ['Novo ban', 'Новый бан']],
 		['reg', 'table > tbody > tr > th > label', [
@@ -1133,7 +1133,7 @@ document.onreadystatechange = function () {
 
 			// перевод сообщений
 			wf.alert = window.alert;
-			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action) 
+			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
 			{
 				msg = {text: msg};
 				for(let r of posting_replacers) {
