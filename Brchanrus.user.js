@@ -515,6 +515,30 @@ var cfg = [
 		[]
 	]],
 
+	// Админка - Бан
+	[/^mod\.php\?\/.+\/ban\/\d+/, [
+		['css', 'head > title', 'Выдать бан'],
+		['css', 'header > h1', 'Забанить пользователя'],
+		
+		['reg', 'form > table > tbody > tr > th', [
+			['ou subnet', 'или подсети', RE_INNER],
+			['Motivo', 'Причина'],
+			['Mensagem', 'Сообщение'],
+			['Tamanho', 'Время бана'],
+			['Board', 'Доска'],
+		]],
+
+		['reg', 'form > table > tbody > tr > td > p,span', [
+			['Be careful with range bans. The bigger the range, the more likely it will affect users you didn\'t intend', 'Будьте осторожны с запретами диапазона.</br>Чем больше диапазон, тем более вероятно, это повлияет на пользователей, которых вы не собирались банить', RE_INNER, RE_SINGLE],
+			['público; anexado à mensagem', 'прикрепить к сообщению'],
+		]],
+
+		['att', 'input#message', 'value', 'Автор этого поста был забанен'],
+		['att', 'input[type="submit"]', 'value', 'Забанить'],
+
+		[]
+	]],
+
 	[]
 ];
 
@@ -1086,7 +1110,7 @@ document.onreadystatechange = function () {
 				wf.actually_load_captcha(provider, extra);
 				for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
 					el.value = "";
-			}
+			};
 
 			doIt();
 			break;
