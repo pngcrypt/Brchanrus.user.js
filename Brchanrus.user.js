@@ -308,6 +308,7 @@ var cfg = [
 		['att', 'input[name="login"]', 'value', 'Войти'],		
 
 		// Ошибки
+		['reg', 'head > title', ['Erro', 'Ошибка']],
 		['reg', 'header > h1', ['Erro', 'Ошибка', RE_INNER]],
 		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
 		['reg', 'body > div > h2', [
@@ -316,6 +317,7 @@ var cfg = [
 			['Banner editing is currently disabled. Please check back later', 'Редактирование баннера отключено. Попробуйте позже'],
 			['Usuário inválido', 'Неверное имя пользователя'],
 			['Board inválida', 'Доска не существует'],
+			['Você não tem permissão para fazer isso', 'У вас нет прав доступа к этой странице'],
 			[]
 		]],
 
@@ -327,6 +329,7 @@ var cfg = [
 
 	// Админка - Главная
 	[/^mod\.php\?\/$/, [
+		['reg', 'head > title', ['Dashboard', 'Панель администрирования']],
 		['reg', 'header > h1', ['Dashboard', 'Панель администрирования']],
 		['reg', 'fieldset > legend', [
 			['Mensagens', 'Сообщения'],
@@ -345,7 +348,7 @@ var cfg = [
 			['Apelos a banimento', 'Аппеляции банов'],
 			['Editar conta', 'Изменить учетную запись'],
 		
-			['Histórico da board', 'История доски'],
+			['Histórico da board', 'История событий доски'],
 			['Mensagens recentes', 'Последние сообщения в тредах'],
 
 			['configurações', 'настройки'],
@@ -383,7 +386,7 @@ var cfg = [
 
 	// Админка - Настройка доски
 	[/^mod\.php\?\/settings\//, [
-		['css', 'head > title', 'Настройки доски'],
+		['reg', 'head > title', ['Configuração da board', 'Настройки доски']],
 		['reg', 'header > h1', ['Configuração da board', 'Настройки доски']],
 		['css', 'body > p', 'Внимание: Некоторые изменения не вступят в силу до тех пор, пока не будет написан новый пост на доске.'],
 
@@ -431,7 +434,7 @@ var cfg = [
 			[/^Limitar números de threads por hora(.+)Serão permitidos.+/, 'Лимит тредов в час$1Количество создаваемых тредов в час, не влияет на количество постов', RE_INNER],
 
 			['Nome padrão nas postagens', 'Имя по умолчанию'],
-			['Anúncio da board', 'Доска объявлений'],
+			['Anúncio da board', 'Объявления для пользователей'],
 
 			[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', RE_INNER],
 
@@ -468,7 +471,7 @@ var cfg = [
 
 		['reg', 'body > form > p > a', [
 			['Editar banners da board', 'Редактировать баннер доски'],
-			['Editar imagens customizadas da board', 'Редактировать пользовательские изображения'],
+			['Editar imagens customizadas da board', 'Редактировать изображения'],
 			['Editar voluntários', 'Редактировать модераторов'],
 			['Editar tags', 'Редактировать тэги']
 		]],
@@ -479,7 +482,7 @@ var cfg = [
 
 	// Админка - Настройки доски - Пользовательские изображения
 	[/^mod\.php\?\/assets\//, [
-		['css', 'head > title', 'Редактирование изображений'],
+		['reg', 'head > title', ['Edit board assets', 'Редактирование изображений']],
 		['reg', 'header > h1', ['Edit board assets', 'Редактирование изображений']],
 
 		['reg', 'form > p > small', [
@@ -501,7 +504,7 @@ var cfg = [
 
 	// Админка - Настройки доски - Модераторы
 	[/^mod\.php\?\/volunteers\//, [
-		['css', 'head > title', 'Редактирование модераторов'],
+		['reg', 'head > title', ['Editar voluntários', 'Редактирование модераторов']],
 		['reg', 'header > h1', ['Editar voluntários', 'Редактирование модераторов']],
 		['reg', 'form > h2', ['Novo usuário', 'Новый модератор']],
 		['reg', 'body > div > h2', ['Voluntários atuais', 'Текущие модераторы']],
@@ -513,6 +516,42 @@ var cfg = [
 		],RE_OUTER],
 
 		[]
+	]],
+
+	// Админка - Редактирование учетной записи
+	[/^mod\.php\?\/users\//, [
+		['reg', 'head > title', ['Edit user profile', 'Учетная запись']],
+		['reg', 'header > h1', ['Edit user profile', 'Изменение учетной записи']],
+		['reg', 'table > tbody > tr > th', [
+			[/\(alerta: trocar.+\)/, ' (внимание: после изменения имени нужно войти заново, имя в журнале событий также будет заменено на новое'],
+			['novo; opcional', 'новый; не обязательно'],
+			[/se você esquecer.+para (.+@brchan\.org).+/, 'если вы забыли свой пароль, напишите на $1 и попросите его сбросить.<br>Адрес электронной почты должен быть один и тот же, связанный с учетной записью; по желанию)', RE_INNER]
+		]],
+		['reg', 'input[type="submit"]', ['Salvar alterações', 'Сохранить изменения'], RE_OUTER]
+	]],
+
+	// Админка - Новый бан
+	[/^mod\.php\?\/\w+\/ban\//, [
+		['reg', 'head > title', ['Novo ban', 'Новый бан']],
+		['reg', 'header > h1', ['Novo ban', 'Новый бан']],
+		['reg', 'table > tbody > tr > th > label', [
+			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', RE_INNER],
+			['Motivo', 'Причина'],
+			['Mensagem', 'Сообщение'],
+			['Tamanho', 'Длительность'],
+			['Board', 'Доска']
+		]],
+		['reg', 'table > tbody > tr > td .unimportant', [
+			[/^Be careful.+/, 'Будьте осторожны с диапазоном адресов. Чем больше диапазон, тем больше пользователей он затронет'],
+			['público; anexado à mensagem', 'публичное; добавляется к посту'],
+			[/^\(eg.(.+) or (.+)/, '(например: $1 или $2']
+		]],
+		['reg', 'select[name="range"] > option', [
+			['no range ban', 'без диапазона'],
+			[/covers (\d+) addresses/, 'охватывает $1 адресов', RE_TEXT, RE_MULTI]
+		]],
+		['att', 'input#message', 'value', 'Автор этого поста был ЗАБАНЕН'],
+		['att', 'input[name="new_ban"]', 'value', 'Забанить']
 	]],
 
 	[]
@@ -854,7 +893,7 @@ class RegexReplace {
 			}
 
 			this.cnt = 0; // сбрасываем счетчик активных regex
-			if(this.array[0].constructor.name == 'Array') {
+			if(Array.isArray(this.array[0])) {
 				for(let i in this.array) {
 					if(this.do(el, this.array[i], i) < 0)
 					{
@@ -974,23 +1013,26 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 						replacers.push(new CSSReplace(c[1], c[2]));
 						continue;
 					}
+					break;
 
 				case "txt":
 					if(cl == 4) {
 						replacers.push(new InnerTextReplace(c[1], c[2], c[3]));
 						continue;
 					}
+					break;
 				case "reg":
-					if(cl > 2) {
+					if(cl > 2 && Array.isArray(c[2])) {
 						replacers.push(new RegexReplace(c[1], c[2], cl>3 ? c[3] : 0, cl>4 ? c[4] : 0, cl>5 ? c[5] : 0));
 						continue;
 					}
-
+					break;
 				case "att":
 					if(cl == 4) {
 						replacers.push(new AttributeReplace(c[1], c[2], c[3]));
 						continue;
 					}
+					break;
 			}
 			console.debug('** Cfg Error: ', c);
 		} // for c
