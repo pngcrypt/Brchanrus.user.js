@@ -909,6 +909,8 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 
 // ==============================================================================================
 // ==============================================================================================
+var wf = {}; // для хранения переопределенных оригинальных ф-ций window
+
 var doIt = function() {
 	let i = performance.now();
 	for(let r of replacers) {
@@ -918,59 +920,80 @@ var doIt = function() {
 };
 
 var days=['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-function FixPostDate(el)
+function fixPostDate(element)
 {
 	// дата и время постов (перевод + коррекция)
-	$("p.intro time", el).each(function()
+	for(let el of (element ? element : document).querySelectorAll("p.intro time"))
 	{
-		var t = new Date(this.getAttribute("datetime"));
+		var t = new Date(el.getAttribute("datetime"));
 		t.setTime(t.getTime() + TIME_CORR);
-		this.innerText = t.toLocaleDateString() + " (" + days[t.getDay()] + ") " + t.toLocaleTimeString();
-	});
+		el.innerText = t.toLocaleDateString() + " (" + days[t.getDay()] + ") " + t.toLocaleTimeString();
+	}
+}
+
+function removeRedirect(element)
+{
+	// удаление редиректа для внешних ссылок
+	let url="http://privatelink.de/?";
+	for(let el of (element ? element : document).querySelectorAll('a[href^="'+url+'"]'))
+		el.setAttribute("href", el.getAttribute("href").substr(url.length));
+
 }
 
 document.onreadystatechange = function () {
 	switch (document.readyState) {
 
 		case 'complete':
-			if(window.jQuery) {
+			if(window.jQuery) 
+			{
 				// перевод новых постов
-				jQuery(document).on('new_post', function(e, post) {
+				$(document).on('new_post', function(e, post) {
 					for(let r of new_posts_replacers) {
 						r.replace(post);
-						FixPostDate(post); // фикс и перевод даты
 					}
+					fixPostDate(post);
+					removeRedirect(post);
 				});
-
-				// добавить дату создания треда в каталоге
-				if(url.match(/^\w+\/catalog\.html/)) $("div.mix").each(function() 
-				{
-					// дата создания в аттрибуте data-time, дата последнего поста - в data-bump
-					var t = new Date(this.getAttribute("data-time")*1000 - 3600000);
-					$("strong", this).first().append("<br><small>"+
-						t.toLocaleDateString() + " (" + days[t.getDay()] + ") " + t.toLocaleTimeString() +
-					"</small>");
-				});
-
-				// добавить дату постов в тредах
-				if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) FixPostDate();
 
 				$('#watchlist').css('width', '20%');
 			}
 
-			// TODO
-			// (function(){var f=function(u,t){[].forEach.call(t.querySelectorAll('a'),(e) =>void(e.href=e.href.replace(/^http(s)?:\/\/privatelink\.de\/\?/,'')))};$(document).on('new_post',f);f(null,document)})();
+			if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) fixPostDate(); // добавить дату постов в тредах
+
+			// добавить дату создания треда в каталоге
+			var t;
+			if(url.match(/^\w+\/catalog\.html/)) for(let el of document.querySelectorAll("div.mix")) 
+			{
+				if(!(t = el.getAttribute("data-time"))) // дата создания
+					continue;
+				t = new Date(t*1000 - 3600000);
+				if(!(el = el.querySelector("strong"))) 
+					continue;
+				el.innerHTML = el.innerHTML + "<br><small>"+ t.toLocaleDateString() + " (" + days[t.getDay()] + ") " + t.toLocaleTimeString() + "</small>";
+			}
+
+			removeRedirect(); // удаление редиректов 
 
 			// перевод сообщений
-			window.alert_orig = window.alert;
-			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action) {
+			wf.alert = window.alert;
+			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action) 
+			{
 				msg = {text: msg};
 				for(let r of posting_replacers) {
 					if(r.replace(msg)) break;
 				}
 				console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-				window.alert_orig(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+				wf.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 			};
+
+			// очистка поля капчи при обновлении
+			wf.actually_load_captcha = window.actually_load_captcha;
+			window.actually_load_captcha = function(provider, extra)
+			{
+				wf.actually_load_captcha(provider, extra);
+				for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+					el.value = "";
+			}
 
 			doIt();
 			break;
