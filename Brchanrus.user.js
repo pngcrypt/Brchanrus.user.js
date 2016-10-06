@@ -13,6 +13,8 @@
 // @nocompat        Chrome
 // ==/UserScript==
 
+const TIME_CORR = 2 * 3600000; // коррекция даты постов (в мс)
+
 const TYPE_FIRSTNODE = 0;
 const TYPE_LASTNODE = 1;
 
@@ -109,7 +111,7 @@ var cfg = [
 			['Ir ao rodapé', 'Вниз страницы']
 		]],
 
-		['reg', 'div.thread > div.post > p.intro > label > time', [
+		/*['reg', 'div.thread > div.post > p.intro > label > time', [
 			['(Seg)', '(Пнд)'],
 			['(Ter)', '(Втр)'],
 			['(Qua)', '(Срд)'],
@@ -117,7 +119,7 @@ var cfg = [
 			['(Sex)', '(Птн)'],
 			['(Sáb)', '(Сбт)'],
 			['(Dom)', '(Вск)']
-		], RE_TEXT, RE_MULTI],
+		], RE_TEXT, RE_MULTI],*/
 
 		// Посты
 		['txt', 'p.intro > label > span.name', TYPE_FIRSTNODE, 'Аноним'],
@@ -809,7 +811,7 @@ class RegexReplace {
 			}
 			if(this.debug) console.debug("REG_FND:", array, prop);
 			if(dobreak == RE_BREAK)
-				return -1;
+				return -1; // сигнализируем о прерывании цикла перебора regex
 			else
 				return 1;
 		}
@@ -835,7 +837,7 @@ let replacers = [];
 let new_posts_replacers = [
 	new CSSReplace('span.name', 'Аноним'),
 	new InnerTextReplace('p.fileinfo', TYPE_FIRSTNODE, 'Файл: '),
-	new RegexReplace('div.thread > div.post > p.intro > label > time', [
+	/*new RegexReplace('div.thread > div.post > p.intro > label > time', [
 			['(Seg)', '(Пнд)'],
 			['(Ter)', '(Втр)'],
 			['(Qua)', '(Срд)'],
@@ -843,7 +845,7 @@ let new_posts_replacers = [
 			['(Sex)', '(Птн)'],
 			['(Sáb)', '(Сбт)'],
 			['(Dom)', '(Вск)']
-	])
+	])*/
 ];
 let posting_replacers = [
 	new PostingReplace('Você errou o codigo de verificação', 'Неверно введен код капчи'),
@@ -915,6 +917,18 @@ var doIt = function() {
 	console.debug('Replace: ', performance.now() - i, "ms");
 };
 
+var days=['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+function FixPostDate(el)
+{
+	// дата и время постов (перевод + коррекция)
+	$("p.intro time", el).each(function()
+	{
+		var t = new Date(this.getAttribute("datetime"));
+		t.setTime(t.getTime() + TIME_CORR);
+		this.innerText = t.toLocaleDateString() + " (" + days[t.getDay()] + ") " + t.toLocaleTimeString();
+	});
+}
+
 document.onreadystatechange = function () {
 	switch (document.readyState) {
 
@@ -924,15 +938,22 @@ document.onreadystatechange = function () {
 				jQuery(document).on('new_post', function(e, post) {
 					for(let r of new_posts_replacers) {
 						r.replace(post);
+						FixPostDate(post); // фикс и перевод даты
 					}
 				});
 
 				// добавить дату создания треда в каталоге
-				if(url.match(/^\w+\/catalog\.html/)) $("div.mix").each(function() {
+				if(url.match(/^\w+\/catalog\.html/)) $("div.mix").each(function() 
+				{
 					// дата создания в аттрибуте data-time, дата последнего поста - в data-bump
-					var t = new Date(this.getAttribute("data-time")*1000);
-					$("strong", this).first().append("<br><small>["+t.toLocaleString()+"]</small>");
+					var t = new Date(this.getAttribute("data-time")*1000 - 3600000);
+					$("strong", this).first().append("<br><small>"+
+						t.toLocaleDateString() + " (" + days[t.getDay()] + ") " + t.toLocaleTimeString() +
+					"</small>");
 				});
+
+				// добавить дату постов в тредах
+				if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) FixPostDate();
 
 				$('#watchlist').css('width', '20%');
 			}
