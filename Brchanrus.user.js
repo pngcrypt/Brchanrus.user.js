@@ -1011,7 +1011,9 @@ let posting_replacers = [
 	new PostingReplace('Seu browser enviou uma referência HTTP inválida ou inexistente', 'Ваш браузер послал неверный referer или он отсутствует в заголовке HTTP'),
 	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:'),
 	new PostingReplace('Extensão de arquivo desconhecida', 'Неизвестный тип файла'),
-	new PostingReplace('Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!')
+	new PostingReplace('Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'),
+	new PostingReplace('É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'),
+	new PostingReplace(/O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!/, 'Файл уже был загружен в <a href="$1">этом треде!</a>')
 
 ];
 
