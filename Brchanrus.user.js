@@ -1010,7 +1010,8 @@ let posting_replacers = [
 	new PostingReplace('Flood detectado; Sua mensagem foi descartada', 'Ошибка постинга: Вы постите слишком быстро'),
 	new PostingReplace('Seu browser enviou uma referência HTTP inválida ou inexistente', 'Ваш браузер послал неверный referer или он отсутствует в заголовке HTTP'),
 	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:'),
-	new PostingReplace('Extensão de arquivo desconhecida', 'Неизвестный тип файла')
+	new PostingReplace('Extensão de arquivo desconhecida', 'Неизвестный тип файла'),
+	new PostingReplace('Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!')
 
 ];
 
