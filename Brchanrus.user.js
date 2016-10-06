@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            Brchan Rusifikator
-// @version         3.2.7
+// @version         3.2.8
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -295,6 +295,29 @@ var cfg = [
 	// Любая доска / тред под модеркой
 	[/^mod\.php\?\/\w+(|\/|\/.+\.html)$/, [
 		// кнопки модерирования
+		['reg', 'span.controls', [
+			['Spoiler em tudo', 'Спрятать превью изображений'],
+			['Apagar todos os posts do IP', 'Удалить все сообщения этого IP'],
+			['"Apagar"', '"Удалить пост"'],
+			['"Banir"', '"Забанить"'],
+			['"Banir e Apagar"', '"Забанить и удалить сообщение"'],
+			['Fixar thread', 'Закрепить тред'],
+			['Desafixar thread', 'Открепить тред'],
+			['Impedir bump', 'Запретить поднимать тред'],
+			['Permitir bump', 'Разрешить поднимать тред'],
+			['Trancar thread', 'Закрыть тред'],
+			['Destrancar thread', 'Открыть тред'],
+			['Make thread cycle', 'Циклический тред(при достижении бамп лимита тред будет очищен)'],
+			['Make thread not cycle', 'Убрать циклическую очистку треда'],
+			['Editar mensagem', 'Редактировать'],
+			['Apagar arquivo', 'Удалить файл'],
+
+			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите спрятать все превью изображений?'],
+			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
+			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
+			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
+		], RE_INNER, RE_MULTI, RE_NOBREAK],
+
 		[]
 	]],
 
@@ -401,7 +424,7 @@ var cfg = [
 			['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
 			['Exigir que o OP poste uma imagem', 'При создании нового треда изображение обязательно'],
 			['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательна'],
-			['Mostrar IDs dos usuários', 'Показать идентификаторы пользователей'],
+			['Mostrar IDs dos usuários', 'Показать ID пользователей'],
 			['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
 			[/^Desabilitar caracteres compostos.+/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
 			[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', RE_INNER],
@@ -530,7 +553,7 @@ var cfg = [
 		['reg', 'input[type="submit"]', ['Salvar alterações', 'Сохранить изменения'], RE_OUTER]
 	]],
 
-	// Админка - Новый бан
+	// Админка - Бан
 	[/^mod\.php\?\/\w+\/ban\//, [
 		['reg', 'head > title', ['Novo ban', 'Новый бан']],
 		['reg', 'header > h1', ['Novo ban', 'Новый бан']],
@@ -553,7 +576,6 @@ var cfg = [
 		['att', 'input#message', 'value', 'Автор этого поста был ЗАБАНЕН'],
 		['att', 'input[name="new_ban"]', 'value', 'Забанить']
 	]],
-
 	[]
 ];
 
@@ -743,7 +765,7 @@ var l10n_rus = {
 	"Enable formatting keybinds": "Включить горячие клавиши",
 	"Show formatting toolbar": "Показать панель форматирования",
 	"Download All": "Скачать всеl",
-	"Hide IDs": "Скрыть все ID",
+	"Hide IDs": "Скрыть ID пользователей",
 	"Image hover": "При наведении курсора",
 	"Image hover on catalog": "При наведении курсора в каталоге тредов",
 	"Image hover should follow cursor": "Всплывать возле курсора",
@@ -1128,7 +1150,7 @@ document.onreadystatechange = function () {
 				wf.actually_load_captcha(provider, extra);
 				for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
 					el.value = "";
-			}
+			};
 
 			doIt();
 			break;
