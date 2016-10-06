@@ -561,16 +561,16 @@ var cfg = [
 	]],
 
 	// Админка - Бан
-	[/^mod\.php\?\/\w+\/ban.+/, [
+	[/^mod\.php\?\/\w+\/ban(&delete)?\//, [
 		['reg', 'head > title', ['Novo ban', 'Новый бан']],
 		['reg', 'header > h1', ['Novo ban', 'Новый бан']],
 		['reg', 'table > tbody > tr > th > label', [
 			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', RE_INNER],
 			['Motivo', 'Причина'],
 			['Mensagem', 'Сообщение'],
-			['Tamanho', 'Длительность'],
-			['Board', 'Доска']
+			['Tamanho', 'Длительность']			
 		]],
+		['reg', 'table > tbody > tr > th', ['Board', 'Доска']],
 		['reg', 'table > tbody > tr > td .unimportant', [
 			[/^Be careful.+/, 'Будьте осторожны с диапазоном адресов. Чем больше диапазон, тем больше пользователей он затронет'],
 			['público; anexado à mensagem', 'публичное; добавляется к посту'],
@@ -583,6 +583,17 @@ var cfg = [
 		['att', 'input#message', 'value', 'Автор этого поста был ЗАБАНЕН'],
 		['att', 'input[name="new_ban"]', 'value', 'Забанить']
 	]],
+
+	// Админка - Список банов
+	[/^mod\.php\?\/bans$/, [
+		['reg', 'head > title', ['Lista de bans', 'Список банов']],
+		['reg', 'header > h1', ['Lista de bans', 'Список банов']],
+		['txt', 'div.banlist-opts > div.checkboxes > label', TYPE_LASTNODE, 'Показать только активные баны'], // txt, т.к. на input висит обработчик
+		['att', 'input#search', 'placeholder', 'Искать...'],
+		['att', 'input#unban', 'value', 'Разбанить выделенных'],
+		[]
+	]],
+
 
 	// Админка - PM: создание/ответ
 	[/^mod\.php\?\/(new_PM\/|PM\/\d+\/reply)/, [
@@ -655,7 +666,7 @@ var cfg = [
 		['reg', 'table.modlog > tbody > tr > td:nth-child(3)', [ // время
 			['segundos', 'сек.'],
 			['minutos', 'мин.'],
-			['horas', 'час.']
+			[/horas?/, 'час.']
 		], RE_INNER, RE_MULTI],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия. хз надо ???
 			[/^Edited post/, 'Редактирование поста'],
@@ -663,7 +674,7 @@ var cfg = [
 			[/^Edited board settings/, 'Редактирование настроек доски'],
 			[/^Removed ban (#\d+) for/, 'Разбан $1 для'],
 			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
-			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)?reason:?/, "Новый '$1' бан на доске $2 для $3. Причина: $4"],
+			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)reason:?/, "Новый '$1' бан на доске $2 для $3. Причина: $4"],
 			[/^Created a new volunteer/, 'Добавлен новый модератор'],
 			[]
 		], RE_TEXT, RE_MULTI],
@@ -832,7 +843,7 @@ var l10n_rus = {
 	" ago": " тому назад",
 	"Expires": "Истекает",
 	"never": "никогда",
-	"in ": "в ",
+	"in ": "через ",
 	"Staff": "Сотрудник",
 	"system": "system",
 	"Auto": "Автообновление",
@@ -846,7 +857,7 @@ var l10n_rus = {
 	"All": "Все",
 	"second(s)": "секунд(ы)",
 	"minute(s)": "минут(ы)",
-	"hour(s)": "часы(ы)",
+	"hour(s)": "час(ы)",
 	"day(s)": "день(ей)",
 	"week(s)": "неделя(ль)",
 	"year(s)": "год(ы)",
