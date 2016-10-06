@@ -692,8 +692,8 @@ var l10n_rus = {
 	"File": "Файл",
 	"hide": "скрыть",
 	"show": "показать",
-	"Show locked threads": "Показать закрепленные треды",
-	"Hide locked threads": "Скрыть закрепленные треды",
+	"Show locked threads": "Показать закрытые треды",
+	"Hide locked threads": "Скрывать закрытые треды",
 	"URL": "URL",
 	"Select": "Select",
 	"Remote": "Remote",
@@ -1176,15 +1176,7 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 // ==============================================================================================
 var wf = {}; // для хранения переопределенных оригинальных ф-ций window
 
-var doIt = function() {
-	let i = performance.now();
-	for(let r of replacers) {
-		r.replace();
-	}
-	console.debug('Replace: ', performance.now() - i, "ms");
-};
-
-var days=['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+wf.days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 function fixPostDate(element)
 {
 	// дата и время постов (перевод + коррекция)
@@ -1192,7 +1184,7 @@ function fixPostDate(element)
 	{
 		var t = new Date(el.getAttribute("datetime"));
 		t.setTime(t.getTime() + TIME_CORR);
-		el.innerText = t.toLocaleDateString() + " (" + days[t.getDay()] + ") " + t.toLocaleTimeString();
+		el.innerText = t.toLocaleDateString() + " (" + wf.days[t.getDay()] + ") " + t.toLocaleTimeString();
 	}
 }
 
@@ -1202,65 +1194,69 @@ function removeRedirect(element)
 	let url="http://privatelink.de/?";
 	for(let el of (element ? element : document).querySelectorAll('a[href^="'+url+'"]'))
 		el.setAttribute("href", el.getAttribute("href").substr(url.length));
-
 }
 
-document.onreadystatechange = function () {
-	switch (document.readyState) {
-
-		case 'complete':
-			if(window.jQuery) 
-			{
-				// перевод новых постов
-				$(document).on('new_post', function(e, post) {
-					for(let r of new_posts_replacers) {
-						r.replace(post);
-					}
-					fixPostDate(post);
-					removeRedirect(post);
-				});
-
-				$('#watchlist').css('width', '20%');
-			}
-
-			if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) fixPostDate(); // добавить дату постов в тредах
-
-			// добавить дату создания треда в каталоге
-			var t;
-			if(url.match(/^\w+\/catalog\.html/)) for(let el of document.querySelectorAll("div.mix")) 
-			{
-				if(!(t = el.getAttribute("data-time"))) // дата создания
-					continue;
-				t = new Date(t*1000 - 3600000);
-				if(!(el = el.querySelector("strong"))) 
-					continue;
-				el.innerHTML = el.innerHTML + "<br><small>"+ t.toLocaleDateString() + " (" + days[t.getDay()] + ") " + t.toLocaleTimeString() + "</small>";
-			}
-
-			removeRedirect(); // удаление редиректов 
-
-			// перевод сообщений
-			wf.alert = window.alert;
-			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
-			{
-				msg = {text: msg};
-				for(let r of posting_replacers) {
-					if(r.replace(msg)) break;
-				}
-				console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-				wf.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-			};
-
-			// очистка поля капчи при обновлении
-			wf.actually_load_captcha = window.actually_load_captcha;
-			window.actually_load_captcha = function(provider, extra)
-			{
-				wf.actually_load_captcha(provider, extra);
-				for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
-					el.value = "";
-			};
-
-			doIt();
-			break;
+var doIt = function() {
+	let i = performance.now();
+	for(let r of replacers) {
+		r.replace();
 	}
+	console.debug('Replace: ', performance.now() - i, "ms");
+
+	if(window.jQuery) 
+	{
+		// перевод новых постов
+		$(document).on('new_post', function(e, post) {
+			for(let r of new_posts_replacers) {
+				r.replace(post);
+			}
+			fixPostDate(post);
+			removeRedirect(post);
+		});
+
+		$('#watchlist').css('width', '20%');
+	}
+
+	if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) fixPostDate(); // добавить дату постов в тредах
+
+	// добавить дату создания треда в каталоге
+	var t;
+	if(url.match(/^\w+\/catalog\.html/)) for(let el of document.querySelectorAll("div.mix")) 
+	{
+		if(!(t = el.getAttribute("data-time"))) // дата создания
+			continue;
+		t = new Date(t*1000 - 3600000);
+		if(!(el = el.querySelector("strong"))) 
+			continue;
+		el.innerHTML = el.innerHTML + "<br><small>"+ t.toLocaleDateString() + " (" + wf.days[t.getDay()] + ") " + t.toLocaleTimeString() + "</small>";
+	}
+
+	removeRedirect(); // удаление редиректов 
+
+	// перевод сообщений
+	wf.alert = window.alert;
+	window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
+	{
+		msg = {text: msg};
+		for(let r of posting_replacers) {
+			if(r.replace(msg)) break;
+		}
+		console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+		wf.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+	};
+
+	// очистка поля капчи при обновлении
+	wf.actually_load_captcha = window.actually_load_captcha;
+	window.actually_load_captcha = function(provider, extra)
+	{
+		wf.actually_load_captcha(provider, extra);
+		for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+			el.value = "";
+	};
 };
+
+if (document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", doIt, false);
+} else if (document.attachEvent) {
+        document.attachEvent("onreadystatechange", doIt);
+}
