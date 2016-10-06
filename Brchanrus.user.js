@@ -295,6 +295,27 @@ var cfg = [
 	// Любая доска / тред под модеркой
 	[/^mod\.php\?\/\w+(|\/|\/.+\.html)$/, [
 		// кнопки модерирования
+		['reg', 'span.controls', [
+			['Spoiler em tudo', 'Спрятать превью изображений'],
+			['Apagar todos os posts do IP', 'Удалить все сообщения этого IP'],
+			['"Apagar"', '"Удалить пост"'],
+			['"Banir"', '"Забанить"'],
+			['"Banir e Apagar"', '"Забанить и удалить сообщение"'],
+			['Fixar thread', 'Закрепить тред'],
+			['Desafixar thread', 'Открепить тред'],
+			['Impedir bump', 'Запретить поднимать тред'],
+			['Permitir bump', 'Разрешить поднимать тред'],
+			['Trancar thread', 'Закрыть тред'],
+			['Destrancar thread', 'Открыть тред'],
+			['Make thread cycle', 'Циклический тред(при достижении бамп лимита тред будет очищен)'],
+			['Make thread not cycle', 'Убрать циклическую очистку треда'],
+			['Editar mensagem', 'Редактировать'],
+
+			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите пометить все изображения как спойлер?'],
+			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
+			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
+		], RE_INNER, RE_MULTI, RE_NOBREAK],
+
 		[]
 	]],
 
