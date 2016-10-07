@@ -93,8 +93,8 @@ var cfg = [
 		[]
 	]],
 
-	// Любая доска / тред 
-	[/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/, [
+	// Любая доска / тред + для некоторых разделов админки (где отображаются посты)
+	[/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)|^mod\.php\?\/(recent|IP_less)\//, [
 		['reg', 'header > div.subtitle > p > a', [/Catálogo|Catalog/, 'Каталог тредов']],
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
@@ -123,6 +123,7 @@ var cfg = [
 
 		// Посты
 		['txt', 'p.intro > label > span.name', TYPE_FIRSTNODE, 'Аноним'],
+		['att', 'p.intro > a.post-btn', "title", 'Опции'],
 		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: '],
 		['css', 'a#link-quick-reply', '[Ответить]'],
 
@@ -181,14 +182,28 @@ var cfg = [
 
 	// Ошибки постинга
 	[/^post\.php/, [
-		['reg', 'head > title', ['Erro', 'Ошибка']],
-		['reg', 'header > h1', ['Erro', 'Ошибка', RE_INNER]],
+		['reg', 'head > title', [
+			['Erro', 'Ошибка'],
+			['Denúncia enviada', 'Жалоба отправлена']
+		]],
+
+		['reg', 'header > h1', [
+			['Erro', 'Ошибка'],
+			['Denúncia enviada', 'Жалоба отправлена']
+		], RE_INNER],
+
 		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
 		['reg', 'body > div > h2', [
 			['IP detectado como proxy, proxies nao sao permitidos nessa board. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, [что произошла ошибка, свяжитесь с администрацией'],
 			['Senha incorreta', 'Неверный пароль']
 		]],
+
 		['css', 'body > div > p> a', 'Назад'],
+
+		['reg', 'body > div > a', [
+			['Fechar janela', 'Закрыть окно'],
+			['Voltar ', 'Назад']
+		]],
 
 		[]
 	]],
@@ -403,7 +418,8 @@ var cfg = [
 		['reg', 'ul.report-actions > li.report-action > a', [
 			['Dismiss', 'Отклонить'],
 			['Promote', 'Принять']
-		]],
+		], RE_TEXT, RE_MULTI],
+		// TODO: title для Dismiss/Promote
 
 		['reg', 'ul.report-content-actions > li.report-content-action', [/Descartar todas denúncias a esse conteúdo(.+)Dismiss All/, 'Отклонить все жалобы к этому посту$1Отклонить все', RE_INNER]],
 		['reg', 'ul.report-content-actions > li.report-action', [/Promover todas denúncias locais para globais(.+>)Promote All/, 'Передать все жалобы к этому посту в глобальные$1Принять все', RE_INNER]],
@@ -570,7 +586,7 @@ var cfg = [
 			['Mensagem', 'Сообщение'],
 			['Tamanho', 'Длительность']			
 		]],
-		['reg', 'table > tbody > tr > th', ['Board', 'Доска']],
+		['reg', 'table > tbody > tr:nth-child(5) > th', ['Board', 'Доска']],
 		['reg', 'table > tbody > tr > td .unimportant', [
 			[/^Be careful.+/, 'Будьте осторожны с диапазоном адресов. Чем больше диапазон, тем больше пользователей он затронет'],
 			['público; anexado à mensagem', 'публичное; добавляется к посту'],
@@ -677,7 +693,49 @@ var cfg = [
 			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)reason:?/, "Новый '$1' бан на доске $2 для $3. Причина: $4"],
 			[/^Created a new volunteer/, 'Добавлен новый модератор'],
 			[]
+		], RE_TEXT, RE_MULTI]
+	]],
+
+	// Админка - Последние сообщения
+	[/^mod\.php\?\/recent/, [
+		['reg', 'head > title', ['Mensagens recentes', 'Последние сообщения']],
+		['reg', 'header > h1', ['Mensagens recentes', 'Последние сообщения']],
+		['reg', 'body > h4', [/Viewing last (\d+) posts/, 'Отображаются последние $1 постов']],
+		['reg', 'body > p', [/^View/, 'Показывать:'], RE_INNER],
+		['css', 'body > a#erase-local-data', 'Стереть локальные данные'],
+		['reg', 'body > a[href^="/mod.php?/recent/"]', [/Next (\d+) posts/, 'Следующие $1 постов']],
+		['reg', 'body > p.unimportant', ['Não há posts ativos.', 'Больше новых сообщений нет. <a href="/mod.php?/recent/" class="unimportant">Вернуться</a>'], RE_INNER],
+		[]
+	]],
+
+	// Админка - Информация о юзере по IP (посты, баны)
+	[/^mod\.php\?\/IP_less/, [
+		['css', 'fieldset#bans > legend', 'Баны'],
+		['reg', 'fieldset#bans table > tbody > tr > th', [
+			['Situação', 'Статус'],
+			['Motivo', 'Причина'],
+			['Board', 'Доска'],
+			['Aplicado', 'Добавлен'],
+			['Expira em', 'Истекает'],
+			['Visto', 'Виза'], // ???
+			['Equipe', 'Группа'] // ??? выдал?
 		], RE_TEXT, RE_MULTI],
+
+		// статус
+		['reg', 'fieldset#bans table tr:nth-child(1) > td', [
+			['Expirado', 'Истек']
+		], RE_TEXT, RE_MULTI],
+
+		// причина
+		['reg', 'fieldset#bans table tr:nth-child(3) > td', [/^sem razão especificada/, '-- не указано --'], RE_TEXT, RE_MULTI],
+
+		// виза (Equipe)
+		['reg', 'fieldset#bans table tr:nth-child(7) > td', [
+			['Não', 'Нет']
+		], RE_TEXT, RE_MULTI],
+
+		['att', 'input[name="unban"]', 'value', 'Разбанить'],
+
 		[]
 	]],
 
