@@ -111,16 +111,6 @@ var cfg = [
 			['Ir ao rodapé', 'Вниз страницы']
 		]],
 
-		/*['reg', 'div.thread > div.post > p.intro > label > time', [
-			['(Seg)', '(Пнд)'],
-			['(Ter)', '(Втр)'],
-			['(Qua)', '(Срд)'],
-			['(Qui)', '(Чтв)'],
-			['(Sex)', '(Птн)'],
-			['(Sáb)', '(Сбт)'],
-			['(Dom)', '(Вск)']
-		], RE_TEXT, RE_MULTI],*/
-
 		// Посты
 		['txt', 'p.intro > label > span.name', TYPE_FIRSTNODE, 'Аноним'],
 		['att', 'p.intro > a.post-btn', "title", 'Опции'],
@@ -148,12 +138,12 @@ var cfg = [
 		['css', 'tr#options-row > th', 'Опции'],
 		['reg', 'form > table.post-table-options > tbody > tr > th', ['Senha', 'Пароль']],
 
-		['reg', 'tr#oekaki > td > a', ['Mostrar oekaki', 'Начать']],
-		['reg', 'table.post-table-options  span.unimportant', [
-			['substitui arquivos', 'заменяет файл'],
-			['(para remover arquivos e mensagens)', '(Для удаления файлов и сообщений)'],
-			['(você também pode escrever sage no e-mail)', '(Вы также можете писать sage в поле Опции)'],
-			['(isso substitui a miniatura da sua imagem por uma interrogação)', '(Это заменяет превью вашего изображения знаком вопроса)']
+		['reg', 'tr#oekaki > td > a', ['Mostrar oekaki', 'начать']],
+		['reg', 'table.post-table-options span.unimportant', [
+			['substitui arquivos', 'заменяет файл', RE_TEXT, RE_NOBREAK],
+			['(para remover arquivos e mensagens)', '(для удаления файлов и сообщений)'],
+			['(você também pode escrever sage no e-mail)', '(вы также можете писать sage в поле опций)'],
+			['(isso substitui a miniatura da sua imagem por uma interrogação)', '(это заменяет превью вашего изображения знаком вопроса)']
 		]],
 		['reg', 'tr#options-row > td > div.no-bump-option > label', ['Não bumpar', 'Не поднимать тред (сажа)', RE_INNER]],
 		['reg', 'tr#options-row > td > div.spoiler-images-option > label', ['Imagem spoiler', 'Скрыть превью изображения', RE_INNER]],
@@ -1151,16 +1141,7 @@ class PostingReplace {
 let replacers = [];
 let new_posts_replacers = [
 	new CSSReplace('span.name', 'Аноним'),
-	new InnerTextReplace('p.fileinfo', TYPE_FIRSTNODE, 'Файл: '),
-	/*new RegexReplace('div.thread > div.post > p.intro > label > time', [
-			['(Seg)', '(Пнд)'],
-			['(Ter)', '(Втр)'],
-			['(Qua)', '(Срд)'],
-			['(Qui)', '(Чтв)'],
-			['(Sex)', '(Птн)'],
-			['(Sáb)', '(Сбт)'],
-			['(Dom)', '(Вск)']
-	])*/
+	new InnerTextReplace('p.fileinfo', TYPE_FIRSTNODE, 'Файл: ')
 ];
 let posting_replacers = [
 	new PostingReplace('Você errou o codigo de verificação', 'Неверно введен код капчи'),
@@ -1174,7 +1155,6 @@ let posting_replacers = [
 	new PostingReplace('Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'),
 	new PostingReplace('É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'),
 	new PostingReplace(/O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!/, 'Файл уже был загружен в <a href="$1">этом треде!</a>')
-
 ];
 
 // ==============================================================================================
