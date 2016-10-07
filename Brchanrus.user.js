@@ -30,11 +30,15 @@ const RE_MULTI = 2; // многократый (поиск во всех элем
 const RE_BREAK = 11; // прерывать перебор на первом найденном regex [по умолчанию] (для текущего селектора)
 const RE_NOBREAK = 12; // перебирать все regex независимо от результата (для текущего селектора)
 
+const RE_DEBUG = true;
+
+if(!console.debug) console.debug = console.log || function(){};
+
 /* cfg = [
 	[ /url-regexp/, [
 		["replacer_type", "selector", <params>],
 		[.....]
-	]],
+	], debug],
 
 	[.....]
 ]
@@ -48,33 +52,33 @@ const RE_NOBREAK = 12; // перебирать все regex независимо
 		reg - regexp
 
 	selector: css-селектор
-
 	<params> - дополнительные параметры, в зависимости от replacer_type
+	debug: включить отладку для заданной группы url-regexp (true/false)
 
 	["css", "selector", "replace_text"]
-	["txt", "selector", "search_text", "replace_text"]
+	
+	["txt", "selector", node_type, "replace_text"]
+		node_type - тип ноды (потомка) внутри элемента: TYPE_FIRSTNODE, TYPE_LASTNODE
+
 	["att", "selector", "attr_name", "replace_text"]
 	
 	["reg", "selector", [regex, "replace_text", replace_type, replace_multi, break_type,]]
 
-	["reg", "selector", [regex, "replace_text"], default_replace_type, default_replace_multi, break_type]
+	["reg", "selector", [regex, "replace_text"], def_replace_type, def_replace_multi, def_break_type]
 
 	["reg", "selector", [
 		[regex, "replace_text"], replace_type, replace_multi, break_type],
 		...
 		[regex, "replace_text"], replace_type, replace_multi, break_type]
-	], default_replace_type, default_replace_multi]
+	], def_replace_type, def_replace_multi, def_break_type]
 
-	replace_text - текст замены
-	
-	replace_type - тип замены для текущего правила [не обязательный]: (RE_TEXT [по умолчанию], RE_INNER, RE_OUTER), переопределяет default_replace_type
-	replace_multi - режим поиска для текущего правила [не обязательный]: (RE_SINGLE [по умолчанию] или RE_MULTI), переопределяет default_replace_multi
+	replace_type - тип замены для текущего правила [не обязательный]: (RE_TEXT [по умолчанию], RE_INNER, RE_OUTER), переопределяет def_replace_type
+	replace_multi - режим поиска для текущего правила [не обязательный]: (RE_SINGLE [по умолчанию] или RE_MULTI), переопределяет def_replace_multi
+	break_type - прерывать перебор regex при первом совпадении [не обязательный] (RE_BREAK [по умолчанию], RE_NOBREAK), переопределяет def_break_type
 
-	default_replace_type - тип замены по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_TEXT)
-	default_replace_multi - режим поиска по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_SINGLE)
-
-	break_type - прерывать перебор regex при первом совпадении [не обязательный] (RE_BREAK [по умолчанию], RE_NOBREAK)
-
+	def_replace_type - тип замены по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_TEXT)
+	def_replace_multi - режим поиска по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_SINGLE)
+	def_break_type - тип прерывания по умолчанию [не обязательный] (RE_BREAK [по умолчанию], RE_NOBREAK)
 */
 
 var cfg = [
@@ -310,12 +314,12 @@ var cfg = [
 			['Permitir bump', 'Разрешить поднимать тред'],
 			['Trancar thread', 'Закрыть тред'],
 			['Destrancar thread', 'Открыть тред'],
-			['Make thread cycle', 'Циклический тред(при достижении бамп лимита тред будет очищен)'],
-			['Make thread not cycle', 'Убрать циклическую очистку треда'],
+			['Make thread cycle', 'Включить циклическую очистку (удаление старых после бамплимита)'],
+			['Make thread not cycle', 'Отключить циклическую очистку'],
 			['Editar mensagem', 'Редактировать'],
 			['Apagar arquivo', 'Удалить файл'],
 
-			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений?'],
+			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений в посте?'],
 			['Tem certeza que desejar tornar o arquivo spoiler?', 'Вы уверены, что хотите скрыть превью изображеня?'],
 			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
 			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
@@ -327,6 +331,7 @@ var cfg = [
 
 	// Админка - логин / ошибки
 	[/^mod\.php\b/, [
+		['reg', 'head > title', ['Login', 'Вход']],
 		['reg', 'header > h1', ['Login', 'Вход']],
 		['reg', 'table > tbody > tr > th', [
 			['Usuário', 'Логин'],
@@ -342,6 +347,7 @@ var cfg = [
 		// Ошибки
 		['reg', 'head > title', ['Erro', 'Ошибка']],
 		['reg', 'header > h1', ['Erro', 'Ошибка', RE_INNER]],
+		['reg', 'body > h2', [/Login e\/ou senha inválido\(s\)/, 'Неверный логин или пароль']],
 		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
 		['reg', 'body > div > h2', [
 			['Pagina não encontrada', 'Страница не найдена'],
@@ -667,17 +673,28 @@ var cfg = [
 		]],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', ['hidden', 'скрыт'], RE_INNER, RE_MULTI], // ip
 		['reg', 'table.modlog > tbody > tr > td:nth-child(3)', [ // время
-			['segundos', 'сек.'],
-			['minutos', 'мин.'],
-			[/horas?/, 'час.']
+			['segundos', 'сек'],
+			[/minutos?/, 'мин'],
+			[/horas?/, 'ч'],
+			['dia', 'дн']
 		], RE_INNER, RE_MULTI],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия. хз надо ???
 			[/^Edited post/, 'Редактирование поста'],
 			[/^Deleted post/, 'Удаление поста'],
+			[/^Stickied thread/, 'Тред закреплен'],
+			[/^Unstickied thread/, 'Тред откреплен'],
+			[/^Locked thread/, 'Тред закрыт'],
+			[/^Unlocked thread/, 'Тред открыт'],
+			[/^Bumplocked thread/, 'Запретить поднимать тред'],
+			[/^Unbumplocked thread/, 'Разрешить поднимать тред'],
+			[/^Made cyclical thread/, 'Циклическая очистка треда включена'],
+			[/^Made not cyclical thread/, 'Циклическая очистка треда отключена'],
 			[/^Edited board settings/, 'Редактирование настроек доски'],
-			[/^Removed ban (#\d+) for/, 'Разбан $1 для'],
+			[/^Spoilered file from post/, 'Скрыть превью изображения в посте'],
+			[/^Deleted file from post/, 'Удаление файла в посте'],
+			[/^Removed ban (#\d+) for/, 'Бан снят $1 для'],
 			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
-			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)reason:?/, "Новый '$1' бан на доске $2 для $3. Причина: $4"],
+			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
 			[/^Created a new volunteer/, 'Добавлен новый модератор'],
 			[]
 		], RE_TEXT, RE_MULTI]
@@ -705,11 +722,12 @@ var cfg = [
 			['Aplicado', 'Добавлен'],
 			['Expira em', 'Истекает'],
 			['Visto', 'Виза'], // ???
-			['Equipe', 'Группа'] // ??? выдал?
+			['Equipe', 'Выдал'] // ???
 		], RE_TEXT, RE_MULTI],
 
 		// статус
 		['reg', 'fieldset#bans table tr:nth-child(1) > td', [
+			['Ativo', 'Активный'],
 			['Expirado', 'Истек']
 		], RE_TEXT, RE_MULTI],
 
@@ -998,7 +1016,7 @@ Object.defineProperty(window, "l10n", {
 
 
 class CSSReplace {
-	constructor(query, text) {
+	constructor(query, text, debug) {
 		this.query = query;
 		this.text = text;
 	}
@@ -1010,7 +1028,7 @@ class CSSReplace {
 }
 
 class AttributeReplace {
-	constructor(query, attr, text) {
+	constructor(query, attr, text, debug) {
 		this.query = query;
 		this.attr = attr;
 		this.text = text;
@@ -1023,7 +1041,7 @@ class AttributeReplace {
 }
 
 class InnerTextReplace {
-	constructor(query, type, text) {
+	constructor(query, type, text, debug) {
 		this.query = query;
 		this.type = type;
 		this.text = text;
@@ -1043,14 +1061,14 @@ class InnerTextReplace {
 }
 
 class RegexReplace {
-	constructor(query, array, prop, multi, dobreak) {
+	constructor(query, array, prop, multi, dobreak, debug) {
 		this.query = query;
 		this.array = array;
 		this.prop = prop ? prop : RE_TEXT; // тип замещения по умолчанию 
 		this.multi = multi ? multi : RE_SINGLE; // режим поиска по умолчанию
 		this.dobreak = dobreak ? dobreak : RE_BREAK; // прерывать перебор при первом совпадении или нет
 		this.cnt = 0; // счетчик активных regex
-		this.debug = 0; // 1 - показывает процесс поиска-замены в консоли
+		this.debug = debug ? debug : 0; // 1 - показывает процесс поиска-замены в консоли
 	}
 	replace(element) {
 		if(this.debug) var cnt=0;
@@ -1161,7 +1179,7 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 	console.debug("URL: ", url);
 	let i = performance.now();
 	for(let u of cfg) {
-		if(u.length != 2 || !url.match(u[0])) // checking url match
+		if(u.length < 2 || !url.match(u[0])) // checking url match
 			continue;
 
 		console.debug('Used: ', u[0]);
@@ -1174,27 +1192,27 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 			switch(c[0]) {
 				case "css":
 					if(cl == 3) {
-						replacers.push(new CSSReplace(c[1], c[2]));
+						replacers.push(new CSSReplace(c[1], c[2], u[2]));
 						continue;
 					}
 					break;
 
 				case "txt":
 					if(cl == 4) {
-						replacers.push(new InnerTextReplace(c[1], c[2], c[3]));
+						replacers.push(new InnerTextReplace(c[1], c[2], c[3], u[2]));
 						continue;
 					}
 					break;
 				case "reg":
 					if(cl > 2 && Array.isArray(c[2])) {
 						//replacers.push(new RegexReplace(c[1], c[2], cl>3 ? c[3] : 0, cl>4 ? c[4] : 0, cl>5 ? c[5] : 0));
-						replacers.push(new RegexReplace(c[1], c[2], c[3], c[4], c[5]));
+						replacers.push(new RegexReplace(c[1], c[2], c[3], c[4], c[5], u[2]));
 						continue;
 					}
 					break;
 				case "att":
 					if(cl == 4) {
-						replacers.push(new AttributeReplace(c[1], c[2], c[3]));
+						replacers.push(new AttributeReplace(c[1], c[2], c[3], u[2]));
 						continue;
 					}
 					break;
@@ -1231,6 +1249,11 @@ function fixRedirect(element)
 		el.setAttribute("href", el.getAttribute("href").substr(url.length));
 }
 
+function fixtDateCustom(selector)
+{
+	// TODO: сделать замену и коррекцию даты для заданных url, поиск по селектору
+}
+
 var doIt = function() {
 	let i = performance.now();
 	for(let r of replacers) {
@@ -1247,6 +1270,7 @@ var doIt = function() {
 			}
 			fixPostDate(post);
 			fixRedirect(post);
+			// TODO: кнопки модерирования на новых постах
 		});
 
 		$('#watchlist').css('width', '20%');
