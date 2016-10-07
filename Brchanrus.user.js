@@ -5,7 +5,7 @@
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
 // @run-at          document-start
-// @grant           none
+// @grant			none
 // @include         https://brchan.org/*
 // @include         http://brchan.org/*
 // @include         https://www.brchan.org/*
@@ -27,8 +27,8 @@ const RE_OUTER = 'outerHTML'; // hmtl код, включая найденный 
 const RE_SINGLE = 1; // однократный [по умолчанию] (заменяет первый удовлетворяющий элемент, после замены строка исключается из поиска)
 const RE_MULTI = 2; // многократый (поиск во всех элементах)
 
-const RE_BREAK = 1; // прерывать перебор на первом найденном regex [по умолчанию] (для текущего селектора)
-const RE_NOBREAK = 2; // перебирать все regex независимо от результата (для текущего селектора)
+const RE_BREAK = 11; // прерывать перебор на первом найденном regex [по умолчанию] (для текущего селектора)
+const RE_NOBREAK = 12; // перебирать все regex независимо от результата (для текущего селектора)
 
 /* cfg = [
 	[ /url-regexp/, [
@@ -260,11 +260,8 @@ var cfg = [
 		]],
 
 		['reg', 'table.modlog > tbody > tr > td > span', [
-			[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов'],
-			[/até (\d+) caracteres/, 'до $1 символов']
-		]],
-
-		['reg', 'table.modlog > tbody > tr > td > span', [
+			[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов']
+			[/até (\d+) caracteres/, 'до $1 символов', RE_TEXT, RE_MULTI],
 			['letras, numeros, pontos e sublinhados', 'буквы, цифры, точки и подчеркивание'],
 			['senha para moderar a board, copie-a', 'пароль для модерирования, сохраните его'],
 			['opcional,serve para recuperar sua board', 'по желанию, служит для восстановления доски']
@@ -993,8 +990,7 @@ Object.defineProperty(window, "l10n", {
 	get: function() {
 		return l10n_rus;
 	},
-
-	set: function(value) {}
+	set: function(value){}
 });
 // ==============================================================================================
 // ==============================================================================================
@@ -1191,7 +1187,8 @@ var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url 
 					break;
 				case "reg":
 					if(cl > 2 && Array.isArray(c[2])) {
-						replacers.push(new RegexReplace(c[1], c[2], cl>3 ? c[3] : 0, cl>4 ? c[4] : 0, cl>5 ? c[5] : 0));
+						//replacers.push(new RegexReplace(c[1], c[2], cl>3 ? c[3] : 0, cl>4 ? c[4] : 0, cl>5 ? c[5] : 0));
+						replacers.push(new RegexReplace(c[1], c[2], c[3], c[4], c[5]));
 						continue;
 					}
 					break;
@@ -1226,7 +1223,7 @@ function fixPostDate(element)
 	}
 }
 
-function removeRedirect(element)
+function fixRedirect(element)
 {
 	// удаление редиректа для внешних ссылок
 	let url="http://privatelink.de/?";
@@ -1249,7 +1246,7 @@ var doIt = function() {
 				r.replace(post);
 			}
 			fixPostDate(post);
-			removeRedirect(post);
+			fixRedirect(post);
 		});
 
 		$('#watchlist').css('width', '20%');
@@ -1269,7 +1266,7 @@ var doIt = function() {
 		el.innerHTML = el.innerHTML + "<br><small>"+ t.toLocaleDateString() + " (" + wf.days[t.getDay()] + ") " + t.toLocaleTimeString() + "</small>";
 	}
 
-	removeRedirect(); // удаление редиректов 
+	fixRedirect(); // удаление редиректов 
 
 	// перевод сообщений
 	wf.alert = window.alert;
