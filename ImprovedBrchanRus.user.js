@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name            Improved BrchanRus Rusifikator
+// @name            Improved Brchan Rusifikator
 // @version         1.0.0
 // @namespace       https://brchan.org/*
 // @run-at          document-start
