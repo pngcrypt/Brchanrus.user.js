@@ -29,10 +29,19 @@ const RE_NOBREAK = 12; // перебирать все regex независимо
 
 const RE_DEBUG = true;
 
+var replacer = {cfg:[], debug:RE_DEBUG};
 
-var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url path
+if(!console.debug) console.debug = console.log || function(){};
+if(!console.group) 
+{
+	console.group = function() {
+		console.debug.apply(this, ["[+]",">>>"].concat(arguments));
+	}
+	console.groupEnd = function() {
+		console.debug('[-] <<<');
+	}
+}
 
-var replacer = {cfg:[], debug:true};
 
 // ==============================================================================================
 // основной конифг перевода
@@ -48,6 +57,12 @@ replacer.cfg["main"] = [
 		['txt', 'div.boardlist > span > a[href="/mod.php"]', TYPE_LASTNODE, ' Админка'],
 		['txt', 'div.boardlist > span > a[href="/bugs.php"]', TYPE_LASTNODE, ' Сообщить об ошибке'],
 		['css', 'body > div > a[title="Opções"]', '[Настройки]'],
+
+		// Техобслуживание
+		['reg', 'body > div:nth-child(1) > span', [
+			['BRchan em manutenção', 'Техобслуживание BRchan'],
+			['O Bananal está em manutenção e deve voltar em breve', 'Бананал закрыт на техническое обслуживание и вернется в ближайшее время']
+		]],
 
 		[]
 	]],
@@ -727,9 +742,273 @@ replacer.cfg["alert"] = [
 ];
 
 // ==============================================================================================
+// переменные локализации (для скриптов: настройки, быстрый ответ, и т.п.) 
+// ==============================================================================================
+var l10n_rus = {
+	"Style: ": "Стиль: ",
+	"File": "Файл",
+	"hide": "скрыть",
+	"show": "показать",
+	"Show locked threads": "Показать закрытые треды",
+	"Hide locked threads": "Скрывать закрытые треды",
+	"URL": "URL",
+	"Select": "Select",
+	"Remote": "Remote",
+	"Embed": "Embed",
+	"Oekaki": "Oekaki",
+	"hidden": "hidden",
+	"Show images": "Показать изображения",
+	"Hide images": "Скрыть изображения",
+	"Password": "Пароль",
+	"Delete file only": "Удалить только файл",
+	"Delete": "Удалить",
+	"Reason": "Причина",
+	"Report": "Жалоба",
+	"Global report": "Жалоба администраторам",
+	"Click reply to view.": "Нажмите ответ для просмотра",
+	"Click to expand": "Нажмите для раскрытия",
+	"Hide expanded replies": "Скрыть раскрытые ответы",
+	"Brush size": "Размер кисти",
+	"Set text": "Set text",
+	"Clear": "Очистить",
+	"Save": "Сохранить",
+	"Load": "Загрузить",
+	"Toggle eraser": "Toggle eraser",
+	"Get color": "Get color",
+	"Fill": "Заливка",
+	"Use oekaki instead of file?": "Use oekaki instead of file?",
+	"Edit in oekaki": "Edit in oekaki",
+	"Enter some text": "Enter some text",
+	"Enter font or leave empty": "Enter font or leave empty",
+	"Forced anonymity": "Анонимное имя вместо пользовательских",
+	"enabled": "enabled",
+	"disabled": "disabled",
+	"Sun": "Вс",
+	"Mon": "Пн",
+	"Tue": "Вт",
+	"Wed": "Ср",
+	"Thu": "Чт",
+	"Fri": "Пт",
+	"Sat": "Сб",
+	"Catalog": "Каталог тредов",
+	"Submit": "Отправить",
+	"Quick Reply": "Быстрый ответ",
+	"Posting mode: Replying to <small>&gt;&gt;{0}<\/small>": "Posting mode: Replying to <small>&gt;&gt;{0}<\/small>",
+	"Return": "Вернуться",
+	"Expand all images": "Развернуть все изображения",
+	"Shrink all images": "Свернуть все изображения",
+	"Hello!": "Привет!",
+	"{0} users": "{0} пользователей",
+	"(hide threads from this board)": "(скрыть этот тред на этой доске)",
+	"(show threads from this board)": "(показать этот тред на этой доске)",
+	"No more threads to display": "No more threads to display",
+	"Loading...": "Загрузка...",
+	"Save as original filename": "Сохранить с оригинальным именем",
+	"Reported post(s).": "Жалоба отправлена.",
+	"An unknown error occured!": "An unknown error occured!",
+	"Something went wrong... An unknown error occured!": "Something went wrong... An unknown error occured!",
+	"Working...": "Working...",
+	"Posting... (#%)": "Отправка... (#%)",
+	"Posted...": "Отправлено...",
+	"An unknown error occured when posting!": "An unknown error occured when posting!",
+	"Posting...": "Отправка...",
+	"Upload URL": "Upload URL",
+	"Spoiler Image": "Spoiler Image",
+	"Comment": "Комментарий",
+	"Watch Thread": "В избранное",
+	"Stop watching this thread": "Удалить из избранного",
+	"Watch this thread": "В избранное",
+	"Unpin this board": "Unpin this board",
+	"Pin this board": "Pin this board",
+	"Stop watching this board": "Stop watching this board",
+	"Watch this board": "Watch this board",
+	"Click on any image on this site to load it into oekaki applet": "Нажмите на любое изображение на этом сайте, чтобы загрузить его в oekaki апплет",
+	"Sunday": "Воскресенье",
+	"Monday": "Понедельник",
+	"Tuesday": "Вторник",
+	"Wednesday": "Среда",
+	"Thursday": "Четверг",
+	"Friday": "Пятница",
+	"Saturday": "Суббота",
+	"January": "Январь",
+	"February": "Феврась",
+	"March": "Март",
+	"April": "Апрель",
+	"May": "Май",
+	"June": "Июнь",
+	"July": "Июль",
+	"August": "Август",
+	"September": "Сентябрь",
+	"October": "Октябрь",
+	"November": "Ноябрь",
+	"December": "Декабрь",
+	"Jan": "Янв",
+	"Feb": "Фев",
+	"Mar": "Мар",
+	"Apr": "Апр",
+	"Jun": "Июн",
+	"Jul": "Июл",
+	"Aug": "Авг",
+	"Sep": "Sep",
+	"Oct": "Окт",
+	"Nov": "Ноя",
+	"Dec": "Дек",
+	"AM": "AM",
+	"PM": "PM",
+	"am": "am",
+	"pm": "pm",
+	"Your browser does not support HTML5 video.": "Ваш браузер не поддерживает HTML5 видео.",
+	"[play once]": "[один раз]",
+	"[loop]": "[по кругу]",
+	"WebM Settings": "WebM Настройки",
+	"Expand videos inline": "Разворачивать видео в посте",
+	"Play videos on hover": "Воспроизводить видео при наведении",
+	"Default volume": "Громкость по умолчанию",
+	"Tree view": "Tree view",
+	"Animate GIFs": "Animate GIFs",
+	"Unanimate GIFs": "Unanimate GIFs",
+	"WebM": "WebM",
+	"No new posts.": "No new posts.",
+	"No new threads.": "No new threads.",
+	"There are {0} new threads.": "There are {0} new threads.",
+	"There are {0} new posts in this thread.": "There are {0} new posts in this thread.",
+	"Options": "Настройки",
+	"General": "Главная",
+	"Storage: ": "Хранилище: ",
+	"Export": "Экспорт",
+	"Import": "Импорт",
+	"Paste your storage data": "Paste your storage data",
+	"Erase": "Удалить",
+	"Are you sure you want to erase your storage? This involves your hidden threads, watched threads, post password and many more.": "Are you sure you want to erase your storage? This involves your hidden threads, watched threads, post password and many more.",
+	"User CSS": "User CSS",
+	"Update custom CSS": "Update custom CSS",
+	"Enter here your own CSS rules...": "Введите сюда CSS-код ваших стилей...",
+	"You can include CSS files from remote servers, for example:": "You can include CSS files from remote servers, for example:",
+	"User JS": "JS-скрипты",
+	"Update custom Javascript": "Update custom Javascript",
+	"Enter here your own Javascript code...": "Enter here your own Javascript code...",
+	"You can include JS files from remote servers, for example:": "Вы можете подключать JS-файлы с внешних серверов. Например:",
+	"Color IDs": "Color IDs",
+	"Update": "Обновить",
+	"IP address": "IP адрес",
+	"Seen": "Seen",
+	"Message for which user was banned is included": "Message for which user was banned is included",
+	"Message:": "Сообщение:",
+	"Board": "Доска",
+	"all": "все",
+	"Set": "Установлен",
+	" ago": " тому назад",
+	"Expires": "Истекает",
+	"never": "никогда",
+	"in ": "через ",
+	"Staff": "Сотрудник",
+	"system": "system",
+	"Auto": "Автообновление",
+	"Updating...": "Обновление...",
+	"Thread updated with {0} new post(s)": "{0} новых постов",
+	"No new posts found": "Нет новых постов",
+	"Thread deleted or pruned": "Тред удалён",
+	"Error: ": "Ошибка: ",
+	"Unknown error": "Неизвестная ошибка",
+	"Page": "Страница",
+	"All": "Все",
+	"second(s)": "секунд(ы)",
+	"minute(s)": "минут(ы)",
+	"hour(s)": "час(ы)",
+	"day(s)": "день(ей)",
+	"week(s)": "неделя(ль)",
+	"year(s)": "год(ы)",
+	"Auto update": "Автообновление",
+	"Auto update thread": "Автообновление треда",
+	"Show desktop notifications when users quote me": "Показывать уведомления, когда пользователи цитируют меня",
+	"Show desktop notifications on all replies": "Показывать уведомления на все ответы",
+	"Scroll to new posts": "Прокрутка к новым постам",
+	"Verification": "Капча",
+	"Enable formatting keybinds": "Включить горячие клавиши",
+	"Show formatting toolbar": "Показать панель форматирования",
+	"Download All": "Скачать всеl",
+	"Hide IDs": "Скрыть ID пользователей",
+	"Image hover": "При наведении курсора",
+	"Image hover on catalog": "При наведении курсора в каталоге тредов",
+	"Image hover should follow cursor": "Всплывать возле курсора",
+	"Number of simultaneous image downloads (0 to disable): ": "Количество одновременных загрузок (0 для отключения): ",
+	"Error: Invalid LaTeX syntax.": "Error: Invalid LaTeX syntax.",
+	"Show relative time": "Показать относительное время",
+	"Favorites": "Избранное",
+	"Drag the boards to sort them.": "Для сортировки перетаскивайте доски в списке",
+	"Note: Most option changes will only take effect on future page loads.": "Примечание: большинство изменений требует перезагрузки страницы.",
+	"Theme": "Тема/CSS",
+	"Save custom CSS": "Сохранить пользовательский CSS",
+	"Board-specific CSS": "Стиль по умолчанию",
+	"Style should affect all boards, not just current board": "Применить стиль ко всем доскам, а не только к текущей",
+	"These will be applied on top of whatever theme you choose below.": "These will be applied on top of whatever theme you choose below.",
+	"Do not paste code here unless you absolutely trust the source or have read it yourself!": "Вставляйте сюда код только если вы абсолютно доверяете источнику или написали его самостоятельно!",
+	"Untrusted code pasted here could do malicious things such as spam the site under your IP.": "Ненадежный код может осуществлять вредоностные действия. Например, отправлять спам с вашего IP.",
+	"Save custom Javascript": "Сохранить пользовательский скрипт",
+	"Enter your own Javascript code here...": "Введите сюда код вашего скрипта...",
+	"(You)": "(Вы)",
+	"Use tree view by default": "Использовать TreeView по умолчанию",
+	"Show top boards": "Показывать ТОП досок",
+	"Loop videos by default": "Бесконечное воспроизведение по умолчанию",
+	"YouTube size": "Размер YouTube",
+	"OK": "OK",
+	"Cancel": "Отмена",
+	"Hide post options &amp; limits": "Скрыть опции",
+	"Show post options &amp; limits": "Показать опции",
+	"Enable gallery mode": "Включить режим галереи",
+	"Disable gallery mode": "Выключить режим галереи",
+	"Hide post": "Скрывать пост",
+	"Add filter": "Добавить фильтр",
+	"Delete post": "Удалить пост",
+	"Delete file": "Удалить файл",
+	"Enable inlining": "При клике на ответы разворачивать их в посте",
+	"Formatting Options": "Настройки форматирования",
+	"Add Rule": "Добавить правило",
+	"Save Rules": "Сохранить правила",
+	"Revert": "Отмена",
+	"Reset to Default": "По умолчанию",
+	"Prefix": "Префикс",
+	"Name": "Имя",
+
+	// дополнительные (не заданные в бразильской локализации). Имена искать в main.js
+	"Hide inlined backlinked posts": "Скрыть встроенные ответы",
+	"Drag and drop file selection": "Включить перетаскивание файла",
+	"If you want to make a redistributable style, be sure to\nhave a Yotsuba B theme selected.": "Если вы хотите сделать распространяемый стиль, убедитесь, что\nвыбрана тема Yotsuba B",
+	"Customize Formatting": "Форматирование",
+	"Spoiler": "Спойлер",
+	"Italics": "Курсив",
+	"Bold": "Жирный",
+	"Underline": "Поддчеркивание",
+	"Code": "Код",
+	"Strike": "Зачеркнутый",
+	"Heading": "Заголовок",
+	"Filters": "Фильтры",
+	"Clear all filters": "Очистить все",
+	"Add": "Добавить",
+	"Tripcode": "Трипкод",
+	"Subject": "Тема",
+	"watchlist": "Избранное",
+	"Unhide post": "Показать скрытый пост",
+	"Hide post and all replies" : "Скрыть пост и все ответы на него",
+	"Post +": "Пост и все ответы на него",
+	"Clear List": "Удалить все",
+	"Clear Ghosts": "Удалить несуществующие",
+	"Reply": "Ответить",
+
+	"":""
+};
+
+Object.defineProperty(window, "l10n", {
+	get: function() {
+		return l10n_rus;
+	},
+	set: function(value){}
+});
+
+// ==============================================================================================
 // replacer functions
 // ==============================================================================================
-replacer.dMsg = function()
+replacer.dbgMsg = function()
 {
 	if(!this.debug) return;
 	console.debug.apply(this, arguments); // вывести в консоль переданные параметры
@@ -749,10 +1028,11 @@ replacer.process = function(cfg, options)
 	*/
 	
 	if(!this.cfg[cfg]) {
-		this.dMsg("ERROR: CFG NOT FOUND: ", cfg);
+		this.dbgMsg("ERROR: CFG NOT FOUND: ", cfg);
 		return;
 	}
 
+	let perf = performance.now();
 	if(!options) options={};
 	let element = options.element || document;
 
@@ -762,21 +1042,21 @@ replacer.process = function(cfg, options)
 	this.instance[cfg]++; 
 	let instance = this.instance[cfg];
 
-	if(this.debug) console.group(cfg+": ", element);
+	if(this.debug) console.group("["+cfg+"]: ", element);
 	for(let u of this.cfg[cfg])
 	{
 		// перебор всех групп url в заданном конфиге
 		if(!u.length) continue; // empty
 		if(u.length < 2 || !Array.isArray(u[1])) // проверка параметров
 		{
-			this.dMsg("ERROR: Syntax1: [", cfg, "]:", u);
+			this.dbgMsg("ERROR: Syntax1: [", cfg, "]:", u);
 			continue;
 		}
-		if(!url.match(u[0])) continue; // проверка url
+		if(!main.url.match(u[0])) continue; // проверка url
 
-		this.dMsg("URL-Match:", u[0]);
+		this.dbgMsg("URL-Match:", u[0]);
 
-		debug = !!(this.debug && (u[2] || options.debug));
+		debug = !!(this.debug && (u[2] || options.debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
 
 		// перебор реплейсеров группы
 		for(let r of u[1]) 
@@ -784,30 +1064,29 @@ replacer.process = function(cfg, options)
 			if(!r.length) continue; //empty
 			if(r.length < 2)
 			{
-				this.dMsg("ERROR: Syntax2: [", cfg, "]:", r);
+				this.dbgMsg("ERROR: Syntax2: [", cfg, "]:", r);
 				continue;
 			}
 			let fn=r[0]+"Replacer";
 			if(!this[fn]) // проверка наличия функции реплейсера
 			{
-				this.dMsg('ERROR: NO Replacer function for: [', cfg, "]:", r);
+				this.dbgMsg('ERROR: NO Replacer function for: [', cfg, "]:", r);
 				continue;
 			}
 
 			// вызов функции реплейсера
 			let err = this[fn](element, r, instance, debug);
 
-			//if(debug) console.groupEnd();
 			if(err < 0)
 			{
-				this.dMsg("ERROR: Syntax3"+err+": [", cfg, "]:", r);
+				this.dbgMsg("ERROR: Syntax3"+err+": [", cfg, "]:", r);
 				continue;
 			}
-			else if(err) {
-				break;
-			}
+			else if(err)
+				break; // прерывание цикла перебора реплейсеров для текущего url-regex
 		}
 	}
+	this.dbgMsg('Relaced in', performance.now() - perf, "ms");
 	if(this.debug) console.groupEnd();
 }
 
@@ -850,7 +1129,7 @@ replacer.cssReplacer = function(el, p, instance, debug)
 	if(p.length < 3)
 		return -1;
 
-	for(let e of el.querySelectorAll(p[1]))
+	for(let e of el.querySelectorAll(p[1])) 
 		e.textContent = p[2];
 }
 
@@ -917,19 +1196,26 @@ replacer.regReplacer = function(el, p, instance, debug)
 	let re_def_type = p[3] || RE_TEXT;
 	let re_def_mode = p[4] || RE_SINGLE;
 	let re_def_break = p[5] || RE_BREAK;
+	let dbg1st = 0;
 
 	for(let e of el.querySelectorAll(p[1]))
 	{
-		if(debug) this.dMsg(" \nELM:", e);			 
+		if(debug) {
+			if(!dbg1st++) console.group("REG:", p[1]);
+			this.dbgMsg(" \nELM:", e);
+		}
 		let re_cnt = 0; // кол-во активных regex (не сработавших)
 		let dobreak = false;
-		let dmsg = "";
+		let dbgMsg = "";
 		for(let a of p[2]) 
 		{
 			if(!a.length)
 				continue;
 			if(a.length < 2) // проверка наличия regex и text
+			{
+				if(debug) console.groupEnd();
 				return -2;
+			}
 
 			if(!a[5] || a[5] < instance) // проверка на активный regex
 				re_cnt++;
@@ -943,39 +1229,40 @@ replacer.regReplacer = function(el, p, instance, debug)
 			if(e[re_type].match(a[0]))
 			{
 				e[re_type] = e[re_type].replace(a[0], a[1]);
-				dmsg = ": FOUND";
+				dbgMsg = ": FOUND";
 
 				if(re_mode == RE_SINGLE)
 				{
 					a[5] = instance; // выставляем флаг сработавшего regex
 					re_cnt--;
-					dmsg += ": REMOVED";
+					dbgMsg += ": REMOVED";
 				}
 				if(re_break == RE_BREAK)
 				{
 					dobreak = true; // прерываем цикл перебора regex
-					dmsg += ": BREAK";
+					dbgMsg += ": BREAK";
 				}
 			}
 			else 
-				dmsg = ": NOT FOUND";
+				dbgMsg = ": NOT FOUND";
 
-			if(debug) this.dMsg("FND:",  [a[0], a[1]], dmsg);
+			if(debug) this.dbgMsg("FND:",  [a[0], a[1]], dbgMsg);
 		} // for a
 		if(re_cnt < 1)
 		{
 			// прекращаем перебор элементов, т.к. не осталось активных regex
-			if(debug) this.dMsg("STOP");
+			if(debug) this.dbgMsg("STOP");
 			break;
 		}
 	} // for e
+	if(dbg1st) console.groupEnd();	
 }
 
 // ----------------------------------------------------
 replacer.strReplacer = function(el, p, instance, debug)
 // ----------------------------------------------------
 {
-	// реплейсер текста в переданном элементе el
+	// реплейсер текста в переданном элементе объекте el (el.text)
 	// p=["str", regex, text]
 
 	if(p.length<3)
@@ -983,50 +1270,189 @@ replacer.strReplacer = function(el, p, instance, debug)
 
 	if(el.text.match(p[1])) {
 		el.text = el.text.replace(p[1], p[2]);
-		if(debug) this.dMsg("FND:", p, ": FOUND\nBREAK");
+		if(debug) this.dbgMsg("FND:", p, ": FOUND\nSTOP");
 		return 1;
 	}
-	if(debug) this.dMsg("FND:", p, ": NOT FOUND");
+	if(debug) this.dbgMsg("FND:", p, ": NOT FOUND");
 }
 
 // ==============================================================================================
+// MAIN
 // ==============================================================================================
-// ==============================================================================================
-var wf = {}; // для хранения переопределенных оригинальных ф-ций window
-wf.days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
 
-function onDocReady()
-{
+var main = {
+	fn: {}, // для хранения внешних функций
+	ru: {
+		days: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс']
+	},
+	url: document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"), // текущий URL страницы (без протокола и домена)
 
-	// перевод сообщений
-	wf.alert = window.alert;
-	window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
+	// ----------------------------------------------------
+	onDocReady: function() 
+	// ----------------------------------------------------
 	{
-		msg = {text: msg};
-		replacer.process("alert", {element: msg, debug:true});
+		// перевод всплывающих сообщений
+		main.fn.alert = window.alert;
+		window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
+		{
+			msg = {text: msg};
+			replacer.process("alert", {element: msg});
 
-		//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-		wf.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-	};
+			//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+			main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+		};
 
-	// очистка поля капчи при обновлении
-	wf.actually_load_captcha = window.actually_load_captcha;
-	window.actually_load_captcha = function(provider, extra)
+		// очистка поля капчи при обновлении
+		main.fn.actually_load_captcha = window.actually_load_captcha;
+		window.actually_load_captcha = function(provider, extra)
+		{
+			main.fn.actually_load_captcha(provider, extra);
+			for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+				el.value = "";
+		};
+
+		if(window.jQuery) 
+		{
+			// перевод новых постов
+			$(document).on('new_post', function(e, post) {
+				for(let r of new_posts_replacers) {
+					r.replace(post);
+				}
+				main.fixPostDate(post);
+				main.fixRedirect(post);
+				// TODO: кнопки модерирования на новых постах
+			});
+			$('#watchlist').css('width', '20%');
+		}
+
+		main.fixThread();
+		main.fixCatalog();
+
+		// перевод страниц
+		replacer.process("main");
+		replacer.clear("main");
+	},
+
+	// ----------------------------------------------------
+	timeLocaleString: function(time)
+	// ----------------------------------------------------
 	{
-		wf.actually_load_captcha(provider, extra);
-		for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
-			el.value = "";
-	};
+		// форматирование даты (time - объект Date)
+		return (time.toLocaleDateString() + " (" + main.ru.days[time.getDay()] + ") " + time.toLocaleTimeString());
+	},
+	
+	// ----------------------------------------------------
+	fixPostDate: function(element) 
+	// ----------------------------------------------------
+	{
+		// дата и время постов (перевод + коррекция)
+		for(let el of (element ? element : document).querySelectorAll("p.intro time"))
+		{
+			var t = new Date(el.getAttribute("datetime"));
+			t.setTime(t.getTime() + TIME_CORR);
+			el.innerText = main.timeLocaleString(t);
+		}
+	},
 
-	replacer.process("main");
-	replacer.clear("main");
-}
+	// ----------------------------------------------------
+	fixRedirect: function(element)
+	// ----------------------------------------------------
+	{
+		// удаление редиректа для внешних ссылок
+		let url="http://privatelink.de/?";
+		for(let el of (element ? element : document).querySelectorAll('a[href^="'+url+'"]'))
+			el.setAttribute("href", el.getAttribute("href").substr(url.length));
+	},
 
-if (document.addEventListener) {
-	document.addEventListener("DOMContentLoaded", onDocReady, false);
-} else if (document.attachEvent) {
-	document.attachEvent("onreadystatechange", onDocReady);
-}
+	// ----------------------------------------------------
+	fixThread: function()
+	// ----------------------------------------------------
+	{
+		// фиксы для любой доски/треда
+		if(!main.url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/))
+			return;
 
-console.log("Improved Brchan Russifikator started");
-console.debug("URL:", url);
+		main.fixPostDate(); // добавить дату постов в тредах
+		main.fixRedirect(); // удаление редиректов 
+
+		// Перемещает изображения в ОП посте в сам пост
+		for(let thread of document.querySelectorAll('div.thread')) {
+			let files = thread.getElementsByClassName('files')[0];
+			if(typeof files == 'undefined' || !files.hasChildNodes()) {
+				continue;
+			}
+
+			let body = thread.getElementsByClassName('body')[0];
+
+			if(files.childNodes.length > 3) {
+				files.style.display = 'inline-block';
+			}
+			else {
+				body.style.overflow = 'auto';
+			}
+
+			for(i of files.getElementsByClassName('post-image')) {
+				i.style.margin = '0';
+			}
+
+			body.parentNode.insertBefore(files, body);
+		}
+
+		// Переместить ответы вниз поста
+		for(let post of document.querySelectorAll('div.post')) {
+			let replies = post.getElementsByClassName('mentioned')[0];
+			
+			if(typeof replies == 'undefined') {
+				continue;
+			}
+
+			let div = document.createElement('div');
+			div.className = 'mentioned unimportant';
+			div.innerText = 'Ответы: ';
+			div.style.margin = '10px 4px 4px 0px';
+			div.style.display = 'inline-block';
+			div.appendChild(replies);
+
+			post.appendChild(div);
+		}
+	},
+
+	// ----------------------------------------------------
+	fixCatalog: function()
+	// ----------------------------------------------------
+	{
+		// фиксы для каталога тредов
+		if(!main.url.match(/^\w+\/catalog\.html/))
+			return;
+
+		var t;
+		for(let el of document.querySelectorAll("div.mix")) 
+		{
+			if(!(t = el.getAttribute("data-time"))) // дата создания
+				continue;
+			t = new Date(t*1000 - 3600000);
+			if(!(el = el.querySelector("strong"))) 
+				continue;
+			el.innerHTML = el.innerHTML + "<br><small>"+ main.timeLocaleString(t); + "</small>";
+		}
+	},
+
+	// ----------------------------------------------------
+	init: function()
+	// ----------------------------------------------------
+	{
+		console.log("Improved Brchan Russifikator started");
+		console.debug("URL:", main.url);
+
+		if (document.addEventListener) {
+			document.addEventListener("DOMContentLoaded", main.onDocReady, false);
+		} else if (document.attachEvent) {
+			document.attachEvent("onreadystatechange", main.onDocReady);
+		}
+	}
+} // main
+
+
+main.init();
+
+
