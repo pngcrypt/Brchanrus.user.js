@@ -1276,7 +1276,22 @@ var doIt = function() {
 		$('#watchlist').css('width', '20%');
 	}
 
-	if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) fixPostDate(); // добавить дату постов в тредах
+	if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) {
+		fixPostDate(); // добавить дату постов в тредах
+
+		// Перемещает изображения в ОП посте в сам пост
+		for(let thread of document.querySelectorAll('div.thread')) {
+			let files = thread.getElementsByClassName('files')[0];
+			if(!files.hasChildNodes()) {
+				continue;
+			}
+			if(files.childNodes.length > 3) {
+				files.style.display = 'inline-block';
+			}
+			let body = thread.getElementsByClassName('body')[0];
+			body.parentNode.insertBefore(files, body);
+		}
+	}
 
 	// добавить дату создания треда в каталоге
 	var t;
