@@ -1286,10 +1286,20 @@ var doIt = function() {
 			if(typeof files == 'undefined' || !files.hasChildNodes()) {
 				continue;
 			}
+
+			let body = thread.getElementsByClassName('body')[0];
+
 			if(files.childNodes.length > 3) {
 				files.style.display = 'inline-block';
 			}
-			let body = thread.getElementsByClassName('body')[0];
+			else {
+				body.style.overflow = 'auto';
+			}
+
+			for(i of files.getElementsByClassName('post-image')) {
+				i.style.margin = '0';
+			}
+
 			body.parentNode.insertBefore(files, body);
 		}
 
@@ -1302,7 +1312,7 @@ var doIt = function() {
 			}
 
 			let div = document.createElement('div');
-			div.className = 'mentioned';
+			div.className = 'mentioned unimportant';
 			div.innerText = 'Ответы: ';
 			div.style.margin = '10px 4px 4px 0px';
 			div.style.display = 'inline-block';
