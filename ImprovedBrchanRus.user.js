@@ -3,7 +3,7 @@
 // @version         1.0.0
 // @namespace       https://brchan.org/*
 // @run-at          document-start
-// @grant			none
+// @grant           none
 // @include         https://brchan.org/*
 // @include         http://brchan.org/*
 // @include         https://www.brchan.org/*
