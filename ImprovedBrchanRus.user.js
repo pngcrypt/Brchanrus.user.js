@@ -742,6 +742,16 @@ replacer.cfg["alert"] = [
 ];
 
 // ==============================================================================================
+// перевод новых постов
+// ==============================================================================================
+replacer.cfg["new_post"] = [
+	['', [
+		['css', 'span.name', 'Аноним'],
+		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: ']
+	]]
+];
+
+// ==============================================================================================
 // переменные локализации (для скриптов: настройки, быстрый ответ, и т.п.) 
 // ==============================================================================================
 var l10n_rus = {
@@ -1015,16 +1025,13 @@ replacer.dbgMsg = function()
 }
 
 // ----------------------------------------------------
-replacer.process = function(cfg, options)
+replacer.process = function(cfg, element, debug)
 // ----------------------------------------------------
 {
 	/* 
 	произвести замену с использованием конфига с именем cfg
-		options - объект доп. опций (не обязательно):
-		options = {
-			element: el, // родительский элемент, по умолчанию document
-			debug: bool, // включить отладку конфига (true/false)
-		}
+		element - родительский элемент, по умолчанию document
+		debug - включить отладку конфига (true/false)
 	*/
 	
 	if(!this.cfg[cfg]) {
@@ -1033,8 +1040,7 @@ replacer.process = function(cfg, options)
 	}
 
 	let perf = performance.now();
-	if(!options) options={};
-	let element = options.element || document;
+	if(!element) element = document;
 
 	// в this.instance[] хранится кол-во запусков для каждого конфига (нужно для regex в частности)
 	if(!this.instance) this.instance = [];
@@ -1056,7 +1062,7 @@ replacer.process = function(cfg, options)
 
 		this.dbgMsg("URL-Match:", u[0]);
 
-		debug = !!(this.debug && (u[2] || options.debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
+		debug = !!(this.debug && (u[2] || debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
 
 		// перебор реплейсеров группы
 		for(let r of u[1]) 
@@ -1296,7 +1302,7 @@ var main = {
 		window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
 		{
 			msg = {text: msg};
-			replacer.process("alert", {element: msg});
+			replacer.process("alert", msg);
 
 			//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 			main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
@@ -1315,9 +1321,7 @@ var main = {
 		{
 			// перевод новых постов
 			$(document).on('new_post', function(e, post) {
-				for(let r of new_posts_replacers) {
-					r.replace(post);
-				}
+				replacer.process("new_post", post);
 				main.fixPostDate(post);
 				main.fixRedirect(post);
 				// TODO: кнопки модерирования на новых постах
