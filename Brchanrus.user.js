@@ -1278,11 +1278,12 @@ var doIt = function() {
 
 	if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) {
 		fixPostDate(); // добавить дату постов в тредах
-
+		fixRedirect(); // удаление редиректов 
+		
 		// Перемещает изображения в ОП посте в сам пост
 		for(let thread of document.querySelectorAll('div.thread')) {
 			let files = thread.getElementsByClassName('files')[0];
-			if(!files.hasChildNodes()) {
+			if(typeof files == 'undefined' || !files.hasChildNodes()) {
 				continue;
 			}
 			if(files.childNodes.length > 3) {
@@ -1292,11 +1293,11 @@ var doIt = function() {
 			body.parentNode.insertBefore(files, body);
 		}
 
-		// Ответы вниз поста
-		for(post of document.querySelectorAll('div.post')) {
+		// Переместить ответы вниз поста
+		for(let post of document.querySelectorAll('div.post')) {
 			let replies = post.getElementsByClassName('mentioned')[0];
 			
-			if(typeof replies == 'undefined') {
+			if(typeof replies == 'undefined' || !files.hasChildNodes()) {
 				continue;
 			}
 
@@ -1322,8 +1323,6 @@ var doIt = function() {
 			continue;
 		el.innerHTML = el.innerHTML + "<br><small>"+ t.toLocaleDateString() + " (" + wf.days[t.getDay()] + ") " + t.toLocaleTimeString() + "</small>";
 	}
-
-	fixRedirect(); // удаление редиректов 
 
 	// перевод сообщений
 	wf.alert = window.alert;
