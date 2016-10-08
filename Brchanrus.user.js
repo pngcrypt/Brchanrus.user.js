@@ -333,7 +333,7 @@ var cfg = [
 	[/^mod\.php\b/, [
 		['reg', 'head > title', ['Login', 'Вход']],
 		['reg', 'header > h1', ['Login', 'Вход']],
-		['reg', 'table > tbody > tr > th', [
+		['reg', 'body > form > table:nth-child(1) th', [
 			['Usuário', 'Логин'],
 			['Senha', 'Пароль']
 		]],
@@ -429,12 +429,14 @@ var cfg = [
 		['reg', 'header > h1', ['Configuração da board', 'Настройки доски']],
 		['css', 'body > p', 'Внимание: Некоторые изменения не вступят в силу до тех пор, пока не будет написан новый пост на доске.'],
 
-		['reg', 'table > tbody > tr > td', ['não pode ser alterado', 'нельзя изменить']],
-
-		['reg', 'form > table > tbody > tr > th', [
+		['reg', 'form > table:nth-child(2) th', [
 			['URI', 'URL'],
 			['Título', 'Название'],
-			['Subtítulo', 'Описание'],
+			['Subtítulo', 'Описание']
+		]],
+		['reg', 'form > table tr:nth-child(1) > td', ['não pode ser alterado', 'нельзя изменить']],
+
+		['reg', 'form > table:nth-child(5) th', [
 			['Tipo de board', 'Тип доски'],
 			[/^Imagens personalizadas(.+)Marcando essa.+/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', RE_INNER],
 			['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
@@ -466,25 +468,29 @@ var cfg = [
 			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
 			[/^Permitir que o OP poste arquivos(.+)Não se aplica a imagens/, 'Разрешить прикреплять файлы к ОП-посту$1Не относится к изображениям', RE_INNER],
 			['Manter o nome original do arquivo', 'Показывать оригинальное имя файла'],
-			['Limite de imagens por post', 'Максимальное количество изображений в посте'],
+			['Limite de imagens por post', 'Максимальное количество изображений в посте']
+		]],
 
+		['reg', 'form > table:nth-child(8) th', [
 			['Configurações de spam', 'Настройки антиспама', RE_INNER],
 			[/^Deletar threads sem movimento antecipadamente(.+)Com isso ativo\D+(\d+)\D+(\d+)\D+(\d+).+/, 'Фиксированный список тредов$1При включении этой опции треды, в которых меньше $2 постов при достижении $3 страницы<br>будут перемещены на $4 страницу', RE_INNER],
-			[/^Limitar números de threads por hora(.+)Serão permitidos.+/, 'Лимит тредов в час$1Количество создаваемых тредов в час, не влияет на количество постов', RE_INNER],
-
+			[/^Limitar números de threads por hora(.+)Serão permitidos.+/, 'Лимит тредов в час$1Количество создаваемых тредов в час, не влияет на количество постов', RE_INNER]
+		]],
+		['reg', 'form > table:nth-child(13) th', [
 			['Nome padrão nas postagens', 'Имя по умолчанию'],
 			['Anúncio da board', 'Объявления для пользователей'],
+			[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', RE_INNER]
+		]],
+		['reg', 'form > table:nth-child(13) + p', [/A criação ou edição do seu tema.+/, 'После создания и редактирования вашей темы может потребоваться несколько часов, чтобы изменения вступили в силу (из-за cloudflare)']],
 
-			[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', RE_INNER],
-
+		['reg', 'form > table#wf th', [
 			['Filtros', 'Фильтры'],
 			['Substituir', 'Замещать:'],
 			['Por', 'На:'],
-
+		]],
+		['reg', 'form > table#tags th', [
 			['Tags', 'Тэги'],
-			['Descrição', 'Описание'],
-
-			[]
+			['Descrição', 'Описание']
 		]],
 
 		// Тип доски
@@ -514,7 +520,6 @@ var cfg = [
 			['Editar voluntários', 'Редактировать модераторов'],
 			['Editar tags', 'Редактировать тэги']
 		]],
-		['reg', 'body > form > p', [/A criação ou edição do seu tema.+/, 'После создания и редактирования вашей темы может потребоваться несколько часов, чтобы изменения вступили в силу (из-за cloudflare)']],
 		
 		[]
 	]],
