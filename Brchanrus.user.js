@@ -1279,7 +1279,7 @@ var doIt = function() {
 	if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) {
 		fixPostDate(); // добавить дату постов в тредах
 		fixRedirect(); // удаление редиректов 
-		
+
 		// Перемещает изображения в ОП посте в сам пост
 		for(let thread of document.querySelectorAll('div.thread')) {
 			let files = thread.getElementsByClassName('files')[0];
@@ -1297,7 +1297,7 @@ var doIt = function() {
 		for(let post of document.querySelectorAll('div.post')) {
 			let replies = post.getElementsByClassName('mentioned')[0];
 			
-			if(typeof replies == 'undefined' || !files.hasChildNodes()) {
+			if(typeof replies == 'undefined') {
 				continue;
 			}
 
