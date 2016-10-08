@@ -1291,6 +1291,24 @@ var doIt = function() {
 			let body = thread.getElementsByClassName('body')[0];
 			body.parentNode.insertBefore(files, body);
 		}
+
+		// Ответы вниз поста
+		for(post of document.querySelectorAll('div.post')) {
+			let replies = post.getElementsByClassName('mentioned')[0];
+			
+			if(typeof replies == 'undefined') {
+				continue;
+			}
+
+			let div = document.createElement('div');
+			div.className = 'mentioned';
+			div.innerText = 'Ответы: ';
+			div.style.margin = '10px 4px 4px 0px';
+			div.style.display = 'inline-block';
+			div.appendChild(replies);
+
+			post.appendChild(div);
+		}
 	}
 
 	// добавить дату создания треда в каталоге
