@@ -708,6 +708,25 @@ replacer.cfg["main"] = [
 ];
 
 // ==============================================================================================
+// окно алертов
+// ==============================================================================================
+replacer.cfg["alert"] = [
+	['', [
+		['str', 'Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'],
+		['str', 'Você errou o codigo de verificação', 'Неверно введен код капчи'],
+		['str', 'O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'],
+		['str', 'Você errou o codigo de verificação', 'Введите сообщение'],
+		['str', 'Flood detectado; Sua mensagem foi descartada', 'Ошибка постинга: Вы постите слишком быстро'],
+		['str', 'Seu browser enviou uma referência HTTP inválida ou inexistente', 'Ваш браузер послал неверный referer или он отсутствует в заголовке HTTP'],
+		['str', 'IP Blocked - Please check', 'IP Заблокирован - проверьте на:'],
+		['str', 'Extensão de arquivo desconhecida', 'Неизвестный тип файла'],
+		['str', 'Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'],
+		['str', 'É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'],
+		['str', /(O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!)/, 'Файл уже был загружен в <a href="$2">этом треде!</a>'],
+	]]
+];
+
+// ==============================================================================================
 // replacer functions
 // ==============================================================================================
 replacer.dMsg = function()
@@ -734,12 +753,16 @@ replacer.process = function(cfg, options)
 		return;
 	}
 
+	if(!options) options={};
+	let element = options.element || document;
+
 	// в this.instance[] хранится кол-во запусков для каждого конфига (нужно для regex в частности)
 	if(!this.instance) this.instance = [];
 	if(!this.instance[cfg]) this.instance[cfg] = 0;
 	this.instance[cfg]++; 
 	let instance = this.instance[cfg];
 
+	if(this.debug) console.group(cfg+": ", element);
 	for(let u of this.cfg[cfg])
 	{
 		// перебор всех групп url в заданном конфиге
@@ -750,7 +773,8 @@ replacer.process = function(cfg, options)
 			continue;
 		}
 		if(!url.match(u[0])) continue; // проверка url
-		this.dMsg("Used:", u[0]);
+
+		this.dMsg("URL-Match:", u[0]);
 
 		debug = !!(this.debug && (u[2] || options.debug));
 
@@ -769,19 +793,22 @@ replacer.process = function(cfg, options)
 				this.dMsg('ERROR: NO Replacer function for: [', cfg, "]:", r);
 				continue;
 			}
-			if(debug) console.group(r[1]);
 
 			// вызов функции реплейсера
-			let err = this[fn](options.element ? options.element : document, r, instance, debug);
+			let err = this[fn](element, r, instance, debug);
 
-			if(debug) console.groupEnd();
+			//if(debug) console.groupEnd();
 			if(err < 0)
 			{
 				this.dMsg("ERROR: Syntax3"+err+": [", cfg, "]:", r);
 				continue;
 			}
+			else if(err) {
+				break;
+			}
 		}
 	}
+	if(this.debug) console.groupEnd();
 }
 
 // ----------------------------------------------------
@@ -809,7 +836,9 @@ replacer.clear = function(cfg)
  	debug - true/false - включена ли отладка для данной группы реплейсеров
 
 возвращаемые значения:
-	<0 : ошибка во входных параметрах (в консоль выдаст сообщения со строкой конфига)
+	= 0 : нормальное завершение
+	< 0 : ошибка во входных параметрах (в консоль выдаст сообщения со строкой конфига)
+	> 0 : прервать перебор реплейсеров для текущего url-regex
 */ 
 
 // ----------------------------------------------------
@@ -891,7 +920,7 @@ replacer.regReplacer = function(el, p, instance, debug)
 
 	for(let e of el.querySelectorAll(p[1]))
 	{
-		if(debug) this.dMsg(" \nREG_ELM:", e);			 
+		if(debug) this.dMsg(" \nELM:", e);			 
 		let re_cnt = 0; // кол-во активных regex (не сработавших)
 		let dobreak = false;
 		let dmsg = "";
@@ -931,23 +960,65 @@ replacer.regReplacer = function(el, p, instance, debug)
 			else 
 				dmsg = ": NOT FOUND";
 
-			if(debug) this.dMsg("REG_FND:",  [a[0], a[1]], dmsg);
+			if(debug) this.dMsg("FND:",  [a[0], a[1]], dmsg);
 		} // for a
 		if(re_cnt < 1)
 		{
 			// прекращаем перебор элементов, т.к. не осталось активных regex
-			if(debug) this.dMsg("REG_STOP");
+			if(debug) this.dMsg("STOP");
 			break;
 		}
 	} // for e
 }
 
+// ----------------------------------------------------
+replacer.strReplacer = function(el, p, instance, debug)
+// ----------------------------------------------------
+{
+	// реплейсер текста в переданном элементе el
+	// p=["str", regex, text]
+
+	if(p.length<3)
+		return -1;
+
+	if(el.text.match(p[1])) {
+		el.text = el.text.replace(p[1], p[2]);
+		if(debug) this.dMsg("FND:", p, ": FOUND\nBREAK");
+		return 1;
+	}
+	if(debug) this.dMsg("FND:", p, ": NOT FOUND");
+}
+
 // ==============================================================================================
 // ==============================================================================================
+// ==============================================================================================
+var wf = {}; // для хранения переопределенных оригинальных ф-ций window
+wf.days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
 function onDocReady()
 {
-	console.debug("URL:", url);
-	replacer.process("main", {debug: RE_DEBUG});
+
+	// перевод сообщений
+	wf.alert = window.alert;
+	window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
+	{
+		msg = {text: msg};
+		replacer.process("alert", {element: msg, debug:true});
+
+		//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+		wf.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+	};
+
+	// очистка поля капчи при обновлении
+	wf.actually_load_captcha = window.actually_load_captcha;
+	window.actually_load_captcha = function(provider, extra)
+	{
+		wf.actually_load_captcha(provider, extra);
+		for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+			el.value = "";
+	};
+
+	replacer.process("main");
 	replacer.clear("main");
 }
 
@@ -958,3 +1029,4 @@ if (document.addEventListener) {
 }
 
 console.log("Improved Brchan Russifikator started");
+console.debug("URL:", url);
