@@ -736,8 +736,8 @@ replacer.cfg["mod_buttons"] = [
 		], [RE_INNER, RE_MULTI, RE_NOBREAK]],
 
 		[]
-	]],
-]],
+	]]
+];
 
 // ==============================================================================================
 // окно алертов
@@ -1381,18 +1381,17 @@ var main = {
 			// перевод новых постов
 			$(document).on('new_post', function(e, post) {
 				replacer.process("new_post", post, false);
-				replacer.process("mod_buttons", post, true);
+				replacer.process("mod_buttons", post, false);
 				main.fixPostDate(post);
 				main.fixRedirect(post);
 				main.moveReplies();
-				// TODO: кнопки модерирования на новых постах
 			});
 			$('#watchlist').css('width', '30%');
 		}
 
 		// перевод страниц
 		replacer.process("main", document, false);
-		replacer.process("mod_buttons", document, true);
+		replacer.process("mod_buttons", document, false);
 		replacer.clear("main");
 
 		main.fixThread();
