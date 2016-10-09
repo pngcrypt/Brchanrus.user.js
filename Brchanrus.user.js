@@ -1346,7 +1346,7 @@ var main = {
 	ru: {
 		days: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 	},
-	url: document.URL.replace(/https?:\/\/[^/]+\/(.*)/, "$1"), // текущий URL страницы (без протокола и домена)
+	url: window.location.pathname.substr(1) + window.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
 
 	// ----------------------------------------------------
 	onDocReady: function() 
@@ -1480,7 +1480,7 @@ var main = {
 		// кнопка поиска
 		replacer.process("search_cat");
 		document.addEventListener("click", function() {
-			replacer.process("search_cat", this.parentNode);
+			replacer.process("search_cat");
 		});
 	},
 
