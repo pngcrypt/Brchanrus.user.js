@@ -766,6 +766,18 @@ replacer.cfg["new_post"] = [
 ];
 
 // ==============================================================================================
+// кнопка поиска в каталоге
+// ==============================================================================================
+replacer.cfg["search_cat"] = [
+	['', [
+		['reg', 'a#catalog_search_button', [
+			['Close', 'Закрыть'],
+			['Search', 'Искать']
+		]]
+	]]
+]
+
+// ==============================================================================================
 // переменные локализации (для скриптов: настройки, быстрый ответ, и т.п.) 
 // ==============================================================================================
 var l10n_rus = {
@@ -1372,13 +1384,12 @@ var main = {
 			$('#watchlist').css('width', '20%');
 		}
 
-		main.fixThread();
-		main.fixCatalog();
-
 		// перевод страниц
-		//replacer.process("main");
 		replacer.process("main", document, false);
 		replacer.clear("main");
+
+		main.fixThread();
+		main.fixCatalog();
 	},
 
 	// ----------------------------------------------------
@@ -1465,6 +1476,12 @@ var main = {
 				continue;
 			el.innerHTML = el.innerHTML + "<br><small>"+ main.timeLocaleString(t); + "</small>";
 		}
+
+		// кнопка поиска
+		replacer.process("search_cat");
+		document.addEventListener("click", function() {
+			replacer.process("search_cat", this.parentNode);
+		});
 	},
 
 	// ----------------------------------------------------
