@@ -1450,24 +1450,6 @@ var main = {
 
 			body.parentNode.insertBefore(files, body);
 		}
-
-		// Переместить ответы вниз поста
-		for(let post of document.querySelectorAll('div.post')) {
-			let replies = post.getElementsByClassName('mentioned')[0];
-			
-			if(typeof replies == 'undefined') {
-				continue;
-			}
-
-			let div = document.createElement('div');
-			div.className = 'mentioned unimportant';
-			div.innerText = 'Ответы: ';
-			div.style.margin = '10px 4px 4px 0px';
-			div.style.display = 'inline-block';
-			div.appendChild(replies);
-
-			post.appendChild(div);
-		}
 	},
 
 	// ----------------------------------------------------
@@ -1504,6 +1486,5 @@ var main = {
 		}
 	}
 } // main
-
 
 main.init();
