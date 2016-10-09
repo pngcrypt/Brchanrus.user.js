@@ -1016,19 +1016,20 @@ var l10n_rus = {
 	"":""
 };
 
-Object.defineProperty(window, "l10n", {
-	get: function() {
-		return l10n_rus;
-	},
-	set: function(value){}
-});
-
 // ==============================================================================================
 // replacer functions
 // ==============================================================================================
-replacer.dbgMsg = function()
+replacer.dbgMsg = function() 
 {
+	// глобальные отладочные сообщения
 	if(!this.debug) return;
+	console.debug.apply(this, arguments); // вывести в консоль переданные параметры
+}
+
+replacer.dbgMsgLocal = function()
+{
+	// локальные отладочные сообщения (для текущей группы url-regex, вызывать из ф-ций реплейсеров)
+	if(!this.debugLocal) return;
 	console.debug.apply(this, arguments); // вывести в консоль переданные параметры
 }
 
@@ -1054,12 +1055,12 @@ replacer.process = function(cfg, element, debug)
 	if(!this.instance) this.instance = [];
 	if(!this.instance[cfg]) this.instance[cfg] = 0;
 	this.instance[cfg]++; 
-	let instance = this.instance[cfg];
+	this.instanceLocal = this.instance[cfg]; // кол-во запусков текущего конфига
 
 	if(this.debug) console.group("["+cfg+"]: ", element);
 	for(let u of this.cfg[cfg])
 	{
-		// перебор всех групп url в заданном конфиге
+		// перебор всех групп url-regex в заданном конфиге
 		if(!u.length) continue; // empty
 		if(u.length < 2 || !Array.isArray(u[1])) // проверка параметров
 		{
@@ -1070,7 +1071,7 @@ replacer.process = function(cfg, element, debug)
 
 		this.dbgMsg("URL-Match:", u[0]);
 
-		let dodebug = (this.debug && (u[2] || debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
+		this.debugLocal = (this.debug && (u[2] || debug)); // отладка для текущего url-regex
 
 		// перебор реплейсеров группы
 		for(let r of u[1]) 
@@ -1089,7 +1090,7 @@ replacer.process = function(cfg, element, debug)
 			}
 
 			// вызов функции реплейсера
-			let err = this[fn](element, r, instance, dodebug);
+			let err = this[fn](element, r);
 
 			if(err < 0)
 			{
@@ -1111,7 +1112,7 @@ replacer.clear = function(cfg)
 	// очистка заданного конфига
 	if(!this.cfg[cfg]) return;
 	this.cfg[cfg] = [];
-	this.instance[cfg]  = undefined;
+	this.instance[cfg]  = 0;
 }
 
 // ----------------------------------------------------
@@ -1151,14 +1152,12 @@ replacer.reOpt = function(arr, def)
  ФУНКЦИИ РЕПЛЕЙСЕРОВ 
  для каждого типа реплейсера должна быть определена функция вида:
  
- replacer.<type>Repacler = function(el, params, instance, debug) {...}
+ replacer.<type>Repacler = function(el, params) {...}
 
  где 
  	<type> - тип реплейсера (css, txt, reg и т.п.)
  	el - родительский элемент, в котором нужно производить поиск
  	params - массив параметров (из конфига) ["type", "css-selector", ....]  // type - тип реплейсера, дальше - параметры
- 	instance - номер текущего запуска данного конфига
- 	debug - true/false - включена ли отладка для данной группы реплейсеров
 
 возвращаемые значения:
 	= 0 : нормальное завершение
@@ -1167,7 +1166,7 @@ replacer.reOpt = function(arr, def)
 */ 
 
 // ----------------------------------------------------
-replacer.cssReplacer = function(el, p, instance, debug)
+replacer.cssReplacer = function(el, p)
 // ----------------------------------------------------
 {
 	// реплейсер текста по селектору
@@ -1181,7 +1180,7 @@ replacer.cssReplacer = function(el, p, instance, debug)
 
 
 // ----------------------------------------------------
-replacer.attReplacer = function(el, p, instance, debug)
+replacer.attReplacer = function(el, p)
 // ----------------------------------------------------
 {
 	// реплейсер атрибутов
@@ -1194,7 +1193,7 @@ replacer.attReplacer = function(el, p, instance, debug)
 }
 
 // ----------------------------------------------------
-replacer.txtReplacer = function(el, p, instance, debug)
+replacer.txtReplacer = function(el, p)
 // ----------------------------------------------------
 {
 	// реплейсер текста дочерних узлов
@@ -1202,11 +1201,10 @@ replacer.txtReplacer = function(el, p, instance, debug)
 	if(p.length < 4)
 		return -1;
 
-	if(debug) console.group("TXT:", p[1]);
-	let worked = false;
+	let dbg1st = 0;
 	try {
-		for(let e of el.querySelectorAll(p[1])) 
-		{
+		for(let e of el.querySelectorAll(p[1])) {
+			if(!dbg1st++ && this.debugLocal) console.group("TXT:", p[1]);
 			let node;
 			switch(p[2]) {
 				case TYPE_FIRSTNODE: node = e.firstChild; break;
@@ -1214,18 +1212,17 @@ replacer.txtReplacer = function(el, p, instance, debug)
 			}
 			if(node)
 				node.textContent = p[3];
-			if(debug) this.dbgMsg(e, node ? ": REPLACED": ": NO NODE");
-			worked = true;
+			this.dbgMsgLocal(e, node ? ": REPLACED": ": NO NODE");
 		}
-		if(debug && !worked) this.dbgMsg("NOT FOUND");
+		//if(!worked) this.dbgMsgLocal("NOT FOUND");
 	} catch(err) {
-		this.dbgMsg("ERROR: Selector");
+		this.dbgMsg("ERROR: Selector", p);
 	}
-	if(debug) console.groupEnd();
+	if(dbg1st) console.groupEnd();
 }
 
 // ----------------------------------------------------
-replacer.regReplacer = function(el, p, instance, debug)
+replacer.regReplacer = function(el, p)
 // ----------------------------------------------------
 {
 	/* 
@@ -1253,7 +1250,7 @@ replacer.regReplacer = function(el, p, instance, debug)
 	try {
 	for(let e of el.querySelectorAll(p[1]))
 	{
-		if(debug) {
+		if(this.debugLocal) {
 			if(!dbg1st++) console.group("REG:", p[1]);
 			this.dbgMsg(" \nELM:", e);
 		}
@@ -1266,13 +1263,13 @@ replacer.regReplacer = function(el, p, instance, debug)
 				continue;
 			if(a.length < 2) // проверка параметров
 			{
-				if(debug) console.groupEnd();
+				if(this.debugLocal) console.groupEnd();
 				return -2;
 			}
 
-			if(!a[3] || a[3] < instance) // проверка на активный regex
+			if(!a[3] || a[3] < this.instanceLocal) // проверка на активный regex
 				re_cnt++;
-			if(dobreak || a[3] == instance)
+			if(dobreak || a[3] == this.instanceLocal)
 				continue; // продолжаем подсчет активных regex
 
 			let opt = replacer.reOpt(a[2], def_opt);
@@ -1284,7 +1281,7 @@ replacer.regReplacer = function(el, p, instance, debug)
 
 				if(opt.single)
 				{
-					a[3] = instance; // выставляем флаг сработавшего regex
+					a[3] = this.instanceLocal; // выставляем флаг сработавшего regex
 					re_cnt--;
 					dbgMsg += ": REMOVED";
 				}
@@ -1297,12 +1294,12 @@ replacer.regReplacer = function(el, p, instance, debug)
 			else 
 				dbgMsg = ": NOT FOUND";
 
-			if(debug) this.dbgMsg("FND:",  [a[0], a[1]], dbgMsg);
+			this.dbgMsgLocal("FND:",  [a[0], a[1]], dbgMsg);
 		} // for a
 		if(re_cnt < 1)
 		{
 			// прекращаем перебор элементов, т.к. не осталось активных regex
-			if(debug) this.dbgMsg("STOP");
+			this.dbgMsgLocal("STOP");
 			break;
 		}
 	} // for e
@@ -1313,10 +1310,10 @@ replacer.regReplacer = function(el, p, instance, debug)
 }
 
 // ----------------------------------------------------
-replacer.strReplacer = function(el, p, instance, debug)
+replacer.strReplacer = function(el, p)
 // ----------------------------------------------------
 {
-	// реплейсер текста в переданном элементе объекте el (el.text)
+	// реплейсер текста в переданном объекте el {text}
 	// p=["str", regex, text]
 
 	if(p.length<3)
@@ -1382,7 +1379,7 @@ var main = {
 
 		// перевод страниц
 		//replacer.process("main");
-		replacer.process("main", document, false);
+		replacer.process("main", document, RE_DEBUG);
 		replacer.clear("main");
 	},
 
@@ -1478,6 +1475,14 @@ var main = {
 	{
 		console.log("Improved Brchan Russifikator started");
 		console.debug("URL:", main.url);
+
+		// замена бразильской локализации
+		Object.defineProperty(window, "l10n", {
+			get: function() {
+				return l10n_rus;
+			},
+			set: function(value){}
+		});
 
 		if (document.addEventListener) {
 			document.addEventListener("DOMContentLoaded", main.onDocReady, false);
