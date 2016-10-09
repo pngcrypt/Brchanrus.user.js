@@ -1379,7 +1379,7 @@ var main = {
 
 		// перевод страниц
 		//replacer.process("main");
-		replacer.process("main", document, RE_DEBUG);
+		replacer.process("main", document, false);
 		replacer.clear("main");
 	},
 
