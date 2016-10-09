@@ -11,6 +11,7 @@
 // @nocompat        Chrome
 // ==/UserScript==
 
+const TIME_CORR = 2 * 3600000; // коррекция даты постов (в мс)
 const TYPE_FIRSTNODE = 0;
 const TYPE_LASTNODE = 1;
 
@@ -59,7 +60,7 @@ replacer.cfg["main"] = [
 		['css', 'body > div > a[title="Opções"]', '[Настройки]'],
 
 		// Техобслуживание
-		['reg', 'body > div:nth-child(1) > span', [
+		['reg', 'body > div:nth-child(1) > span:not([class])', [
 			['BRchan em manutenção', 'Техобслуживание BRchan'],
 			['O Bananal está em manutenção e deve voltar em breve', 'Бананал закрыт на техническое обслуживание и вернется в ближайшее время']
 		]],
@@ -73,7 +74,7 @@ replacer.cfg["main"] = [
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
 			['Responder', 'Ответить']
-		], [RE_TEXT, RE_MULTI]],
+		], [RE_MULTI]],
 		['reg', 'div.options_tab > div > fieldset > legend', [
 			['Formatting Options', 'Опции форматирования'],
 			['Image hover', 'Всплывающие изображения']
@@ -129,7 +130,7 @@ replacer.cfg["main"] = [
 			['Anterior', 'Предыдущая'],
 			['Próxima', 'Следующая'],
 			['Catálogo', 'Каталог тредов']
-		], [RE_INNER, RE_SINGLE, RE_NOBREAK]],
+		], [RE_INNER, RE_NOBREAK]],
 
 		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', [RE_INNER, RE_MULTI]]],
 		['reg', 'div.post > span.omitted', [
@@ -234,8 +235,8 @@ replacer.cfg["main"] = [
 		]],
 
 		['reg', 'table.modlog > tbody > tr > td > span', [
-			[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов']
-			[/até (\d+) caracteres/, 'до $1 символов', [RE_TEXT, RE_MULTI]],
+			[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов'],
+			[/até (\d+) caracteres/, 'до $1 символов', [RE_MULTI]],
 			['letras, numeros, pontos e sublinhados', 'буквы, цифры, точки и подчеркивание'],
 			['senha para moderar a board, copie-a', 'пароль для модерирования, сохраните его'],
 			['opcional,serve para recuperar sua board', 'по желанию, служит для восстановления доски']
@@ -600,9 +601,12 @@ replacer.cfg["main"] = [
 			['Mensagem', 'Текст']
 		]],
 		['reg', 'table > tbody > tr:nth-child(2) > td', [
-			['minutos', 'мин'],
+			[/segundos?/, 'сек'],
+			[/minutos?/, 'мин'],
+			[/horas?/, 'ч'],
+			[/dias?/, 'дн'],
 			['ago', 'назад']
-		], [RE_INNER, RE_SINGLE, RE_NOBREAK]],
+		], [RE_INNER, RE_NOBREAK]],
 		['att', 'input[name="delete"]', 'value', 'Удалить'],
 		['reg', 'form > ul > li > a', ['Responder com citação', 'Ответить с цитированием']],
 	]],
@@ -641,6 +645,7 @@ replacer.cfg["main"] = [
 		['reg', 'head > title', ['Histórico da board', 'История событий']],
 		['reg', 'header > h1', ['Histórico da board', 'История событий доски']],
 		['reg', 'table.modlog > tbody > tr > th', [
+			['Usuário', 'Имя'],
 			['Endereço de IP', 'IP-адрес'],
 			['Tempo', 'Время'],
 			['Board', 'Доска'],
@@ -648,10 +653,10 @@ replacer.cfg["main"] = [
 		]],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', ['hidden', 'скрыт'], [RE_INNER, RE_MULTI]], // ip
 		['reg', 'table.modlog > tbody > tr > td:nth-child(3)', [ // время
-			['segundos', 'сек'],
+			[/segundos?/, 'сек'],
 			[/minutos?/, 'мин'],
 			[/horas?/, 'ч'],
-			['dia', 'дн']
+			[/dias?/, 'дн']
 		], [RE_INNER, RE_MULTI]],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия. хз надо ???
 			[/^Edited post/, 'Редактирование поста'],
@@ -1116,9 +1121,9 @@ replacer.reOpt = function(arr, def)
 
 	var opt = new Object();
 	if(typeof(def) != 'object')
-		opt={prop: RE_TEXT, single: true, dobreak: true};
+		opt={prop: RE_TEXT, single: true, break: true};
 	else
-		opt={prop: def.prop, single: def.single, dobreak: def.dobreak};
+		opt={prop: def.prop, single: def.single, break: def.break};
 	if(!Array.isArray(arr))
 		return opt;
 
@@ -1126,8 +1131,8 @@ replacer.reOpt = function(arr, def)
 		switch(o) {
 			case RE_SINGLE: opt.single = true; break;
 			case RE_MULTI: opt.single = false; break;
-			case RE_BREAK: opt.dobreak = true; break;
-			case RE_NOBREAK: opt.dobreak = false; break;
+			case RE_BREAK: opt.break = true; break;
+			case RE_NOBREAK: opt.break = false; break;
 			case RE_TEXT:
 			case RE_INNER:
 			case RE_OUTER:
@@ -1232,6 +1237,7 @@ replacer.regReplacer = function(el, p, instance, debug)
 	let def_opt = replacer.reOpt(p[3]);
 	let dbg1st = 0;
 
+	try {
 	for(let e of el.querySelectorAll(p[1]))
 	{
 		if(debug) {
@@ -1288,6 +1294,9 @@ replacer.regReplacer = function(el, p, instance, debug)
 		}
 	} // for e
 	if(dbg1st) console.groupEnd();	
+	} catch(err) {
+		this.dbgMsg("ERROR: Selector:", p);
+	}
 }
 
 // ----------------------------------------------------
