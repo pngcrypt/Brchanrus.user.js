@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name            Brchan Rusifikator
-// @version         3.2.9
+// @version         3.3
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
 // @run-at          document-start
-// @grant			none
+// @grant           none
 // @include         https://brchan.org/*
 // @include         http://brchan.org/*
 // @include         https://www.brchan.org/*
@@ -14,76 +14,43 @@
 // ==/UserScript==
 
 const TIME_CORR = 2 * 3600000; // коррекция даты постов (в мс)
-
 const TYPE_FIRSTNODE = 0;
 const TYPE_LASTNODE = 1;
 
-// типы замены для regex
+const RE_DEBUG = true;
+
+// типы замены по regex
 const RE_TEXT = 'textContent'; // текст внутри элемента [по умолчанию] (все тэги будут удалены)
 const RE_INNER = 'innerHTML'; // html код внутри элемента
 const RE_OUTER = 'outerHTML'; // hmtl код, включая найденный элемент
 
-// режимы поиска строк для regex
-const RE_SINGLE = 1; // однократный [по умолчанию] (заменяет первый удовлетворяющий элемент, после замены строка исключается из поиска)
+// режимы поиска строк по regex
+const RE_SINGLE = 1; // однократный [по умолчанию] (после замены regex исключается из дальнейшего поиска)
 const RE_MULTI = 2; // многократый (поиск во всех элементах)
 
+// режим прерывания поиска по regex
 const RE_BREAK = 11; // прерывать перебор на первом найденном regex [по умолчанию] (для текущего селектора)
 const RE_NOBREAK = 12; // перебирать все regex независимо от результата (для текущего селектора)
 
-const RE_DEBUG = true;
+var replacer = {cfg:[], debug:RE_DEBUG};
 
 if(!console.debug) console.debug = console.log || function(){};
+if(!console.group) 
+{
+	console.group = function() {
+		console.debug.apply(this, ["[+]",">>>"].concat(arguments));
+	}
+	console.groupEnd = function() {
+		console.debug('[-] <<<');
+	}
+}
 
-/* cfg = [
-	[ /url-regexp/, [
-		["replacer_type", "selector", <params>],
-		[.....]
-	], debug],
 
-	[.....]
-]
+// ==============================================================================================
+// основной конифг перевода
+// ==============================================================================================
+replacer.cfg["main"] = [
 
-	url-regexp: regex для проверки текущего url
-
-	replacer_type: тип поиска/замены:
-		css 
-		txt - inner text
-		att - attribute
-		reg - regexp
-
-	selector: css-селектор
-	<params> - дополнительные параметры, в зависимости от replacer_type
-	debug: включить отладку для заданной группы url-regexp (true/false)
-
-	["css", "selector", "replace_text"]
-	
-	["txt", "selector", node_type, "replace_text"]
-		node_type - тип ноды (потомка) внутри элемента: TYPE_FIRSTNODE, TYPE_LASTNODE
-
-	["att", "selector", "attr_name", "replace_text"]
-	
-	["reg", "selector", [regex, "replace_text", replace_type, replace_multi, break_type,]]
-
-	["reg", "selector", [regex, "replace_text"], def_replace_type, def_replace_multi, def_break_type]
-
-	["reg", "selector", [
-		[regex, "replace_text"], replace_type, replace_multi, break_type],
-		...
-		[regex, "replace_text"], replace_type, replace_multi, break_type]
-	], def_replace_type, def_replace_multi, def_break_type]
-
-	replace_type - тип замены для текущего правила [не обязательный]: (RE_TEXT [по умолчанию], RE_INNER, RE_OUTER), переопределяет def_replace_type
-	replace_multi - режим поиска для текущего правила [не обязательный]: (RE_SINGLE [по умолчанию] или RE_MULTI), переопределяет def_replace_multi
-	break_type - прерывать перебор regex при первом совпадении [не обязательный] (RE_BREAK [по умолчанию], RE_NOBREAK), переопределяет def_break_type
-
-	def_replace_type - тип замены по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_TEXT)
-	def_replace_multi - режим поиска по умолчанию [не обязательный] (для всех элементов, по умолчанию - RE_SINGLE)
-	def_break_type - тип прерывания по умолчанию [не обязательный] (RE_BREAK [по умолчанию], RE_NOBREAK)
-*/
-
-var cfg = [
-
-	// Общие переводы (для всех url)
 	[/^/, [
 		// Панель меню
 		['txt', 'div.boardlist > span > a[href="/"]', TYPE_LASTNODE, ' Главная'],
@@ -92,7 +59,14 @@ var cfg = [
 		['txt', 'div.boardlist > span > a[href="/create.php"]', TYPE_LASTNODE, ' Создать доску'],
 		['txt', 'div.boardlist > span > a[href="/mod.php"]', TYPE_LASTNODE, ' Админка'],
 		['txt', 'div.boardlist > span > a[href="/bugs.php"]', TYPE_LASTNODE, ' Сообщить об ошибке'],
+		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все'],
 		['css', 'body > div > a[title="Opções"]', '[Настройки]'],
+
+		// Техобслуживание
+		['reg', 'body > div:nth-child(1) > span:not([class])', [
+			['BRchan em manutenção', 'Техобслуживание BRchan'],
+			['O Bananal está em manutenção e deve voltar em breve', 'Бананал закрыт на техническое обслуживание и вернется в ближайшее время']
+		]],
 
 		[]
 	]],
@@ -103,13 +77,13 @@ var cfg = [
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
 			['Responder', 'Ответить']
-		], RE_TEXT, RE_MULTI],
+		], [RE_MULTI]],
 		['reg', 'div.options_tab > div > fieldset > legend', [
 			['Formatting Options', 'Опции форматирования'],
 			['Image hover', 'Всплывающие изображения']
 		]],
 
-		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', RE_INNER]], // ???
+		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]]], // ???
 		['reg', 'div.banner > a', [
 			['Voltar', 'Назад'],
 			['Ir ao rodapé', 'Вниз страницы']
@@ -144,28 +118,28 @@ var cfg = [
 
 		['reg', 'tr#oekaki > td > a', ['Mostrar oekaki', 'начать']],
 		['reg', 'table.post-table-options span.unimportant', [
-			['substitui arquivos', 'заменяет файл', RE_TEXT, RE_NOBREAK],
+			['substitui arquivos', 'заменяет файл', [RE_NOBREAK]],
 			['(para remover arquivos e mensagens)', '(для удаления файлов и сообщений)'],
 			['(você também pode escrever sage no e-mail)', '(вы также можете писать sage в поле опций)'],
 			['(isso substitui a miniatura da sua imagem por uma interrogação)', '(это заменяет превью вашего изображения знаком вопроса)']
 		]],
-		['reg', 'tr#options-row > td > div.no-bump-option > label', ['Não bumpar', 'Не поднимать тред (сажа)', RE_INNER]],
-		['reg', 'tr#options-row > td > div.spoiler-images-option > label', ['Imagem spoiler', 'Скрыть превью изображения', RE_INNER]],
+		['reg', 'tr#options-row > td > div.no-bump-option > label', ['Não bumpar', 'Не поднимать тред (сажа)', [RE_INNER]]],
+		['reg', 'tr#options-row > td > div.spoiler-images-option > label', ['Imagem spoiler', 'Скрыть превью изображения', [RE_INNER]]],
 
-		['reg', 'table.post-table-options  p.unimportant', [/Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', RE_INNER]],
+		['reg', 'table.post-table-options  p.unimportant', [/Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', [RE_INNER]]],
 
 		// Навигация по страницам
 		['reg', 'body > div.pages', [
 			['Anterior', 'Предыдущая'],
 			['Próxima', 'Следующая'],
 			['Catálogo', 'Каталог тредов']
-		], RE_INNER, RE_SINGLE, RE_NOBREAK],
+		], [RE_INNER, RE_NOBREAK]],
 
-		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', RE_INNER, RE_MULTI]],
+		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', [RE_INNER, RE_MULTI]]],
 		['reg', 'div.post > span.omitted', [
 			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 			[/(\d+) mensage.s? omitidas?.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
-		], RE_TEXT, RE_MULTI],
+		], [RE_MULTI]],
 
 		['css',	'a#thread-return',	'[Назад]'],
 		['css',	'a#thread-top',		'[Вверх]'],
@@ -184,7 +158,7 @@ var cfg = [
 		['reg', 'header > h1', [
 			['Erro', 'Ошибка'],
 			['Denúncia enviada', 'Жалоба отправлена']
-		], RE_INNER],
+		], [RE_INNER]],
 
 		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
 		['reg', 'body > div > h2', [
@@ -233,7 +207,7 @@ var cfg = [
 
 		// Панель поиска
 		['css', 'aside > form > h2', 'Поиск'],
-		['reg', 'aside > form label.search-item.search-sfw', ['Ocultar', 'Скрыть', RE_INNER]],
+		['reg', 'aside > form label.search-item.search-sfw', ['Ocultar', 'Скрыть', [RE_INNER]]],
 		['att', 'input#search-title-input', 'placeholder', 'Поиск названия...'],
 		['att', 'input#search-tag-input', 'placeholder', 'Поиск тэгов...'],
 		['css', 'button#search-submit', 'Искать'],
@@ -264,8 +238,8 @@ var cfg = [
 		]],
 
 		['reg', 'table.modlog > tbody > tr > td > span', [
-			[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов']
-			[/até (\d+) caracteres/, 'до $1 символов', RE_TEXT, RE_MULTI],
+			[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов'],
+			[/até (\d+) caracteres/, 'до $1 символов', [RE_MULTI]],
 			['letras, numeros, pontos e sublinhados', 'буквы, цифры, точки и подчеркивание'],
 			['senha para moderar a board, copie-a', 'пароль для модерирования, сохраните его'],
 			['opcional,serve para recuperar sua board', 'по желанию, служит для восстановления доски']
@@ -284,10 +258,10 @@ var cfg = [
 		['reg', 'body > div > p > a', ['Voltar', 'Назад']],
 
 		['reg', 'body > p', [
-			['Sua board foi criada e está disponível em', 'Ваша доска была создана и доступна по адресу', RE_INNER],
-			['Certifique-se de não esquecer a senha de sua board', 'Убедитесь в том, чтобы не забыть пароль к доске', RE_INNER],
-			['Você pode gerenciar sua board nessa página', 'Вы можете управлять вашей доской на этой странице', RE_INNER]
-		]],
+			['Sua board foi criada e está disponível em', 'Ваша доска была создана и доступна по адресу'],
+			['Certifique-se de não esquecer a senha de sua board', 'Убедитесь в том, чтобы не забыть пароль к доске'],
+			['Você pode gerenciar sua board nessa página', 'Вы можете управлять вашей доской на этой странице']
+		], [RE_INNER]],
 
 		[]
 	]],
@@ -324,7 +298,7 @@ var cfg = [
 			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
 			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
 			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
-		], RE_INNER, RE_MULTI, RE_NOBREAK],
+		], [RE_INNER, RE_MULTI, RE_NOBREAK]],
 
 		[]
 	]],
@@ -341,12 +315,12 @@ var cfg = [
 
 		// Панель уведомлений
 		['reg', 'body > div.top_notice:first-child', [
-			[/You have(.+)an unread PM/, 'У вас есть$1Новые сообщения', RE_INNER]
+			[/You have(.+)an unread PM/, 'У вас есть$1Новые сообщения', [RE_INNER]]
 		]],
 
 		// Ошибки
 		['reg', 'head > title', ['Erro', 'Ошибка']],
-		['reg', 'header > h1', ['Erro', 'Ошибка', RE_INNER]],
+		['reg', 'header > h1', ['Erro', 'Ошибка', [RE_INNER]]],
 		['reg', 'body > h2', [/Login e\/ou senha inválido\(s\)/, 'Неверный логин или пароль']],
 		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
 		['reg', 'body > div > h2', [
@@ -375,7 +349,7 @@ var cfg = [
 			['Boards', 'Доски'],
 			['Conta de usuário', 'Учетная запись']
 		]],
-		['reg', 'fieldset > ul > li', ['Quadro de noticias', 'Доска объявлений', RE_INNER]],
+		['reg', 'fieldset > ul > li', ['Quadro de noticias', 'Доска объявлений', [RE_INNER]]],
 		['reg', 'fieldset > ul > li > ul > li > a', ['Comunicado', 'Коммуникация']],
 		['reg', 'fieldset > ul > li > a', [
 			['Ver todas as noticias do quadro de noticias', 'Просмотр всех новостей'],
@@ -404,19 +378,19 @@ var cfg = [
 		['reg', 'header > h1', [/Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)']],
 		['att', 'h2.report-header > a', 'title', 'Перейти в тред'],
 		['reg', 'h2.report-header', [
-			[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1', RE_INNER],
-			[/thread repotado (\d+) vez\(es\)/, 'жалоб на тред: $1', RE_INNER]
-		]],
+			[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1'],
+			[/thread repotado (\d+) vez\(es\)/, 'жалоб на тред: $1']
+		], [RE_INNER]],
 
 		['reg', 'ul.report-actions > li.report-action > a', [
 			['Dismiss', 'Отклонить'],
 			['Promote', 'Принять']
-		], RE_TEXT, RE_MULTI],
+		], [RE_MULTI]],
 		// TODO: title для Dismiss/Promote
 
-		['reg', 'ul.report-content-actions > li.report-content-action', [/Descartar todas denúncias a esse conteúdo(.+)Dismiss All/, 'Отклонить все жалобы к этому посту$1Отклонить все', RE_INNER]],
-		['reg', 'ul.report-content-actions > li.report-action', [/Promover todas denúncias locais para globais(.+>)Promote All/, 'Передать все жалобы к этому посту в глобальные$1Принять все', RE_INNER]],
-		['reg', 'ul.report-content-actions > li.report-content-action', [/Clean(.+")Ignorar e descartar denúncias locais dessa mensagem nessa board/, 'Очистить$1Игнорировать и удалить все местные жалобы в этом треде', RE_INNER]], // "
+		['reg', 'ul.report-content-actions > li.report-content-action', [/Descartar todas denúncias a esse conteúdo(.+)Dismiss All/, 'Отклонить все жалобы к этому посту$1Отклонить все', [RE_INNER]]],
+		['reg', 'ul.report-content-actions > li.report-action', [/Promover todas denúncias locais para globais(.+>)Promote All/, 'Передать все жалобы к этому посту в глобальные$1Принять все', [RE_INNER]]],
+		['reg', 'ul.report-content-actions > li.report-content-action', [/Clean(.+)Ignorar e descartar denúncias locais dessa mensagem nessa board/, 'Очистить$1Игнорировать и удалить все местные жалобы в этом треде', [RE_INNER]]], // "
 
 		['reg', 'body > p.unimportant', ['Não há denúncias no momento', 'На данный момент никаких жалоб нет']],
 
@@ -438,48 +412,48 @@ var cfg = [
 
 		['reg', 'form > table:nth-child(5) th', [
 			['Tipo de board', 'Тип доски'],
-			[/^Imagens personalizadas(.+)Marcando essa.+/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', RE_INNER],
+			[/^Imagens personalizadas(.+)Marcando essa.+/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', [RE_INNER]],
 			['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
 			['Exigir que o OP poste uma imagem', 'При создании нового треда изображение обязательно'],
 			['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательна'],
 			['Mostrar IDs dos usuários', 'Показать ID пользователей'],
 			['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
 			[/^Desabilitar caracteres compostos.+/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
-			[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', RE_INNER],
-			[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', RE_INNER],
-			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', RE_INNER],
+			[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', [RE_INNER]],
+			[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', [RE_INNER]],
+			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', [RE_INNER]],
 			['Formatação matemática entre', 'Форматировать математику между'],
 			['Permitir upload de SWF', 'Разрешить загружать SWF'],
 			['Permitir upload de PDF', 'Разрешить загружать PDF'],
 			[/^Permitir rolar dados\(roll\)/, 'Разрешить бросить кости (roll)'],
-			['Proibir usuários de repostar imagens repetidas', 'Запретить отправлять повторяющиеся изображения', RE_TEXT, RE_MULTI, RE_NOBREAK],
+			['Proibir usuários de repostar imagens repetidas', 'Запретить отправлять повторяющиеся изображения', [RE_MULTI, RE_NOBREAK]],
 			['(em toda a board)', '(по всей доске)'],
 			['(no mesmo thread)', '(в том же треде)'],
 			['Permitir usuário deletar seu própro post', 'Разрешить пользователю удалить свой пост'],
 			['Permitir aos usuários ver se a thread está com o bump bloqueado', 'Разрешить просмотр треда после бамплимита'],
 			[/^Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
 			['Habilitar CAPTCHA apenas para criação de threads', 'Включить CAPTCHA, только для создания тредов'],
-			[/^Bans públicos(.+)Mostrar.+/, 'Публичные баны$1Показывать пользователей которых забанили другие пользователи', RE_INNER],
-			[/^Histórico de ações público(.+)Mostrar todas as ações ao público/, 'История общественных действий$1Показать все действия общественности', RE_INNER], // ???
+			[/^Bans públicos(.+)Mostrar.+/, 'Публичные баны$1Показывать пользователей которых забанили другие пользователи', [RE_INNER]],
+			[/^Histórico de ações público(.+)Mostrar todas as ações ao público/, 'История общественных действий$1Показать все действия общественности', [RE_INNER]], // ???
 			['Número máximo de linhas por post', 'Максимальное количество строк на пост'],
-			[/^Contador de páginas(.+)Número.+/, 'Счетчик страниц$1Максимальное количество страниц<br>Переходя за этот предел старые треды будут удалены', RE_INNER],
+			[/^Contador de páginas(.+)Número.+/, 'Счетчик страниц$1Максимальное количество страниц<br>Переходя за этот предел старые треды будут удалены', [RE_INNER]],
 			['Limite de bumps', 'Бамплимит'],
-			[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', RE_INNER],
+			[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', [RE_INNER]],
 			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
-			[/^Permitir que o OP poste arquivos(.+)Não se aplica a imagens/, 'Разрешить прикреплять файлы к ОП-посту$1Не относится к изображениям', RE_INNER],
+			[/^Permitir que o OP poste arquivos(.+)Não se aplica a imagens/, 'Разрешить прикреплять файлы к ОП-посту$1Не относится к изображениям', [RE_INNER]],
 			['Manter o nome original do arquivo', 'Показывать оригинальное имя файла'],
 			['Limite de imagens por post', 'Максимальное количество изображений в посте']
 		]],
 
 		['reg', 'form > table:nth-child(8) th', [
-			['Configurações de spam', 'Настройки антиспама', RE_INNER],
-			[/^Deletar threads sem movimento antecipadamente(.+)Com isso ativo\D+(\d+)\D+(\d+)\D+(\d+).+/, 'Фиксированный список тредов$1При включении этой опции треды, в которых меньше $2 постов при достижении $3 страницы<br>будут перемещены на $4 страницу', RE_INNER],
-			[/^Limitar números de threads por hora(.+)Serão permitidos.+/, 'Лимит тредов в час$1Количество создаваемых тредов в час, не влияет на количество постов', RE_INNER]
+			['Configurações de spam', 'Настройки антиспама', [RE_INNER]],
+			[/^Deletar threads sem movimento antecipadamente(.+)Com isso ativo\D+(\d+)\D+(\d+)\D+(\d+).+/, 'Фиксированный список тредов$1При включении этой опции треды, в которых меньше $2 постов при достижении $3 страницы<br>будут перемещены на $4 страницу', [RE_INNER]],
+			[/^Limitar números de threads por hora(.+)Serão permitidos.+/, 'Лимит тредов в час$1Количество создаваемых тредов в час, не влияет на количество постов', [RE_INNER]]
 		]],
 		['reg', 'form > table:nth-child(13) th', [
 			['Nome padrão nas postagens', 'Имя по умолчанию'],
 			['Anúncio da board', 'Объявления для пользователей'],
-			[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', RE_INNER]
+			[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', [RE_INNER]]
 		]],
 		['reg', 'form > table:nth-child(13) + p', [/A criação ou edição do seu tema.+/, 'После создания и редактирования вашей темы может потребоваться несколько часов, чтобы изменения вступили в силу (из-за cloudflare)']],
 
@@ -531,16 +505,16 @@ var cfg = [
 
 		['reg', 'form > p > small', [
 			[/^Todas as imagens padrões.+/, 'Все изображения должны быть в формате PNG или GIF и иметь размер файла не более 500 Кб'],
-			[/A imagem deve conter a resolução/, 'Изображение должно иметь разрешение', RE_TEXT, RE_MULTI]
+			[/A imagem deve conter a resolução/, 'Изображение должно иметь разрешение', [RE_MULTI]]
 		]],
 
 		['reg', 'form > h2', [
-			['Enviar nova imagem de', 'Выбрать изображение для', RE_TEXT, RE_MULTI, RE_NOBREAK],
+			['Enviar nova imagem de', 'Выбрать изображение для', [RE_MULTI, RE_NOBREAK]],
 			['spoiler', 'спойлер'],
 			['arquivo deletado', 'файл удален'],
 			['arquivo deletado', 'нет файла']
 		]],
-		['reg', 'body > div > form > p', [/Imagem de .+ atual/, 'Текущее изображение', RE_INNER, RE_MULTI]],
+		['reg', 'body > div > form > p', [/Imagem de .+ atual/, 'Текущее изображение', [RE_INNER, RE_MULTI]]],
 		['att', 'input[type="submit"]', 'value', 'Сохранить изображения'],
 
 		[]
@@ -557,7 +531,7 @@ var cfg = [
 		['reg', 'input[type="submit"]', [
 			['Criar usuário', 'Добавить'],
 			['Deletar selecionados', 'Удалить выделенных']
-		],RE_OUTER],
+		], [RE_OUTER]],
 
 		[]
 	]],
@@ -567,11 +541,11 @@ var cfg = [
 		['reg', 'head > title', ['Edit user profile', 'Учетная запись']],
 		['reg', 'header > h1', ['Edit user profile', 'Изменение учетной записи']],
 		['reg', 'table > tbody > tr > th', [
-			[/\(alerta: trocar.+\)/, ' (внимание: после изменения имени нужно войти заново, имя в журнале событий также будет заменено на новое'],
-			['novo; opcional', 'новый; не обязательно'],
-			[/se você esquecer.+para (.+@brchan\.org).+/, 'если вы забыли свой пароль, напишите на $1 и попросите его сбросить.<br>Адрес электронной почты должен быть один и тот же, связанный с учетной записью; по желанию)', RE_INNER]
-		]],
-		['reg', 'input[type="submit"]', ['Salvar alterações', 'Сохранить изменения'], RE_OUTER]
+			[/Usuário(.+)\(alerta:.+/, 'Логин$1(внимание: после изменения имени нужно войти заново,<br>имя в журнале событий также будет заменено на новое)'],
+			[/Senha(.+)\(novo.+/, 'Пароль$1(новый; не обязательно)'],
+			[/se você esquecer.+para (.+@brchan\.org).+/, 'если вы забыли свой пароль, напишите на $1<br> и попросите его сбросить. Адрес почты должен быть<br>тот же, связанный с учетной записью; по желанию)']
+		], [RE_INNER]],
+		['reg', 'input[type="submit"]', ['Salvar alterações', 'Сохранить изменения'], [RE_OUTER]]
 	]],
 
 	// Админка - Бан
@@ -579,7 +553,7 @@ var cfg = [
 		['reg', 'head > title', ['Novo ban', 'Новый бан']],
 		['reg', 'header > h1', ['Novo ban', 'Новый бан']],
 		['reg', 'table > tbody > tr > th > label', [
-			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', RE_INNER],
+			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', [RE_INNER]],
 			['Motivo', 'Причина'],
 			['Mensagem', 'Сообщение'],
 			['Tamanho', 'Длительность']			
@@ -592,7 +566,7 @@ var cfg = [
 		]],
 		['reg', 'select[name="range"] > option', [
 			['no range ban', 'без диапазона'],
-			[/covers (\d+) addresses/, 'охватывает $1 адресов', RE_TEXT, RE_MULTI]
+			[/covers (\d+) addresses/, 'охватывает $1 адресов', [RE_MULTI]]
 		]],
 		['att', 'input#message', 'value', 'Автор этого поста был ЗАБАНЕН'],
 		['att', 'input[name="new_ban"]', 'value', 'Забанить']
@@ -617,7 +591,7 @@ var cfg = [
 			['To', 'Кому'],
 			['Message', 'Сообщение']
 		]],
-		['reg', 'input[type="submit"]', ['Enviar mensagem', 'Отправить'], RE_OUTER]
+		['reg', 'input[type="submit"]', ['Enviar mensagem', 'Отправить'], [RE_OUTER]]
 	]],
 
 	// Админка - PM: просмотр
@@ -630,9 +604,12 @@ var cfg = [
 			['Mensagem', 'Текст']
 		]],
 		['reg', 'table > tbody > tr:nth-child(2) > td', [
-			['minutos', 'мин'],
+			[/segundos?/, 'сек'],
+			[/minutos?/, 'мин'],
+			[/horas?/, 'ч'],
+			[/dias?/, 'дн'],
 			['ago', 'назад']
-		], RE_INNER, RE_SINGLE, RE_NOBREAK],
+		], [RE_INNER, RE_NOBREAK]],
 		['att', 'input[name="delete"]', 'value', 'Удалить'],
 		['reg', 'form > ul > li > a', ['Responder com citação', 'Ответить с цитированием']],
 	]],
@@ -659,7 +636,7 @@ var cfg = [
 			['Mensagem', 'Сообщение'],
 			['Embutir', 'Вставка'] // ???
 		]],
-		['reg', 'table > tbody > tr:nth-child(2) > td', ['Remove tripcode', 'Удалить трипкод', RE_INNER]],
+		['reg', 'table > tbody > tr:nth-child(2) > td', ['Remove tripcode', 'Удалить трипкод', [RE_INNER]]],
 		['att', 'input[name="post"]', 'value', 'Сохранить'],
 		['reg', 'form > h2', ['Existing post', 'Существующий пост']],
 		[]
@@ -671,18 +648,19 @@ var cfg = [
 		['reg', 'head > title', ['Histórico da board', 'История событий']],
 		['reg', 'header > h1', ['Histórico da board', 'История событий доски']],
 		['reg', 'table.modlog > tbody > tr > th', [
+			['Usuário', 'Имя'],
 			['Endereço de IP', 'IP-адрес'],
 			['Tempo', 'Время'],
 			['Board', 'Доска'],
 			['Ação', 'Действие']
 		]],
-		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', ['hidden', 'скрыт'], RE_INNER, RE_MULTI], // ip
+		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', ['hidden', 'скрыт'], [RE_INNER, RE_MULTI]], // ip
 		['reg', 'table.modlog > tbody > tr > td:nth-child(3)', [ // время
-			['segundos', 'сек'],
+			[/segundos?/, 'сек'],
 			[/minutos?/, 'мин'],
 			[/horas?/, 'ч'],
-			['dia', 'дн']
-		], RE_INNER, RE_MULTI],
+			[/dias?/, 'дн']
+		], [RE_INNER, RE_MULTI]],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия. хз надо ???
 			[/^Edited post/, 'Редактирование поста'],
 			[/^Deleted post/, 'Удаление поста'],
@@ -702,7 +680,7 @@ var cfg = [
 			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
 			[/^Created a new volunteer/, 'Добавлен новый модератор'],
 			[]
-		], RE_TEXT, RE_MULTI]
+		], [RE_MULTI]]
 	]],
 
 	// Админка - Последние сообщения
@@ -710,10 +688,10 @@ var cfg = [
 		['reg', 'head > title', ['Mensagens recentes', 'Последние сообщения']],
 		['reg', 'header > h1', ['Mensagens recentes', 'Последние сообщения']],
 		['reg', 'body > h4', [/Viewing last (\d+) posts/, 'Отображаются последние $1 постов']],
-		['reg', 'body > p', [/^View/, 'Показывать:'], RE_INNER],
-		['css', 'body > a#erase-local-data', 'Стереть локальные данные'],
+		['reg', 'body > p', [/^View/, 'Показывать:'], [RE_INNER]],
+		['css', 'body > a#erase-local-data', 'Стереть локальные данные'], // wtf?
 		['reg', 'body > a[href^="/mod.php?/recent/"]', [/Next (\d+) posts/, 'Следующие $1 постов']],
-		['reg', 'body > p.unimportant', ['Não há posts ativos.', 'Больше новых сообщений нет. <a href="/mod.php?/recent/" class="unimportant">Вернуться</a>'], RE_INNER],
+		['reg', 'body > p.unimportant', [/\(Não há posts ativos.+/, '(Больше новых сообщений нет)<br><a href="/mod.php?/recent/25">Вернуться</a>'], [RE_INNER]],
 		[]
 	]],
 
@@ -728,21 +706,21 @@ var cfg = [
 			['Expira em', 'Истекает'],
 			['Visto', 'Виза'], // ???
 			['Equipe', 'Выдал'] // ???
-		], RE_TEXT, RE_MULTI],
+		], [RE_MULTI]],
 
 		// статус
 		['reg', 'fieldset#bans table tr:nth-child(1) > td', [
 			['Ativo', 'Активный'],
 			['Expirado', 'Истек']
-		], RE_TEXT, RE_MULTI],
+		], [RE_MULTI]],
 
 		// причина
-		['reg', 'fieldset#bans table tr:nth-child(3) > td', [/^sem razão especificada/, '-- не указано --'], RE_TEXT, RE_MULTI],
+		['reg', 'fieldset#bans table tr:nth-child(3) > td', [/^sem razão especificada/, '-- не указано --'], [RE_MULTI]],
 
 		// виза (Equipe)
 		['reg', 'fieldset#bans table tr:nth-child(7) > td', [
 			['Não', 'Нет']
-		], RE_TEXT, RE_MULTI],
+		], [RE_MULTI]],
 
 		['att', 'input[name="unban"]', 'value', 'Разбанить'],
 
@@ -750,6 +728,35 @@ var cfg = [
 	]],
 
 	[]
+];
+
+// ==============================================================================================
+// окно алертов
+// ==============================================================================================
+replacer.cfg["alert"] = [
+	['', [
+		['str', 'Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'],
+		['str', 'Você errou o codigo de verificação', 'Неверно введен код капчи'],
+		['str', 'O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'],
+		['str', 'Você errou o codigo de verificação', 'Введите сообщение'],
+		['str', 'Flood detectado; Sua mensagem foi descartada', 'Ошибка постинга: Вы постите слишком быстро'],
+		['str', 'Seu browser enviou uma referência HTTP inválida ou inexistente', 'Ваш браузер послал неверный referer или он отсутствует в заголовке HTTP'],
+		['str', 'IP Blocked - Please check', 'IP Заблокирован - проверьте на:'],
+		['str', 'Extensão de arquivo desconhecida', 'Неизвестный тип файла'],
+		['str', 'Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'],
+		['str', 'É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'],
+		['str', /(O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!)/, 'Файл уже был загружен в <a href="$2">этом треде!</a>'],
+	]]
+];
+
+// ==============================================================================================
+// перевод новых постов
+// ==============================================================================================
+replacer.cfg["new_post"] = [
+	['', [
+		['css', 'span.name', 'Аноним'],
+		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: ']
+	]]
 ];
 
 // ==============================================================================================
@@ -1015,275 +1022,411 @@ Object.defineProperty(window, "l10n", {
 	},
 	set: function(value){}
 });
+
 // ==============================================================================================
+// replacer functions
 // ==============================================================================================
-
-
-
-class CSSReplace {
-	constructor(query, text, debug) {
-		this.query = query;
-		this.text = text;
-	}
-	replace(element) {
-		for(let el of (element ? element : document).querySelectorAll(this.query)) {
-			el.textContent = this.text;
-		}
-	}
+replacer.dbgMsg = function()
+{
+	if(!this.debug) return;
+	console.debug.apply(this, arguments); // вывести в консоль переданные параметры
 }
 
-class AttributeReplace {
-	constructor(query, attr, text, debug) {
-		this.query = query;
-		this.attr = attr;
-		this.text = text;
+// ----------------------------------------------------
+replacer.process = function(cfg, element, debug)
+// ----------------------------------------------------
+{
+	/* 
+	произвести замену с использованием конфига с именем cfg
+		element - родительский элемент, по умолчанию document
+		debug - включить отладку конфига (true/false)
+	*/
+	
+	if(!this.cfg[cfg]) {
+		this.dbgMsg("ERROR: CFG NOT FOUND: ", cfg);
+		return;
 	}
-	replace(element) {
-		for(let el of (element ? element : document).querySelectorAll(this.query)) {
-			el.setAttribute(this.attr, this.text);
+
+	let perf = performance.now();
+	if(!element) element = document;
+
+	// в this.instance[] хранится кол-во запусков для каждого конфига (нужно для regex в частности)
+	if(!this.instance) this.instance = [];
+	if(!this.instance[cfg]) this.instance[cfg] = 0;
+	this.instance[cfg]++; 
+	let instance = this.instance[cfg];
+
+	if(this.debug) console.group("["+cfg+"]: ", element);
+	for(let u of this.cfg[cfg])
+	{
+		// перебор всех групп url в заданном конфиге
+		if(!u.length) continue; // empty
+		if(u.length < 2 || !Array.isArray(u[1])) // проверка параметров
+		{
+			this.dbgMsg("ERROR: Syntax1:", u);
+			continue;
+		}
+		if(!main.url.match(u[0])) continue; // проверка url
+
+		this.dbgMsg("URL-Match:", u[0]);
+
+		let dodebug = (this.debug && (u[2] || debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
+
+		// перебор реплейсеров группы
+		for(let r of u[1]) 
+		{
+			if(!r.length) continue; //empty
+			if(r.length < 2)
+			{
+				this.dbgMsg("ERROR: Syntax2:", r);
+				continue;
+			}
+			let fn=r[0]+"Replacer";
+			if(!this[fn]) // проверка наличия функции реплейсера
+			{
+				this.dbgMsg('ERROR: NO Replacer function for:', r);
+				continue;
+			}
+
+			// вызов функции реплейсера
+			let err = this[fn](element, r, instance, dodebug);
+
+			if(err < 0)
+			{
+				this.dbgMsg("ERROR: Syntax3"+err+":", r);
+				continue;
+			}
+			else if(err)
+				break; // прерывание цикла перебора реплейсеров для текущего url-regex
 		}
 	}
+	this.dbgMsg('Relaced in', performance.now() - perf, "ms");
+	if(this.debug) console.groupEnd();
 }
 
-class InnerTextReplace {
-	constructor(query, type, text, debug) {
-		this.query = query;
-		this.type = type;
-		this.text = text;
+// ----------------------------------------------------
+replacer.clear = function(cfg)
+// ----------------------------------------------------
+{
+	// очистка заданного конфига
+	if(!this.cfg[cfg]) return;
+	this.cfg[cfg] = [];
+	this.instance[cfg]  = undefined;
+}
+
+// ----------------------------------------------------
+replacer.reOpt = function(arr, def)
+// ----------------------------------------------------
+{
+	// arr - массив модификаторов [RE_TEXT, RE_MULTI] и т.п. порядок значения не имеет
+	// def - объект опций по умолчанию {prop, single, break} 
+	// возвращает новый созданный объект опций {prop, single, break}
+
+	var opt = new Object();
+	if(typeof(def) != 'object')
+		opt={prop: RE_TEXT, single: true, break: true};
+	else
+		opt={prop: def.prop, single: def.single, break: def.break};
+	if(!Array.isArray(arr))
+		return opt;
+
+	for(let o of arr) {
+		switch(o) {
+			case RE_SINGLE: opt.single = true; break;
+			case RE_MULTI: opt.single = false; break;
+			case RE_BREAK: opt.break = true; break;
+			case RE_NOBREAK: opt.break = false; break;
+			case RE_TEXT:
+			case RE_INNER:
+			case RE_OUTER:
+			 	opt.prop = o;
+			 	break;
+		}
 	}
-	replace(element) {
-		for(let el of (element ? element : document).querySelectorAll(this.query)) {
+	return opt;
+}
+
+/*
+// ----------------------------------------------------
+ ФУНКЦИИ РЕПЛЕЙСЕРОВ 
+ для каждого типа реплейсера должна быть определена функция вида:
+ 
+ replacer.<type>Repacler = function(el, params, instance, debug) {...}
+
+ где 
+ 	<type> - тип реплейсера (css, txt, reg и т.п.)
+ 	el - родительский элемент, в котором нужно производить поиск
+ 	params - массив параметров (из конфига) ["type", "css-selector", ....]  // type - тип реплейсера, дальше - параметры
+ 	instance - номер текущего запуска данного конфига
+ 	debug - true/false - включена ли отладка для данной группы реплейсеров
+
+возвращаемые значения:
+	= 0 : нормальное завершение
+	< 0 : ошибка во входных параметрах (в консоль выдаст сообщения со строкой конфига)
+	> 0 : прервать перебор реплейсеров для текущего url-regex
+*/ 
+
+// ----------------------------------------------------
+replacer.cssReplacer = function(el, p, instance, debug)
+// ----------------------------------------------------
+{
+	// реплейсер текста по селектору
+	// p=["css", query, text]
+	if(p.length < 3)
+		return -1;
+
+	for(let e of el.querySelectorAll(p[1])) 
+		e.textContent = p[2];
+}
+
+
+// ----------------------------------------------------
+replacer.attReplacer = function(el, p, instance, debug)
+// ----------------------------------------------------
+{
+	// реплейсер атрибутов
+	// p=["att", query, attr_name, text]
+	if(p.length < 4)
+		return -1;
+
+	for(let e of el.querySelectorAll(p[1]))
+		e.setAttribute(p[2], p[3]);
+}
+
+// ----------------------------------------------------
+replacer.txtReplacer = function(el, p, instance, debug)
+// ----------------------------------------------------
+{
+	// реплейсер текста дочерних узлов
+	// p=["txt", query, node_type, text]
+	if(p.length < 4)
+		return -1;
+
+	if(debug) console.group("TXT:", p[1]);
+	let worked = false;
+	try {
+		for(let e of el.querySelectorAll(p[1])) 
+		{
 			let node;
-			switch(this.type) {
-				case TYPE_FIRSTNODE: node = el.firstChild; break;
-				case TYPE_LASTNODE: node = el.lastChild; break;
+			switch(p[2]) {
+				case TYPE_FIRSTNODE: node = e.firstChild; break;
+				case TYPE_LASTNODE: node = e.lastChild; break;
 			}
-			if(node) {
-				node.textContent = this.text;
-			}
+			if(node)
+				node.textContent = p[3];
+			if(debug) this.dbgMsg(e, node ? ": REPLACED": ": NO NODE");
+			worked = true;
 		}
+		if(debug && !worked) this.dbgMsg("NOT FOUND");
+	} catch(err) {
+		this.dbgMsg("ERROR: Selector");
 	}
+	if(debug) console.groupEnd();
 }
 
-class RegexReplace {
-	constructor(query, array, prop, multi, dobreak, debug) {
-		this.query = query;
-		this.array = array;
-		this.prop = prop ? prop : RE_TEXT; // тип замещения по умолчанию 
-		this.multi = multi ? multi : RE_SINGLE; // режим поиска по умолчанию
-		this.dobreak = dobreak ? dobreak : RE_BREAK; // прерывать перебор при первом совпадении или нет
-		this.cnt = 0; // счетчик активных regex
-		this.debug = debug ? debug : 0; // 1 - показывает процесс поиска-замены в консоли
-	}
-	replace(element) {
-		if(this.debug) var cnt=0;
+// ----------------------------------------------------
+replacer.regReplacer = function(el, p, instance, debug)
+// ----------------------------------------------------
+{
+	/* 
+	реплейсер текста по regex 
+		p=["reg", query, param_arr, re_arr]
+		p=["reg", query, [param_arr1,...,param_arrN], re_arr_def]
 
-		for(let el of (element ? element : document).querySelectorAll(this.query)) {
-			
-			if(this.debug) {
-				if(!cnt++)
-					console.debug("-------\nREG_SEL:", this.query);
-				console.debug(" \nREG_ELM:", el);
+		param_arr - массив параметров: [regex, text, re_arr]
+		re_arr - массив с комбинацией RE_* параметров [не обязательно]
+		re_arr_def - массив с комбинацией RE_* параметров по умолчанию для всей группы [не обязательно]
+
+		порядок и количество RE_* параметров в массиве не важен, по умолчанию: [RE_TEXT, RE_SINGLE, RE_BREAK]
+	*/
+
+	if(p.length < 3 || !Array.isArray(p[2]) || (p.length > 3 && !Array.isArray(p[3])) || p.length > 4)
+		return -1;
+
+	if(!Array.isArray(p[2][0])) 
+		p[2] = [p[2]];
+
+	// параметры по умолчанию для всей группы
+	let def_opt = replacer.reOpt(p[3]);
+	let dbg1st = 0;
+
+	try {
+	for(let e of el.querySelectorAll(p[1]))
+	{
+		if(debug) {
+			if(!dbg1st++) console.group("REG:", p[1]);
+			this.dbgMsg(" \nELM:", e);
+		}
+		let re_cnt = 0; // кол-во активных regex (не сработавших)
+		let dobreak = false;
+		let dbgMsg = "";
+		for(let a of p[2]) 
+		{
+			if(!a.length)
+				continue;
+			if(a.length < 2) // проверка параметров
+			{
+				if(debug) console.groupEnd();
+				return -2;
 			}
 
-			this.cnt = 0; // сбрасываем счетчик активных regex
-			if(Array.isArray(this.array[0])) {
-				for(let i in this.array) {
-					if(this.do(el, this.array[i], i) < 0)
-					{
-						if(this.debug) console.debug("REG_BREAK");
-						this.cnt=1;
-						break;
-					}
+			if(!a[3] || a[3] < instance) // проверка на активный regex
+				re_cnt++;
+			if(dobreak || a[3] == instance)
+				continue; // продолжаем подсчет активных regex
+
+			let opt = replacer.reOpt(a[2], def_opt);
+
+			if(e[opt.prop].match(a[0]))
+			{
+				e[opt.prop] = e[opt.prop].replace(a[0], a[1]);
+				dbgMsg = ": FOUND";
+
+				if(opt.single)
+				{
+					a[3] = instance; // выставляем флаг сработавшего regex
+					re_cnt--;
+					dbgMsg += ": REMOVED";
+				}
+				if(opt.break)
+				{
+					dobreak = true; // прерываем цикл перебора regex
+					dbgMsg += ": BREAK";
 				}
 			}
-			else
-				this.do(el, this.array, -1);
+			else 
+				dbgMsg = ": NOT FOUND";
 
-			if(this.cnt<1)
-			{
-				// больше нет ни одного активного regex для данного селектора
-				if(this.debug) console.debug("REG_STOP");
-				break;
-			}
-		}
-	}
-
-	do(el, array, i) 
-	{
-		if(!array.length)
-			return 0;
-
-		this.cnt++; // кол-во активных regex
-
-		let prop = array.length > 2 ? array[2] : this.prop; // тип замещения (индивидуальный или по умолчанию)
-		let multi = array.length > 3 ? array[3] : this.multi; // режим поиска (индивидуальный или по умолчанию)
-		let dobreak = array.length > 4 ? array[4] : this.dobreak; // прерывать перебор при совпадении
-		if(el[prop].match(array[0])) 
+			if(debug) this.dbgMsg("FND:",  [a[0], a[1]], dbgMsg);
+		} // for a
+		if(re_cnt < 1)
 		{
-			el[prop] = el[prop].replace(array[0], array[1]);
-			if(this.debug) prop = ":: FOUND"; 
-			if(multi == RE_SINGLE)
-			{
-				// удаляем сработавший regex
-				this.cnt--;
-				if(i>=0)
-					this.array[i] = [];
-				else
-					this.array = [];
-				if(this.debug) prop += " :: REMOVED";
-			}
-			if(this.debug) console.debug("REG_FND:", array, prop);
-			if(dobreak == RE_BREAK)
-				return -1; // сигнализируем о прерывании цикла перебора regex
-			else
-				return 1;
+			// прекращаем перебор элементов, т.к. не осталось активных regex
+			if(debug) this.dbgMsg("STOP");
+			break;
 		}
-		if(this.debug) console.debug("REG_FND:", array, ":: NOT FOUND");
-		return 0;
+	} // for e
+	if(dbg1st) console.groupEnd();	
+	} catch(err) {
+		this.dbgMsg("ERROR: Selector:", p);
 	}
 }
 
-class PostingReplace {
-	constructor(regex, text) {
-		this.regex = regex;
-		this.text = text;
+// ----------------------------------------------------
+replacer.strReplacer = function(el, p, instance, debug)
+// ----------------------------------------------------
+{
+	// реплейсер текста в переданном элементе объекте el (el.text)
+	// p=["str", regex, text]
+
+	if(p.length<3)
+		return -1;
+
+	if(el.text.match(p[1])) {
+		el.text = el.text.replace(p[1], p[2]);
+		if(debug) this.dbgMsg("FND:", p, ": FOUND\nSTOP");
+		return 1;
 	}
-	replace(obj) {
-		if(obj.text.match(this.regex)) {
-			obj.text = obj.text.replace(this.regex, this.text);
-			return true;
+	if(debug) this.dbgMsg("FND:", p, ": NOT FOUND");
+}
+
+// ==============================================================================================
+// MAIN
+// ==============================================================================================
+
+var main = {
+	fn: {}, // для хранения внешних функций
+	ru: {
+		days: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс']
+	},
+	url: document.URL.replace(/https?:\/\/[^/]+\/(.*)/, "$1"), // текущий URL страницы (без протокола и домена)
+
+	// ----------------------------------------------------
+	onDocReady: function() 
+	// ----------------------------------------------------
+	{
+		// перевод всплывающих сообщений
+		main.fn.alert = window.alert;
+		window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
+		{
+			msg = {text: msg};
+			replacer.process("alert", msg);
+
+			//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+			main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+		};
+
+		// очистка поля капчи при обновлении
+		main.fn.actually_load_captcha = window.actually_load_captcha;
+		window.actually_load_captcha = function(provider, extra)
+		{
+			main.fn.actually_load_captcha(provider, extra);
+			for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+				el.value = "";
+		};
+
+		if(window.jQuery) 
+		{
+			// перевод новых постов
+			$(document).on('new_post', function(e, post) {
+				replacer.process("new_post", post);
+				main.fixPostDate(post);
+				main.fixRedirect(post);
+				// TODO: кнопки модерирования на новых постах
+			});
+			$('#watchlist').css('width', '20%');
 		}
-	}
-}
 
-let replacers = [];
-let new_posts_replacers = [
-	new CSSReplace('span.name', 'Аноним'),
-	new InnerTextReplace('p.fileinfo', TYPE_FIRSTNODE, 'Файл: ')
-];
-let posting_replacers = [
-	new PostingReplace('Você errou o codigo de verificação', 'Неверно введен код капчи'),
-	new PostingReplace('Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'),
-	new PostingReplace('O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'),
-	new PostingReplace('Você errou o codigo de verificação', 'Введите сообщение'),
-	new PostingReplace('Flood detectado; Sua mensagem foi descartada', 'Ошибка постинга: Вы постите слишком быстро'),
-	new PostingReplace('Seu browser enviou uma referência HTTP inválida ou inexistente', 'Ваш браузер послал неверный referer или он отсутствует в заголовке HTTP'),
-	new PostingReplace('IP Blocked - Please check', 'IP Заблокирован - проверьте на:'),
-	new PostingReplace('Extensão de arquivo desconhecida', 'Неизвестный тип файла'),
-	new PostingReplace('Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'),
-	new PostingReplace('É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'),
-	new PostingReplace(/O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!/, 'Файл уже был загружен в <a href="$1">этом треде!</a>')
-];
+		main.fixThread();
+		main.fixCatalog();
 
-// ==============================================================================================
-// загрузка конфига
-// ==============================================================================================
-var url = document.URL.replace(/https?:\/\/[^/]+\/(.+)/i, "$1"); // extract url path
-(function(){
-	console.debug("URL: ", url);
-	let i = performance.now();
-	for(let u of cfg) {
-		if(u.length < 2 || !url.match(u[0])) // checking url match
-			continue;
+		// перевод страниц
+		//replacer.process("main");
+		replacer.process("main", document, false);
+		replacer.clear("main");
+	},
 
-		console.debug('Used: ', u[0]);
-
-		for(let c of u[1]) {
-			let cl=c.length;
-			if(!cl)
-				continue;
-
-			switch(c[0]) {
-				case "css":
-					if(cl == 3) {
-						replacers.push(new CSSReplace(c[1], c[2], u[2]));
-						continue;
-					}
-					break;
-
-				case "txt":
-					if(cl == 4) {
-						replacers.push(new InnerTextReplace(c[1], c[2], c[3], u[2]));
-						continue;
-					}
-					break;
-				case "reg":
-					if(cl > 2 && Array.isArray(c[2])) {
-						//replacers.push(new RegexReplace(c[1], c[2], cl>3 ? c[3] : 0, cl>4 ? c[4] : 0, cl>5 ? c[5] : 0));
-						replacers.push(new RegexReplace(c[1], c[2], c[3], c[4], c[5], u[2]));
-						continue;
-					}
-					break;
-				case "att":
-					if(cl == 4) {
-						replacers.push(new AttributeReplace(c[1], c[2], c[3], u[2]));
-						continue;
-					}
-					break;
-			}
-			console.debug('** Cfg Error: ', c);
-		} // for c
-	} // for u
-	cfg = [];
-	console.debug("Cfg Loaded: ", performance.now() - i, "ms");
-})();
-
-
-// ==============================================================================================
-// ==============================================================================================
-var wf = {}; // для хранения переопределенных оригинальных ф-ций window
-
-wf.days = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-function fixPostDate(element)
-{
-	// дата и время постов (перевод + коррекция)
-	for(let el of (element ? element : document).querySelectorAll("p.intro time"))
+	// ----------------------------------------------------
+	timeLocaleString: function(time)
+	// ----------------------------------------------------
 	{
-		var t = new Date(el.getAttribute("datetime"));
-		t.setTime(t.getTime() + TIME_CORR);
-		el.innerText = t.toLocaleDateString() + " (" + wf.days[t.getDay()] + ") " + t.toLocaleTimeString();
-	}
-}
-
-function fixRedirect(element)
-{
-	// удаление редиректа для внешних ссылок
-	let url="http://privatelink.de/?";
-	for(let el of (element ? element : document).querySelectorAll('a[href^="'+url+'"]'))
-		el.setAttribute("href", el.getAttribute("href").substr(url.length));
-}
-
-function fixtDateCustom(selector)
-{
-	// TODO: сделать замену и коррекцию даты для заданных url, поиск по селектору
-}
-
-var doIt = function() {
-	let i = performance.now();
-	for(let r of replacers) {
-		r.replace();
-	}
-	console.debug('Replace: ', performance.now() - i, "ms");
-
-	if(window.jQuery) 
+		// форматирование даты (time - объект Date)
+		return (time.toLocaleDateString() + " (" + main.ru.days[time.getDay()] + ") " + time.toLocaleTimeString());
+	},
+	
+	// ----------------------------------------------------
+	fixPostDate: function(element) 
+	// ----------------------------------------------------
 	{
-		// перевод новых постов
-		$(document).on('new_post', function(e, post) {
-			for(let r of new_posts_replacers) {
-				r.replace(post);
-			}
-			fixPostDate(post);
-			fixRedirect(post);
-			// TODO: кнопки модерирования на новых постах
-		});
+		// дата и время постов (перевод + коррекция)
+		for(let el of (element ? element : document).querySelectorAll("p.intro time"))
+		{
+			var t = new Date(el.getAttribute("datetime"));
+			t.setTime(t.getTime() + TIME_CORR);
+			el.innerText = main.timeLocaleString(t);
+		}
+	},
 
-		$('#watchlist').css('width', '20%');
-	}
+	// ----------------------------------------------------
+	fixRedirect: function(element)
+	// ----------------------------------------------------
+	{
+		// удаление редиректа для внешних ссылок
+		let url="http://privatelink.de/?";
+		for(let el of (element ? element : document).querySelectorAll('a[href^="'+url+'"]'))
+			el.setAttribute("href", el.getAttribute("href").substr(url.length));
+	},
 
-	if(url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/)) {
-		fixPostDate(); // добавить дату постов в тредах
-		fixRedirect(); // удаление редиректов 
+	// ----------------------------------------------------
+	fixThread: function()
+	// ----------------------------------------------------
+	{
+		// фиксы для любой доски/треда
+		if(!main.url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/))
+			return;
+
+		main.fixPostDate(); // добавить дату постов в тредах
+		main.fixRedirect(); // удаление редиректов 
 
 		// Перемещает изображения в ОП посте в сам пост
 		for(let thread of document.querySelectorAll('div.thread')) {
@@ -1307,62 +1450,41 @@ var doIt = function() {
 
 			body.parentNode.insertBefore(files, body);
 		}
+	},
 
-		// Переместить ответы вниз поста
-		for(let post of document.querySelectorAll('div.post')) {
-			let replies = post.getElementsByClassName('mentioned')[0];
-			
-			if(typeof replies == 'undefined') {
+	// ----------------------------------------------------
+	fixCatalog: function()
+	// ----------------------------------------------------
+	{
+		// фиксы для каталога тредов
+		if(!main.url.match(/^\w+\/catalog\.html/))
+			return;
+
+		var t;
+		for(let el of document.querySelectorAll("div.mix")) 
+		{
+			if(!(t = el.getAttribute("data-time"))) // дата создания
 				continue;
-			}
+			t = new Date(t*1000 - 3600000);
+			if(!(el = el.querySelector("strong"))) 
+				continue;
+			el.innerHTML = el.innerHTML + "<br><small>"+ main.timeLocaleString(t); + "</small>";
+		}
+	},
 
-			let div = document.createElement('div');
-			div.className = 'mentioned unimportant';
-			div.innerText = 'Ответы: ';
-			div.style.margin = '10px 4px 4px 0px';
-			div.style.display = 'inline-block';
-			div.appendChild(replies);
+	// ----------------------------------------------------
+	init: function()
+	// ----------------------------------------------------
+	{
+		console.log("Improved Brchan Russifikator started");
+		console.debug("URL:", main.url);
 
-			post.appendChild(div);
+		if (document.addEventListener) {
+			document.addEventListener("DOMContentLoaded", main.onDocReady, false);
+		} else if (document.attachEvent) {
+			document.attachEvent("onreadystatechange", main.onDocReady);
 		}
 	}
+} // main
 
-	// добавить дату создания треда в каталоге
-	var t;
-	if(url.match(/^\w+\/catalog\.html/)) for(let el of document.querySelectorAll("div.mix")) 
-	{
-		if(!(t = el.getAttribute("data-time"))) // дата создания
-			continue;
-		t = new Date(t*1000 - 3600000);
-		if(!(el = el.querySelector("strong"))) 
-			continue;
-		el.innerHTML = el.innerHTML + "<br><small>"+ t.toLocaleDateString() + " (" + wf.days[t.getDay()] + ") " + t.toLocaleTimeString() + "</small>";
-	}
-
-	// перевод сообщений
-	wf.alert = window.alert;
-	window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
-	{
-		msg = {text: msg};
-		for(let r of posting_replacers) {
-			if(r.replace(msg)) break;
-		}
-		console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-		wf.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-	};
-
-	// очистка поля капчи при обновлении
-	wf.actually_load_captcha = window.actually_load_captcha;
-	window.actually_load_captcha = function(provider, extra)
-	{
-		wf.actually_load_captcha(provider, extra);
-		for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
-			el.value = "";
-	};
-};
-
-if (document.addEventListener) {
-	document.addEventListener("DOMContentLoaded", doIt, false);
-} else if (document.attachEvent) {
-	document.attachEvent("onreadystatechange", doIt);
-}
+main.init();
