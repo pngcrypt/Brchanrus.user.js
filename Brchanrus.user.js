@@ -759,7 +759,8 @@ replacer.cfg["alert"] = [
 // ==============================================================================================
 replacer.cfg["new_post"] = [
 	['', [
-		['css', 'span.name', 'Аноним'],
+		['reg', 'span.name', ['Anônimo', 'Аноним'], [RE_INNER]],
+		['reg', 'span.name > span', ['You', 'Вы']],
 		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: ']
 	]]
 ];
@@ -1034,14 +1035,15 @@ replacer.process = function(cfg, element, debug)
 		element - родительский элемент, по умолчанию document
 		debug - включить отладку конфига (true/false)
 	*/
-	
+
+	let perf = performance.now();
 	if(!this.cfg[cfg]) {
 		if(this.debug) console.debug("ERROR: CFG NOT FOUND: ", cfg);
 		return;
 	}
 
-	let perf = performance.now();
 	if(!element) element = document;
+	if(this.debug) console.group("["+cfg+"]: ", element);
 
 	// в this.instance[] хранится кол-во запусков для каждого конфига (нужно для regex в частности)
 	if(!this.instance) this.instance = [];
@@ -1049,7 +1051,6 @@ replacer.process = function(cfg, element, debug)
 	this.instance[cfg]++; 
 	this.instanceLocal = this.instance[cfg]; // кол-во запусков текущего конфига
 
-	if(this.debug) console.group("["+cfg+"]: ", element);
 	for(let u of this.cfg[cfg])
 	{
 		// перебор всех групп url-regex в заданном конфиге
@@ -1062,7 +1063,6 @@ replacer.process = function(cfg, element, debug)
 		if(!main.url.match(u[0])) continue; // проверка url
 
 		if(this.debug) console.debug("URL-Match:", u[0]);
-
 		this.debugLocal = (this.debug && (u[2] || debug)); // отладка для текущего url-regex
 
 		// перебор реплейсеров группы
@@ -1094,7 +1094,7 @@ replacer.process = function(cfg, element, debug)
 		}
 	}
 	if(this.debug) {
-		console.debug('Relaced in', performance.now() - perf, "ms");
+		console.debug('Relaced in', Math.round(performance.now() - perf), "ms");
 		console.groupEnd();
 	}	
 }
