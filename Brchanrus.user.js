@@ -296,7 +296,7 @@ replacer.cfg["main"] = [
 			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений в посте?'],
 			['Tem certeza que desejar tornar o arquivo spoiler?', 'Вы уверены, что хотите скрыть превью изображеня?'],
 			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
-			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
+			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?']
 			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
 		], [RE_INNER, RE_MULTI, RE_NOBREAK]],
 
@@ -329,8 +329,7 @@ replacer.cfg["main"] = [
 			['Banner editing is currently disabled. Please check back later', 'Редактирование баннера отключено. Попробуйте позже'],
 			['Usuário inválido', 'Неверное имя пользователя'],
 			['Board inválida', 'Доска не существует'],
-			['Você não tem permissão para fazer isso', 'У вас нет прав доступа к этой странице'],
-			[]
+			['Você não tem permissão para fazer isso', 'У вас нет прав доступа к этой странице']
 		]],
 
 		['reg', 'div.subtitle > p > a', ['Voltar à dashboard', 'Назад к панели управления']],
@@ -460,7 +459,7 @@ replacer.cfg["main"] = [
 		['reg', 'form > table#wf th', [
 			['Filtros', 'Фильтры'],
 			['Substituir', 'Замещать:'],
-			['Por', 'На:'],
+			['Por', 'На:']
 		]],
 		['reg', 'form > table#tags th', [
 			['Tags', 'Тэги'],
@@ -556,7 +555,7 @@ replacer.cfg["main"] = [
 			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', [RE_INNER]],
 			['Motivo', 'Причина'],
 			['Mensagem', 'Сообщение'],
-			['Tamanho', 'Длительность']			
+			['Tamanho', 'Длительность']
 		]],
 		['reg', 'table > tbody > tr:nth-child(5) > th', ['Board', 'Доска']],
 		['reg', 'table > tbody > tr > td .unimportant', [
@@ -678,8 +677,7 @@ replacer.cfg["main"] = [
 			[/^Removed ban (#\d+) for/, 'Бан снят $1 для'],
 			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
 			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
-			[/^Created a new volunteer/, 'Добавлен новый модератор'],
-			[]
+			[/^Created a new volunteer/, 'Добавлен новый модератор']
 		], [RE_MULTI]]
 	]],
 
@@ -745,7 +743,7 @@ replacer.cfg["alert"] = [
 		['str', 'Extensão de arquivo desconhecida', 'Неизвестный тип файла'],
 		['str', 'Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'],
 		['str', 'É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'],
-		['str', /(O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!)/, 'Файл уже был загружен в <a href="$2">этом треде!</a>'],
+		['str', /(O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!)/, 'Файл уже был загружен в <a href="$2">этом треде!</a>']
 	]]
 ];
 
@@ -1047,18 +1045,19 @@ replacer.process = function(cfg, element, debug)
 		return;
 	}
 
-	let perf = performance.now();
+	var perf = performance.now();
 	if(!element) element = document;
 
 	// в this.instance[] хранится кол-во запусков для каждого конфига (нужно для regex в частности)
 	if(!this.instance) this.instance = [];
 	if(!this.instance[cfg]) this.instance[cfg] = 0;
 	this.instance[cfg]++; 
-	let instance = this.instance[cfg];
+	var instance = this.instance[cfg];
 
 	if(this.debug) console.group("["+cfg+"]: ", element);
-	for(let u of this.cfg[cfg])
+	for(var u in this.cfg[cfg])
 	{
+		u = this.cfg[cfg][u];
 		// перебор всех групп url в заданном конфиге
 		if(!u.length) continue; // empty
 		if(u.length < 2 || !Array.isArray(u[1])) // проверка параметров
@@ -1070,18 +1069,19 @@ replacer.process = function(cfg, element, debug)
 
 		this.dbgMsg("URL-Match:", u[0]);
 
-		let dodebug = (this.debug && (u[2] || debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
+		var dodebug = (this.debug && (u[2] || debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
 
 		// перебор реплейсеров группы
-		for(let r of u[1]) 
+		for(var r in u[1]) 
 		{
+			r = u[1][r];
 			if(!r.length) continue; //empty
 			if(r.length < 2)
 			{
 				this.dbgMsg("ERROR: Syntax2:", r);
 				continue;
 			}
-			let fn=r[0]+"Replacer";
+			var fn=r[0]+"Replacer";
 			if(!this[fn]) // проверка наличия функции реплейсера
 			{
 				this.dbgMsg('ERROR: NO Replacer function for:', r);
@@ -1089,7 +1089,7 @@ replacer.process = function(cfg, element, debug)
 			}
 
 			// вызов функции реплейсера
-			let err = this[fn](element, r, instance, dodebug);
+			var err = this[fn](element, r, instance, dodebug);
 
 			if(err < 0)
 			{
@@ -1130,7 +1130,8 @@ replacer.reOpt = function(arr, def)
 	if(!Array.isArray(arr))
 		return opt;
 
-	for(let o of arr) {
+	for(var o in arr) {
+		o = arr[o];
 		switch(o) {
 			case RE_SINGLE: opt.single = true; break;
 			case RE_MULTI: opt.single = false; break;
@@ -1175,8 +1176,9 @@ replacer.cssReplacer = function(el, p, instance, debug)
 	if(p.length < 3)
 		return -1;
 
-	for(let e of el.querySelectorAll(p[1])) 
+	el.querySelectorAll(p[1]).forEach(function(e, id){
 		e.textContent = p[2];
+	});
 }
 
 
@@ -1189,8 +1191,9 @@ replacer.attReplacer = function(el, p, instance, debug)
 	if(p.length < 4)
 		return -1;
 
-	for(let e of el.querySelectorAll(p[1]))
+	el.querySelectorAll(p[1]).forEach(function(e, id){
 		e.setAttribute(p[2], p[3]);
+	});
 }
 
 // ----------------------------------------------------
@@ -1203,11 +1206,10 @@ replacer.txtReplacer = function(el, p, instance, debug)
 		return -1;
 
 	if(debug) console.group("TXT:", p[1]);
-	let worked = false;
+	var worked = false;
 	try {
-		for(let e of el.querySelectorAll(p[1])) 
-		{
-			let node;
+		el.querySelectorAll(p[1]).forEach(function(e, id) {
+			var node;
 			switch(p[2]) {
 				case TYPE_FIRSTNODE: node = e.firstChild; break;
 				case TYPE_LASTNODE: node = e.lastChild; break;
@@ -1216,7 +1218,7 @@ replacer.txtReplacer = function(el, p, instance, debug)
 				node.textContent = p[3];
 			if(debug) this.dbgMsg(e, node ? ": REPLACED": ": NO NODE");
 			worked = true;
-		}
+		});
 		if(debug && !worked) this.dbgMsg("NOT FOUND");
 	} catch(err) {
 		this.dbgMsg("ERROR: Selector");
@@ -1247,66 +1249,70 @@ replacer.regReplacer = function(el, p, instance, debug)
 		p[2] = [p[2]];
 
 	// параметры по умолчанию для всей группы
-	let def_opt = replacer.reOpt(p[3]);
-	let dbg1st = 0;
-
+	var def_opt = replacer.reOpt(p[3]);
+	var dbg1st = 0;
 	try {
-	for(let e of el.querySelectorAll(p[1]))
-	{
-		if(debug) {
-			if(!dbg1st++) console.group("REG:", p[1]);
-			this.dbgMsg(" \nELM:", e);
+		var elements = el.querySelectorAll(p[1]);
+		if(!elements.length) {
+			return -1;
 		}
-		let re_cnt = 0; // кол-во активных regex (не сработавших)
-		let dobreak = false;
-		let dbgMsg = "";
-		for(let a of p[2]) 
-		{
-			if(!a.length)
-				continue;
-			if(a.length < 2) // проверка параметров
-			{
-				if(debug) console.groupEnd();
-				return -2;
+
+		elements.forEach(function(e, id) {
+			if(debug) {
+				if(!dbg1st++) console.group("REG:", p[1]);
+				this.dbgMsg(" \nELM:", e);
 			}
-
-			if(!a[3] || a[3] < instance) // проверка на активный regex
-				re_cnt++;
-			if(dobreak || a[3] == instance)
-				continue; // продолжаем подсчет активных regex
-
-			let opt = replacer.reOpt(a[2], def_opt);
-
-			if(e[opt.prop].match(a[0]))
+			var re_cnt = 0; // кол-во активных regex (не сработавших)
+			var dobreak = false;
+			var dbgMsg = "";
+			for(var a in p[2]) 
 			{
-				e[opt.prop] = e[opt.prop].replace(a[0], a[1]);
-				dbgMsg = ": FOUND";
+				a = p[2][a];
+				if(!a.length)
+					continue;
+				if(a.length < 2) // проверка параметров
+				{
+					if(debug) console.groupEnd();
+					return -2;
+				}
 
-				if(opt.single)
+				if(!a[3] || a[3] < instance) // проверка на активный regex
+					re_cnt++;
+				if(dobreak || a[3] == instance)
+					continue; // продолжаем подсчет активных regex
+
+				var opt = replacer.reOpt(a[2], def_opt);
+
+				if(e[opt.prop].match(a[0]))
 				{
-					a[3] = instance; // выставляем флаг сработавшего regex
-					re_cnt--;
-					dbgMsg += ": REMOVED";
+					e[opt.prop] = e[opt.prop].replace(a[0], a[1]);
+					dbgMsg = ": FOUND";
+
+					if(opt.single)
+					{
+						a[3] = instance; // выставляем флаг сработавшего regex
+						re_cnt--;
+						dbgMsg += ": REMOVED";
+					}
+					if(opt.break)
+					{
+						dobreak = true; // прерываем цикл перебора regex
+						dbgMsg += ": BREAK";
+					}
 				}
-				if(opt.break)
-				{
-					dobreak = true; // прерываем цикл перебора regex
-					dbgMsg += ": BREAK";
-				}
+				else 
+					dbgMsg = ": NOT FOUND";
+
+				if(debug) this.dbgMsg("FND:",  [a[0], a[1]], dbgMsg);
+			} // for a
+			if(re_cnt < 1)
+			{
+				// прекращаем перебор элементов, т.к. не осталось активных regex
+				if(debug) this.dbgMsg("STOP");
+				return true;
 			}
-			else 
-				dbgMsg = ": NOT FOUND";
-
-			if(debug) this.dbgMsg("FND:",  [a[0], a[1]], dbgMsg);
-		} // for a
-		if(re_cnt < 1)
-		{
-			// прекращаем перебор элементов, т.к. не осталось активных regex
-			if(debug) this.dbgMsg("STOP");
-			break;
-		}
-	} // for e
-	if(dbg1st) console.groupEnd();	
+		}); // for e
+		if(dbg1st) console.groupEnd();
 	} catch(err) {
 		this.dbgMsg("ERROR: Selector:", p);
 	}
@@ -1361,8 +1367,9 @@ var main = {
 		window.actually_load_captcha = function(provider, extra)
 		{
 			main.fn.actually_load_captcha(provider, extra);
-			for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+			document.querySelectorAll('form input[name="captcha_text"]').forEach(function(el, id) {
 				el.value = "";
+			});
 		};
 
 		if(window.jQuery) 
@@ -1399,12 +1406,12 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// дата и время постов (перевод + коррекция)
-		for(let el of (element ? element : document).querySelectorAll("p.intro time"))
-		{
+		var elements = (element ? element : document).querySelectorAll("p.intro time");
+		elements.forEach(function(el, id) {
 			var t = new Date(el.getAttribute("datetime"));
 			t.setTime(t.getTime() + TIME_CORR);
 			el.innerText = main.timeLocaleString(t);
-		}
+		});
 	},
 
 	// ----------------------------------------------------
@@ -1412,9 +1419,11 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// удаление редиректа для внешних ссылок
-		let url="http://privatelink.de/?";
-		for(let el of (element ? element : document).querySelectorAll('a[href^="'+url+'"]'))
+		var url="http://privatelink.de/?";
+		var elements = (element ? element : document).querySelectorAll('a[href^="'+url+'"]');
+		elements.forEach(function(el, id) {
 			el.setAttribute("href", el.getAttribute("href").substr(url.length));
+		});
 	},
 
 	// ----------------------------------------------------
@@ -1429,13 +1438,15 @@ var main = {
 		main.fixRedirect(); // удаление редиректов 
 
 		// Перемещает изображения в ОП посте в сам пост
-		for(let thread of document.querySelectorAll('div.thread')) {
-			let files = thread.getElementsByClassName('files')[0];
+		var elements = document.querySelectorAll('div.thread');
+		elements.forEach(function(thread, id) {
+			var files = thread.getElementsByClassName('files')[0];
+
 			if(typeof files == 'undefined' || !files.hasChildNodes()) {
-				continue;
+				return;
 			}
 
-			let body = thread.getElementsByClassName('body')[0];
+			var body = thread.getElementsByClassName('body')[0];
 
 			if(files.childNodes.length > 3) {
 				files.style.display = 'inline-block';
@@ -1444,30 +1455,8 @@ var main = {
 				body.style.overflow = 'auto';
 			}
 
-			for(i of files.getElementsByClassName('post-image')) {
-				i.style.margin = '0';
-			}
-
 			body.parentNode.insertBefore(files, body);
-		}
-
-		// Переместить ответы вниз поста
-		for(let post of document.querySelectorAll('div.post')) {
-			let replies = post.getElementsByClassName('mentioned')[0];
-			
-			if(typeof replies == 'undefined') {
-				continue;
-			}
-
-			let div = document.createElement('div');
-			div.className = 'mentioned unimportant';
-			div.innerText = 'Ответы: ';
-			div.style.margin = '10px 4px 4px 0px';
-			div.style.display = 'inline-block';
-			div.appendChild(replies);
-
-			post.appendChild(div);
-		}
+		});
 	},
 
 	// ----------------------------------------------------
@@ -1479,15 +1468,14 @@ var main = {
 			return;
 
 		var t;
-		for(let el of document.querySelectorAll("div.mix")) 
-		{
+		document.querySelectorAll("div.mix").forEach(function(el, id) {
 			if(!(t = el.getAttribute("data-time"))) // дата создания
-				continue;
+				return;
 			t = new Date(t*1000 - 3600000);
 			if(!(el = el.querySelector("strong"))) 
-				continue;
+				return;
 			el.innerHTML = el.innerHTML + "<br><small>"+ main.timeLocaleString(t); + "</small>";
-		}
+		});
 	},
 
 	// ----------------------------------------------------
