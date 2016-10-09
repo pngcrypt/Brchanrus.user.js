@@ -276,38 +276,6 @@ replacer.cfg["main"] = [
 		['reg', 'p', [/^Enter reason below/, 'Введите причину жалобы']]
 	]],
 
-
-	// Любая доска / тред под модеркой
-	[/^mod\.php\?\/\w+(|\/|\/.+\.html)/, [
-		// кнопки модерирования
-		['reg', 'span.controls', [
-			['Spoiler em tudo', 'Скрыть превью всех изображений'],
-			['Arquivo spoiler', 'Скрыть превью изображения'],
-			['Apagar todos os posts do IP', 'Удалить все сообщения этого IP'],
-			['"Apagar"', '"Удалить пост"'],
-			['"Banir"', '"Забанить"'],
-			['"Banir e Apagar"', '"Забанить и удалить сообщение"'],
-			['Fixar thread', 'Закрепить тред'],
-			['Desafixar thread', 'Открепить тред'],
-			['Impedir bump', 'Запретить поднимать тред'],
-			['Permitir bump', 'Разрешить поднимать тред'],
-			['Trancar thread', 'Закрыть тред'],
-			['Destrancar thread', 'Открыть тред'],
-			['Make thread cycle', 'Включить циклическую очистку (удаление старых после бамплимита)'],
-			['Make thread not cycle', 'Отключить циклическую очистку'],
-			['Editar mensagem', 'Редактировать'],
-			['Apagar arquivo', 'Удалить файл'],
-
-			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений в посте?'],
-			['Tem certeza que desejar tornar o arquivo spoiler?', 'Вы уверены, что хотите скрыть превью изображеня?'],
-			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
-			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
-			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
-		], [RE_INNER, RE_MULTI, RE_NOBREAK]],
-
-		[]
-	]],
-
 	// Админка - логин / ошибки
 	[/^mod\.php\b/, [
 		['reg', 'head > title', ['Login', 'Вход']],
@@ -734,6 +702,42 @@ replacer.cfg["main"] = [
 
 	[]
 ];
+
+// ==============================================================================================
+// Кнопки модерирования
+// ==============================================================================================
+replacer.cfg["mod_buttons"] = [
+	// Любая доска / тред под модеркой
+	[/^mod\.php\?\/\w+(|\/|\/.+\.html)/, [
+		// кнопки модерирования
+		['reg', 'span.controls', [
+			['Spoiler em tudo', 'Скрыть превью всех изображений'],
+			['Arquivo spoiler', 'Скрыть превью изображения'],
+			['Apagar todos os posts do IP', 'Удалить все сообщения этого IP'],
+			['"Apagar"', '"Удалить пост"'],
+			['"Banir"', '"Забанить"'],
+			['"Banir e Apagar"', '"Забанить и удалить сообщение"'],
+			['Fixar thread', 'Закрепить тред'],
+			['Desafixar thread', 'Открепить тред'],
+			['Impedir bump', 'Запретить поднимать тред'],
+			['Permitir bump', 'Разрешить поднимать тред'],
+			['Trancar thread', 'Закрыть тред'],
+			['Destrancar thread', 'Открыть тред'],
+			['Make thread cycle', 'Включить циклическую очистку (удаление старых после бамплимита)'],
+			['Make thread not cycle', 'Отключить циклическую очистку'],
+			['Editar mensagem', 'Редактировать'],
+			['Apagar arquivo', 'Удалить файл'],
+
+			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений в посте?'],
+			['Tem certeza que desejar tornar o arquivo spoiler?', 'Вы уверены, что хотите скрыть превью изображеня?'],
+			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
+			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
+			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
+		], [RE_INNER, RE_MULTI, RE_NOBREAK]],
+
+		[]
+	]],
+]],
 
 // ==============================================================================================
 // окно алертов
@@ -1377,16 +1381,18 @@ var main = {
 			// перевод новых постов
 			$(document).on('new_post', function(e, post) {
 				replacer.process("new_post", post, false);
+				replacer.process("mod_buttons", post, true);
 				main.fixPostDate(post);
 				main.fixRedirect(post);
 				main.moveReplies();
 				// TODO: кнопки модерирования на новых постах
 			});
-			$('#watchlist').css('width', '20%');
+			$('#watchlist').css('width', '30%');
 		}
 
 		// перевод страниц
 		replacer.process("main", document, false);
+		replacer.process("mod_buttons", document, true);
 		replacer.clear("main");
 
 		main.fixThread();
