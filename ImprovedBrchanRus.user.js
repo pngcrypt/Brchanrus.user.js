@@ -57,6 +57,7 @@ replacer.cfg["main"] = [
 		['txt', 'div.boardlist > span > a[href="/create.php"]', TYPE_LASTNODE, ' Создать доску'],
 		['txt', 'div.boardlist > span > a[href="/mod.php"]', TYPE_LASTNODE, ' Админка'],
 		['txt', 'div.boardlist > span > a[href="/bugs.php"]', TYPE_LASTNODE, ' Сообщить об ошибке'],
+		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все'],
 		['css', 'body > div > a[title="Opções"]', '[Настройки]'],
 
 		// Техобслуживание
@@ -1067,7 +1068,7 @@ replacer.process = function(cfg, element, debug)
 
 		this.dbgMsg("URL-Match:", u[0]);
 
-		debug = !!(this.debug && (u[2] || debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
+		let dodebug = (this.debug && (u[2] || debug)); // принудительная отладка для заданного url-regex (задается в конфиге)
 
 		// перебор реплейсеров группы
 		for(let r of u[1]) 
@@ -1086,7 +1087,7 @@ replacer.process = function(cfg, element, debug)
 			}
 
 			// вызов функции реплейсера
-			let err = this[fn](element, r, instance, debug);
+			let err = this[fn](element, r, instance, dodebug);
 
 			if(err < 0)
 			{
@@ -1199,16 +1200,26 @@ replacer.txtReplacer = function(el, p, instance, debug)
 	if(p.length < 4)
 		return -1;
 
-	for(let e of el.querySelectorAll(p[1])) 
-	{
-		let node;
-		switch(p[2]) {
-			case TYPE_FIRSTNODE: node = e.firstChild; break;
-			case TYPE_LASTNODE: node = e.lastChild; break;
+	if(debug) console.group("TXT:", p[1]);
+	let worked = false;
+	try {
+		for(let e of el.querySelectorAll(p[1])) 
+		{
+			let node;
+			switch(p[2]) {
+				case TYPE_FIRSTNODE: node = e.firstChild; break;
+				case TYPE_LASTNODE: node = e.lastChild; break;
+			}
+			if(node)
+				node.textContent = p[3];
+			if(debug) this.dbgMsg(e, node ? ": REPLACED": ": NO NODE");
+			worked = true;
 		}
-		if(node) 
-			node.textContent = p[3];
+		if(debug && !worked) this.dbgMsg("NOT FOUND");
+	} catch(err) {
+		this.dbgMsg("ERROR: Selector");
 	}
+	if(debug) console.groupEnd();
 }
 
 // ----------------------------------------------------
