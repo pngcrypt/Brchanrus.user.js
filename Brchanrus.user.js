@@ -13,7 +13,7 @@
 // @nocompat        Chrome
 // ==/UserScript==
 
-const TIME_CORR = 2 * 3600000; // коррекция даты постов (в мс)
+const TIME_CORR = 3 * 3600000; // коррекция даты постов (в мс)
 const TYPE_FIRSTNODE = 0;
 const TYPE_LASTNODE = 1;
 
@@ -1019,19 +1019,6 @@ var l10n_rus = {
 // ==============================================================================================
 // replacer functions
 // ==============================================================================================
-replacer.dbgMsg = function() 
-{
-	// глобальные отладочные сообщения
-	if(!this.debug) return;
-	console.debug.apply(this, arguments); // вывести в консоль переданные параметры
-}
-
-replacer.dbgMsgLocal = function()
-{
-	// локальные отладочные сообщения (для текущей группы url-regex, вызывать из ф-ций реплейсеров)
-	if(!this.debugLocal) return;
-	console.debug.apply(this, arguments); // вывести в консоль переданные параметры
-}
 
 // ----------------------------------------------------
 replacer.process = function(cfg, element, debug)
@@ -1044,7 +1031,7 @@ replacer.process = function(cfg, element, debug)
 	*/
 	
 	if(!this.cfg[cfg]) {
-		this.dbgMsg("ERROR: CFG NOT FOUND: ", cfg);
+		if(this.debug) console.debug("ERROR: CFG NOT FOUND: ", cfg);
 		return;
 	}
 
@@ -1064,12 +1051,12 @@ replacer.process = function(cfg, element, debug)
 		if(!u.length) continue; // empty
 		if(u.length < 2 || !Array.isArray(u[1])) // проверка параметров
 		{
-			this.dbgMsg("ERROR: Syntax1:", u);
+			if(this.debug) console.debug("ERROR: Syntax1:", u);
 			continue;
 		}
 		if(!main.url.match(u[0])) continue; // проверка url
 
-		this.dbgMsg("URL-Match:", u[0]);
+		if(this.debug) console.debug("URL-Match:", u[0]);
 
 		this.debugLocal = (this.debug && (u[2] || debug)); // отладка для текущего url-regex
 
@@ -1079,13 +1066,13 @@ replacer.process = function(cfg, element, debug)
 			if(!r.length) continue; //empty
 			if(r.length < 2)
 			{
-				this.dbgMsg("ERROR: Syntax2:", r);
+				if(this.debug) console.debug("ERROR: Syntax2:", r);
 				continue;
 			}
 			let fn=r[0]+"Replacer";
 			if(!this[fn]) // проверка наличия функции реплейсера
 			{
-				this.dbgMsg('ERROR: NO Replacer function for:', r);
+				if(this.debug) console.debug('ERROR: NO Replacer function for:', r);
 				continue;
 			}
 
@@ -1094,15 +1081,17 @@ replacer.process = function(cfg, element, debug)
 
 			if(err < 0)
 			{
-				this.dbgMsg("ERROR: Syntax3"+err+":", r);
+				if(this.debug) console.debug("ERROR: Syntax3"+err+":", r);
 				continue;
 			}
 			else if(err)
 				break; // прерывание цикла перебора реплейсеров для текущего url-regex
 		}
 	}
-	this.dbgMsg('Relaced in', performance.now() - perf, "ms");
-	if(this.debug) console.groupEnd();
+	if(this.debug) {
+		console.debug('Relaced in', performance.now() - perf, "ms");
+		console.groupEnd();
+	}	
 }
 
 // ----------------------------------------------------
@@ -1204,7 +1193,7 @@ replacer.txtReplacer = function(el, p)
 	let dbg1st = 0;
 	try {
 		for(let e of el.querySelectorAll(p[1])) {
-			if(!dbg1st++ && this.debugLocal) console.group("TXT:", p[1]);
+			if(this.debugLocal && !dbg1st++) console.group("TXT:", p[1]);
 			let node;
 			switch(p[2]) {
 				case TYPE_FIRSTNODE: node = e.firstChild; break;
@@ -1212,11 +1201,15 @@ replacer.txtReplacer = function(el, p)
 			}
 			if(node)
 				node.textContent = p[3];
-			this.dbgMsgLocal(e, node ? ": REPLACED": ": NO NODE");
+			if(this.debugLocal) {
+				if(node)
+					console.debug(e, ":REPLACED:", [p[3]]);
+				else
+					console.debug(e, ":NO NODE");
+			}
 		}
-		//if(!worked) this.dbgMsgLocal("NOT FOUND");
 	} catch(err) {
-		this.dbgMsg("ERROR: Selector", p);
+		if(this.debug) console.debug("ERROR: Selector", p);
 	}
 	if(dbg1st) console.groupEnd();
 }
@@ -1252,7 +1245,7 @@ replacer.regReplacer = function(el, p)
 	{
 		if(this.debugLocal) {
 			if(!dbg1st++) console.group("REG:", p[1]);
-			this.dbgMsg(" \nELM:", e);
+			console.debug(" \nELM:", e);
 		}
 		let re_cnt = 0; // кол-во активных regex (не сработавших)
 		let dobreak = false;
@@ -1263,7 +1256,7 @@ replacer.regReplacer = function(el, p)
 				continue;
 			if(a.length < 2) // проверка параметров
 			{
-				if(this.debugLocal) console.groupEnd();
+				if(dbg1st) console.groupEnd();
 				return -2;
 			}
 
@@ -1294,18 +1287,18 @@ replacer.regReplacer = function(el, p)
 			else 
 				dbgMsg = ": NOT FOUND";
 
-			this.dbgMsgLocal("FND:",  [a[0], a[1]], dbgMsg);
+			if(this.debugLocal) console.debug("FND:",  [a[0], a[1]], dbgMsg);
 		} // for a
 		if(re_cnt < 1)
 		{
 			// прекращаем перебор элементов, т.к. не осталось активных regex
-			this.dbgMsgLocal("STOP");
+			if(this.debugLocal) console.debug("STOP");
 			break;
 		}
 	} // for e
 	if(dbg1st) console.groupEnd();	
 	} catch(err) {
-		this.dbgMsg("ERROR: Selector:", p);
+		if(this.debug) console.debug("ERROR: Selector:", p);
 	}
 }
 
@@ -1321,10 +1314,10 @@ replacer.strReplacer = function(el, p)
 
 	if(el.text.match(p[1])) {
 		el.text = el.text.replace(p[1], p[2]);
-		if(debug) this.dbgMsg("FND:", p, ": FOUND\nSTOP");
+		//if(this.debugLocal) console.debug("STR:", p, ": FOUND\nSTOP");
 		return 1;
 	}
-	if(debug) this.dbgMsg("FND:", p, ": NOT FOUND");
+	//if(this.debugLocal) console.debug("FND:", p, ": NOT FOUND");
 }
 
 // ==============================================================================================
@@ -1347,7 +1340,7 @@ var main = {
 		window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
 		{
 			msg = {text: msg};
-			replacer.process("alert", msg);
+			replacer.process("alert", msg, false);
 
 			//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 			main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
@@ -1366,7 +1359,7 @@ var main = {
 		{
 			// перевод новых постов
 			$(document).on('new_post', function(e, post) {
-				replacer.process("new_post", post);
+				replacer.process("new_post", post, false);
 				main.fixPostDate(post);
 				main.fixRedirect(post);
 				// TODO: кнопки модерирования на новых постах
