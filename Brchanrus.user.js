@@ -1379,6 +1379,7 @@ var main = {
 				replacer.process("new_post", post, false);
 				main.fixPostDate(post);
 				main.fixRedirect(post);
+				main.moveReplies();
 				// TODO: кнопки модерирования на новых постах
 			});
 			$('#watchlist').css('width', '20%');
@@ -1433,6 +1434,7 @@ var main = {
 
 		main.fixPostDate(); // добавить дату постов в тредах
 		main.fixRedirect(); // удаление редиректов 
+		main.moveReplies();
 
 		// Перемещает изображения в ОП посте в сам пост
 		for(let thread of document.querySelectorAll('div.thread')) {
@@ -1483,6 +1485,19 @@ var main = {
 			replacer.process("search_cat");
 		});
 	},
+
+	moveReplies: function() {
+		// Переместить ответы вниз поста
+		for(let post of document.querySelectorAll('div.post')) {
+			let replies = post.getElementsByClassName('mentioned')[0];
+			
+			if(typeof replies == 'undefined') {
+				continue;
+			}
+
+			post.appendChild(replies);
+		}
+ 	},
 
 	// ----------------------------------------------------
 	init: function()
