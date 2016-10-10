@@ -1492,7 +1492,7 @@ var main = {
 
 	moveReplies: function() {
 		// Переместить ответы вниз поста
-		for(let post of document.querySelectorAll('div.post[id^="reply_"]')) {
+		for(let post of document.querySelectorAll('div.thread > div.post')) {
 			let replies = post.getElementsByClassName('mentioned')[0];
 			
 			if(typeof replies == 'undefined') {
