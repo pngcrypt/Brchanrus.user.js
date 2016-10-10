@@ -1031,7 +1031,7 @@ var l10n_rus = {
 	"Hide post and all replies" : "Скрыть пост и все ответы на него",
 	"Post +": "Пост и все ответы на него",
 	"Clear List": "Удалить все",
-	"Clear Ghosts": "Удалить несуществующие",
+	"Clear Ghosts": "Очистить",
 	"Reply": "Ответить",
 
 	"":""
@@ -1355,45 +1355,49 @@ var main = {
 	onDocReady: function() 
 	// ----------------------------------------------------
 	{
-		// перевод всплывающих сообщений
-		main.fn.alert = window.alert;
-		window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
-		{
-			msg = {text: msg};
-			replacer.process("alert", msg, false);
+		setTimeout(function() { // даем отработать скриптам борды
 
-			//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-			main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-		};
+			// перевод всплывающих сообщений
+			main.fn.alert = window.alert;
+			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
+			{
+				msg = {text: msg};
+				replacer.process("alert", msg, false);
 
-		// очистка поля капчи при обновлении
-		main.fn.actually_load_captcha = window.actually_load_captcha;
-		window.actually_load_captcha = function(provider, extra)
-		{
-			main.fn.actually_load_captcha(provider, extra);
-			for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
-				el.value = "";
-		};
+				//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+				main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+			};
 
-		if(window.jQuery) 
-		{
-			// перевод новых постов
-			$(document).on('new_post', function(e, post) {
-				replacer.process("new_post", post, false);
-				replacer.process("mod_buttons", post, false);
-				main.fixPostDate(post);
-				main.fixRedirect(post);
-				main.moveReplies();
-			});
-		}
+			// очистка поля капчи при обновлении
+			main.fn.actually_load_captcha = window.actually_load_captcha;
+			window.actually_load_captcha = function(provider, extra)
+			{
+				main.fn.actually_load_captcha(provider, extra);
+				for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+					el.value = "";
+			};
 
-		// перевод страниц
-		replacer.process("main", document, false);
-		replacer.process("mod_buttons", document, false);
-		replacer.clear("main");
+			if(window.jQuery) 
+			{
+				// перевод новых постов
+				$(document).on('new_post', function(e, post) {
+					replacer.process("new_post", post, false);
+					replacer.process("mod_buttons", post, false);
+					main.fixPostDate(post);
+					main.fixRedirect(post);
+					main.moveReplies();
+				});
+			}
 
-		main.fixThread();
-		main.fixCatalog();
+			// перевод страниц
+			replacer.process("main", document, false);
+			replacer.process("mod_buttons", document, false);
+			replacer.clear("main");
+
+			main.fixThread();
+			main.fixCatalog();
+
+		}, 0); // setTimeout
 	},
 
 	// ----------------------------------------------------
@@ -1459,9 +1463,12 @@ var main = {
 			/*for(i of files.getElementsByClassName('post-image')) {
 				i.style.margin = '0';
 			}*/
-
 			body.parentNode.insertBefore(files, body);
 		}
+
+		// фикс ширины панели избранного
+		let el = document.querySelector('#watchlist');
+		if(el) el.style.width = 'auto';
 	},
 
 	// ----------------------------------------------------
