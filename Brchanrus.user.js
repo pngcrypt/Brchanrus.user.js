@@ -134,7 +134,7 @@ replacer.cfg["main"] = [
 			['Catálogo', 'Каталог тредов']
 		], [RE_INNER, RE_NOBREAK]],
 
-		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, 'Сообщение слишком длинное. Нажмите <a href="$1">здесь</a> чтобы увидеть полный текст.', [RE_INNER, RE_MULTI]]],
+		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER, RE_MULTI]]],
 		['reg', 'div.post > span.omitted', [
 			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 			[/(\d+) mensage.s? omitidas?.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
@@ -1455,9 +1455,9 @@ var main = {
 				body.style.overflow = 'auto';
 			}
 
-			for(i of files.getElementsByClassName('post-image')) {
+			/*for(i of files.getElementsByClassName('post-image')) {
 				i.style.margin = '0';
-			}
+			}*/
 
 			body.parentNode.insertBefore(files, body);
 		}
