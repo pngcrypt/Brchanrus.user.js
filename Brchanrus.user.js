@@ -25,16 +25,17 @@ const RE_INNER = 'innerHTML'; // html код внутри элемента
 const RE_OUTER = 'outerHTML'; // hmtl код, включая найденный элемент
 
 // режимы поиска строк по regex
-const RE_SINGLE = 1; // однократный [по умолчанию] (после замены regex исключается из дальнейшего поиска)
-const RE_MULTI = 2; // многократый (поиск во всех элементах)
+const RE_SINGLE = 11; // однократный [по умолчанию] (после замены regex исключается из дальнейшего поиска)
+const RE_MULTI = 12; // многократый (поиск во всех элементах)
 
 // режим прерывания поиска по regex
-const RE_BREAK = 11; // прерывать перебор на первом найденном regex [по умолчанию] (для текущего селектора)
-const RE_NOBREAK = 12; // перебирать все regex независимо от результата (для текущего селектора)
+const RE_BREAK = 21; // прерывать перебор на первом найденном regex [по умолчанию] (для текущего селектора)
+const RE_NOBREAK = 22; // перебирать все regex независимо от результата (для текущего селектора)
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
 if(!console.debug) console.debug = console.log || function(){};
+if(!console.error) console.error = console.log || function(){};
 if(!console.group) 
 {
 	console.group = function() {
@@ -153,6 +154,12 @@ replacer.cfg["main"] = [
 		['reg', 'body > header > h1', [/^(\/\w+\/)/, '<a href="../">$1</a>', [RE_INNER]]]
 	]],
 
+	// доска tudo ("все")
+	[/^tudo\//, [
+		['css', 'header > h1', 'Все доски'],
+		['css', 'header > div.subtitle', 'Здесь показываются треды и посты со всех досок'],
+	]],
+
 	// Ошибки постинга
 	[/^post\.php/, [
 		['reg', 'head > title', [
@@ -171,7 +178,7 @@ replacer.cfg["main"] = [
 			['Senha incorreta', 'Неверный пароль']
 		]],
 
-		['css', 'body > div > p> a', 'Назад'],
+		['css', 'body > div > p > a', 'Назад'],
 
 		['reg', 'body > div > a', [
 			['Fechar janela', 'Закрыть окно'],
@@ -633,7 +640,7 @@ replacer.cfg["main"] = [
 			[/horas?/, 'ч'],
 			[/dias?/, 'дн']
 		], [RE_INNER, RE_MULTI]],
-		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия. хз надо ???
+		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия.
 			[/^Edited post/, 'Редактирование поста'],
 			[/^Deleted post/, 'Удаление поста'],
 			[/^Stickied thread/, 'Тред закреплен'],
@@ -649,7 +656,7 @@ replacer.cfg["main"] = [
 			[/^Deleted file from post/, 'Удаление файла в посте'],
 			[/^Removed ban (#\d+) for/, 'Бан снят $1 для'],
 			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
-			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no |)reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
+			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
 			[/^Created a new volunteer/, 'Добавлен новый модератор'],
 			[]
 		], [RE_MULTI]]
@@ -762,9 +769,13 @@ replacer.cfg["alert"] = [
 // ==============================================================================================
 replacer.cfg["new_post"] = [
 	['', [
-		['reg', 'span.name', ['Anônimo', 'Аноним'], [RE_INNER]],
-		['reg', 'span.name > span', ['You', 'Вы']],
+		['reg', 'span.name', ['Anônimo', 'Аноним'], [RE_INNER, RE_MULTI]],
+		['reg', 'span.name > span', ['You', 'Вы'], [RE_MULTI]],
 		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: ']
+		['reg', 'p.intro > a:not([class])', [
+			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
+			['Responder', 'Ответить']
+		], [RE_MULTI]],
 	]]
 ];
 
@@ -1009,7 +1020,7 @@ var l10n_rus = {
 	"Prefix": "Префикс",
 	"Name": "Имя",
 
-	// дополнительные (не заданные в бразильской локализации). Имена искать в main.js
+	// дополнительные (не заданные в бразильской локализации). -- /main.js
 	"Hide inlined backlinked posts": "Скрыть встроенные ответы",
 	"Drag and drop file selection": "Включить перетаскивание файла",
 	"If you want to make a redistributable style, be sure to\nhave a Yotsuba B theme selected.": "Если вы хотите сделать распространяемый стиль, убедитесь, что\nвыбрана тема Yotsuba B",
@@ -1034,6 +1045,12 @@ var l10n_rus = {
 	"Clear Ghosts": "Очистить",
 	"Reply": "Ответить",
 
+	// локализация доски "tudo" ("Все") -- /tudo/ukko.js
+	"(esconder threads desta board)": "(скрыть треды этой доски)",
+	"(mostrar threads desta board)": "(показать треды этой доски)",
+	"Sem mais threads para exibir.": "Нет больше тредов для отображения",
+	"Carregando...": "Загрузка...",
+
 	"":""
 };
 
@@ -1048,7 +1065,7 @@ replacer.process = function(cfg, element, debug)
 	/* 
 	произвести замену с использованием конфига с именем cfg
 		element - родительский элемент, по умолчанию document
-		debug - включить отладку конфига (true/false)
+		debug - включить отладку реплейсеров конфига (true/false)
 	*/
 
 	let perf = performance.now();
@@ -1066,6 +1083,9 @@ replacer.process = function(cfg, element, debug)
 	this.instance[cfg]++; 
 	this.instanceLocal = this.instance[cfg]; // кол-во запусков текущего конфига
 
+	let re_opt = this.reOpt(); // модификаторы по умолчанию
+	if(this.debug) re_opt.debug = !!debug; // если разрешена глобальная отладка, то меняем модификатор на переданный 
+
 	for(let u of this.cfg[cfg])
 	{
 		// перебор всех групп url-regex в заданном конфиге
@@ -1076,11 +1096,11 @@ replacer.process = function(cfg, element, debug)
 			continue;
 		}
 		if(!main.url.match(u[0])) continue; // проверка url
-
 		if(this.debug) console.debug("URL-Match:", u[0]);
-		this.debugLocal = (this.debug && (u[2] || debug)); // отладка для текущего url-regex
 
-		// перебор реплейсеров группы
+		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для группы url-regex
+
+		// перебор реплейсеров url-regex группы
 		for(let r of u[1]) 
 		{
 			if(!r.length) continue; //empty
@@ -1089,16 +1109,14 @@ replacer.process = function(cfg, element, debug)
 				if(this.debug) console.debug("ERROR: Syntax2:", r);
 				continue;
 			}
+
 			let fn=r[0]+"Replacer";
 			if(!this[fn]) // проверка наличия функции реплейсера
 			{
 				if(this.debug) console.debug('ERROR: NO Replacer function for:', r);
 				continue;
 			}
-
-			// вызов функции реплейсера
-			let err = this[fn](element, r);
-
+			let err = this[fn](element, r, opt); // вызов функции реплейсера
 			if(err < 0)
 			{
 				if(this.debug) console.debug("ERROR: Syntax3"+err+":", r);
@@ -1129,19 +1147,18 @@ replacer.reOpt = function(arr, def)
 // ----------------------------------------------------
 {
 	// arr - массив модификаторов [RE_TEXT, RE_MULTI] и т.п. порядок значения не имеет
-	// def - объект опций по умолчанию {prop, single, break} 
-	// возвращает новый созданный объект опций {prop, single, break}
+	// def - объект опций по умолчанию {prop, single, break, debug} 
+	// возвращает объект модифицированных опций 
 
-	var opt = new Object();
 	if(typeof(def) != 'object')
-		opt={prop: RE_TEXT, single: true, break: true};
-	else
-		opt={prop: def.prop, single: def.single, break: def.break};
+		def={prop: RE_TEXT, single: true, break: true, debug: this.debug}; // новый объект с дефолтными параметрами
 	if(!Array.isArray(arr))
-		return opt;
+		return def; // возвращаем либо ссылку на дефолтный объект, либо новый объект
+	var opt={prop: def.prop, single: def.single, break: def.break, debug: def.debug}; // новый объект опций
 
 	for(let o of arr) {
 		switch(o) {
+			case RE_DEBUG: 	opt.debug = true; break;
 			case RE_SINGLE: opt.single = true; break;
 			case RE_MULTI: opt.single = false; break;
 			case RE_BREAK: opt.break = true; break;
@@ -1161,12 +1178,13 @@ replacer.reOpt = function(arr, def)
  ФУНКЦИИ РЕПЛЕЙСЕРОВ 
  для каждого типа реплейсера должна быть определена функция вида:
  
- replacer.<type>Repacler = function(el, params) {...}
+ replacer.<type>Repacler = function(el, params, re_opt) {...}
 
  где 
  	<type> - тип реплейсера (css, txt, reg и т.п.)
  	el - родительский элемент, в котором нужно производить поиск
  	params - массив параметров (из конфига) ["type", "css-selector", ....]  // type - тип реплейсера, дальше - параметры
+ 	re_opt - объект RE_* модификаторов по умолчанию для текущего реплейсера
 
 возвращаемые значения:
 	= 0 : нормальное завершение
@@ -1175,7 +1193,7 @@ replacer.reOpt = function(arr, def)
 */ 
 
 // ----------------------------------------------------
-replacer.cssReplacer = function(el, p)
+replacer.cssReplacer = function(el, p, re_opt)
 // ----------------------------------------------------
 {
 	// реплейсер текста по селектору
@@ -1189,7 +1207,7 @@ replacer.cssReplacer = function(el, p)
 
 
 // ----------------------------------------------------
-replacer.attReplacer = function(el, p)
+replacer.attReplacer = function(el, p, re_opt)
 // ----------------------------------------------------
 {
 	// реплейсер атрибутов
@@ -1202,7 +1220,7 @@ replacer.attReplacer = function(el, p)
 }
 
 // ----------------------------------------------------
-replacer.txtReplacer = function(el, p)
+replacer.txtReplacer = function(el, p, re_opt)
 // ----------------------------------------------------
 {
 	// реплейсер текста дочерних узлов
@@ -1213,7 +1231,7 @@ replacer.txtReplacer = function(el, p)
 	let dbg1st = 0;
 	try {
 		for(let e of el.querySelectorAll(p[1])) {
-			if(this.debugLocal && !dbg1st++) console.group("TXT:", p[1]);
+			if(re_opt.debug && !dbg1st++) console.group("TXT:", p[1]);
 			let node;
 			switch(p[2]) {
 				case TYPE_FIRSTNODE: node = e.firstChild; break;
@@ -1221,7 +1239,7 @@ replacer.txtReplacer = function(el, p)
 			}
 			if(node)
 				node.textContent = p[3];
-			if(this.debugLocal) {
+			if(re_opt.debug) {
 				if(node)
 					console.debug(e, ":REPLACED:", [p[3]]);
 				else
@@ -1229,13 +1247,17 @@ replacer.txtReplacer = function(el, p)
 			}
 		}
 	} catch(err) {
-		if(this.debug) console.debug("ERROR: Selector", p);
+		if(err.name != "SyntaxError") {
+			console.error(err);
+			throw err;
+		}
+		else if(this.debug) console.debug("ERROR: Selector?", p);
 	}
 	if(dbg1st) console.groupEnd();
 }
 
 // ----------------------------------------------------
-replacer.regReplacer = function(el, p)
+replacer.regReplacer = function(el, p, re_opt)
 // ----------------------------------------------------
 {
 	/* 
@@ -1256,14 +1278,13 @@ replacer.regReplacer = function(el, p)
 	if(!Array.isArray(p[2][0])) 
 		p[2] = [p[2]];
 
-	// параметры по умолчанию для всей группы
-	let def_opt = replacer.reOpt(p[3]);
+	re_opt = this.reOpt(p[3], re_opt); // модификаторы по умолчанию для группы regex
 	let dbg1st = 0;
 
 	try {
 	for(let e of el.querySelectorAll(p[1]))
 	{
-		if(this.debugLocal) {
+		if(re_opt.debug) {
 			if(!dbg1st++) console.group("REG:", p[1]);
 			console.debug(" \nELM:", e);
 		}
@@ -1285,7 +1306,7 @@ replacer.regReplacer = function(el, p)
 			if(dobreak || a[3] == this.instanceLocal)
 				continue; // продолжаем подсчет активных regex
 
-			let opt = replacer.reOpt(a[2], def_opt);
+			let opt = replacer.reOpt(a[2], re_opt); // модификаторы для текущего regex
 
 			if(e[opt.prop].match(a[0]))
 			{
@@ -1307,23 +1328,27 @@ replacer.regReplacer = function(el, p)
 			else 
 				dbgMsg = ": NOT FOUND";
 
-			if(this.debugLocal) console.debug("FND:",  [a[0], a[1]], dbgMsg);
+			if(opt.debug) console.debug("FND:",  [a[0], a[1]], dbgMsg);
 		} // for a
 		if(re_cnt < 1)
 		{
 			// прекращаем перебор элементов, т.к. не осталось активных regex
-			if(this.debugLocal) console.debug("STOP");
+			if(re_opt.debug) console.debug("STOP");
 			break;
 		}
 	} // for e
 	if(dbg1st) console.groupEnd();	
 	} catch(err) {
-		if(this.debug) console.debug("ERROR: Selector:", p);
+		if(err.name != "SyntaxError") {
+			console.error(err);
+			throw err;
+		}
+		else if(this.debug) console.debug("ERROR: Selector?", p);
 	}
 }
 
 // ----------------------------------------------------
-replacer.strReplacer = function(el, p)
+replacer.strReplacer = function(el, p, re_opt)
 // ----------------------------------------------------
 {
 	// реплейсер текста в переданном объекте el {text}
@@ -1334,10 +1359,10 @@ replacer.strReplacer = function(el, p)
 
 	if(el.text.match(p[1])) {
 		el.text = el.text.replace(p[1], p[2]);
-		//if(this.debugLocal) console.debug("STR:", p, ": FOUND\nSTOP");
+		//if(re_opt.debug) console.debug("STR:", p, ": FOUND\nSTOP");
 		return 1;
 	}
-	//if(this.debugLocal) console.debug("FND:", p, ": NOT FOUND");
+	//if(re_opt.debug) console.debug("FND:", p, ": NOT FOUND");
 }
 
 // ==============================================================================================
