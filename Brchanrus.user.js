@@ -1453,6 +1453,7 @@ var main = {
 			}
 			else {
 				body.style.overflow = 'auto';
+				body.parentNode.style.overflow = 'auto'; // На нулевой смещает ответы под оп пост
 			}
 
 			/*for(i of files.getElementsByClassName('post-image')) {
