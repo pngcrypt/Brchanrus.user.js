@@ -117,7 +117,7 @@ replacer.cfg["main"] = [
 
 		['reg', 'tr#oekaki > td > a', ['Mostrar oekaki', 'начать']],
 		['reg', 'table.post-table-options span.unimportant', [
-			['substitui arquivos', 'заменяет файл', [RE_NOBREAK]],
+			['substitui arquivos', 'заменяет файл', [RE_MULTI, RE_NOBREAK]],
 			['(para remover arquivos e mensagens)', '(для удаления файлов и сообщений)'],
 			['(você também pode escrever sage no e-mail)', '(вы также можете писать sage в поле опций)'],
 			['(isso substitui a miniatura da sua imagem por uma interrogação)', '(это заменяет превью вашего изображения знаком вопроса)']
@@ -554,7 +554,6 @@ replacer.cfg["main"] = [
 		['att', 'input#unban', 'value', 'Разбанить выделенных'],
 		[]
 	]],
-
 
 	// Админка - PM: создание/ответ
 	[/^mod\.php\?\/(new_PM\/|PM\/\d+\/reply)/, [
@@ -1493,13 +1492,21 @@ var main = {
 
 	moveReplies: function() {
 		// Переместить ответы вниз поста
-		for(let post of document.querySelectorAll('div.post')) {
+		for(let post of document.querySelectorAll('div.post[id^="reply_"]')) {
 			let replies = post.getElementsByClassName('mentioned')[0];
 			
 			if(typeof replies == 'undefined') {
 				continue;
 			}
 
+			if(!post.brr_init) {
+				let dsc = document.createTextNode('Ответы: ');
+				replies.insertBefore(dsc, replies.children[0]);
+				post.brr_init = true;
+			}
+			for(let i of replies.children) {
+				i.style.fontSize = 'inherit';
+			}
 			post.appendChild(replies);
 		}
  	},
