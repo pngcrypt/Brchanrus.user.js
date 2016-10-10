@@ -1385,7 +1385,6 @@ var main = {
 				main.fixRedirect(post);
 				main.moveReplies();
 			});
-			$('#watchlist').css('width', '30%');
 		}
 
 		// перевод страниц
