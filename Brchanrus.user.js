@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name            Brchan Rusifikator
+// @name            BRchan Rusifikator
 // @version         3.3
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
@@ -104,8 +104,10 @@ replacer.cfg["main"] = [
 			['Verificação', 'Капча'],
 			['Arquivo', 'Файл']
 		]],
-		['css', 'table.post-table > tbody > tr > td > div.format-text > a', 'ВСТАВИТЬ'],
-		['css', 'table.post-table > tbody > tr > td > div.captcha_html', 'кликните сюда для показа'],
+		['css', 'table.post-table > tbody > tr > td', [
+			['div.format-text > a', 'ВСТАВИТЬ'],
+			['div.captcha_html', 'кликните сюда для показа']
+		]],
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
 		['css', 'a.show-post-table-options', '[Показать опции]'],
@@ -156,8 +158,10 @@ replacer.cfg["main"] = [
 
 	// доска tudo ("все")
 	[/^tudo\//, [
-		['css', 'header > h1', 'Все доски'],
-		['css', 'header > div.subtitle', 'Здесь показываются треды и посты со всех досок'],
+		['css', 'header', [
+			['h1', 'Все доски'],
+			['div.subtitle', 'Здесь показываются треды и посты со всех досок']
+		]]
 	]],
 
 	// Ошибки постинга
@@ -195,17 +199,19 @@ replacer.cfg["main"] = [
 		['reg', 'body > span', ['Ordenar por', 'Сортировка по']],
 		['reg', 'body > span', ['Tamanho da imagem', 'Размер изображений']],
 
-		['css', 'select#sort_by > option[value="bump:desc"]', 'Активности'],
-		['css', 'select#sort_by > option[value="time:desc"]', 'Дате создания'],
-		['css', 'select#sort_by > option[value="reply:desc"]', 'Кол-ву ответов'],
-		['css', 'select#sort_by > option[value="random:desc"]', 'Случайная'],
+		['css', 'select#sort_by', [
+			['option[value="bump:desc"]', 'Активности'],
+			['option[value="time:desc"]', 'Дате создания'],
+			['option[value="reply:desc"]', 'Кол-ву ответов'],
+			['option[value="random:desc"]', 'Случайная']
+		]],
 
-		['css', 'select#image_size > option[value="vsmall"]', 'Крошечные'],
-		['css', 'select#image_size > option[value="small"]', 'Маленькие'],
-		['css', 'select#image_size > option[value="medium"]', 'Средние'],
-		['css', 'select#image_size > option[value="large"]', 'Большие'],
-
-		[]
+		['css', 'select#image_size', [
+			['option[value="vsmall"]', 'Крошечные'],
+			['option[value="small"]', 'Маленькие'],
+			['option[value="medium"]', 'Средние'],
+			['option[value="large"]', 'Большие']
+		]]
 	]],
 
 	// Список досок
@@ -771,12 +777,12 @@ replacer.cfg["new_post"] = [
 	['', [
 		['reg', 'span.name', ['Anônimo', 'Аноним'], [RE_INNER, RE_MULTI]],
 		['reg', 'span.name > span', ['You', 'Вы'], [RE_MULTI]],
-		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: ']
+		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: '],
 		['reg', 'p.intro > a:not([class])', [
-			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
+			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений]'],
 			['Responder', 'Ответить']
 		], [RE_MULTI]],
-	]]
+	], []]
 ];
 
 // ==============================================================================================
@@ -1085,41 +1091,53 @@ replacer.process = function(cfg, element, debug)
 
 	let re_opt = this.reOpt(); // модификаторы по умолчанию
 	if(this.debug) re_opt.debug = !!debug; // если разрешена глобальная отладка, то меняем модификатор на переданный 
+	let ucnt = 0;
 
-	for(let u of this.cfg[cfg])
-	{
-		// перебор всех групп url-regex в заданном конфиге
-		if(!u.length) continue; // empty
-		if(u.length < 2 || !Array.isArray(u[1])) // проверка параметров
+	for(let u of this.cfg[cfg]) // перебор всех групп url-regex в заданном конфиге
+	{		
+		ucnt++;
+
+		if(Array.isArray(u) && !u.length) continue; // empty
+
+		// проверка параметров
+		if(!Array.isArray(u) || u.length < 2 || !Array.isArray(u[1])) 
 		{
-			if(this.debug) console.debug("ERROR: Syntax1:", u);
-			continue;
+			console.error("ERROR: Syntax: URL-group #"+ucnt+" : ", u);
+			if(Array.isArray(u))
+				continue;
+			else
+				break;
 		}
+
 		if(!main.url.match(u[0])) continue; // проверка url
 		if(this.debug) console.debug("URL-Match:", u[0]);
 
 		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для группы url-regex
+		let recnt = 0;
 
-		// перебор реплейсеров url-regex группы
-		for(let r of u[1]) 
+		for(let r of u[1]) // перебор реплейсеров url-regex группы
 		{
-			if(!r.length) continue; //empty
-			if(r.length < 2)
+			recnt++;
+			if(Array.isArray(r) && !r.length) continue; //empty
+			if(!Array.isArray(r) || r.length < 2)
 			{
-				if(this.debug) console.debug("ERROR: Syntax2:", r);
-				continue;
+				console.error("ERROR: Syntax: Replacer #"+recnt+" : ", r);
+				if(!Array.isArray(r))
+					break;
+				else
+					continue;
 			}
 
 			let fn=r[0]+"Replacer";
 			if(!this[fn]) // проверка наличия функции реплейсера
 			{
-				if(this.debug) console.debug('ERROR: NO Replacer function for:', r);
+				console.error('ERROR: NO Replacer function for:', r);
 				continue;
 			}
 			let err = this[fn](element, r, opt); // вызов функции реплейсера
 			if(err < 0)
 			{
-				if(this.debug) console.debug("ERROR: Syntax3"+err+":", r);
+				console.error("ERROR: Syntax"+err+": Replacer #"+recnt+" : ", r);
 				continue;
 			}
 			else if(err)
@@ -1196,13 +1214,60 @@ replacer.reOpt = function(arr, def)
 replacer.cssReplacer = function(el, p, re_opt)
 // ----------------------------------------------------
 {
-	// реплейсер текста по селектору
-	// p=["css", query, text]
+	/*
+	реплейсер текста по селектору
+		p=["css", query, text, re_arr]
+		p=["css", query, [ [sub-query1, text1],...,[sub-queryN, textN] ], re_arr]
+
+		в расширенном синтаксисе sub-query - селекторы, для дочерних элементов от родительского (найденного по query)
+		re_arr - массив RE_* модификаторов [не обязательно]
+	*/
+
 	if(p.length < 3)
 		return -1;
 
-	for(let e of el.querySelectorAll(p[1])) 
-		e.textContent = p[2];
+	var elements, sub;
+
+	try {
+		elements = el.querySelectorAll(p[1]);
+	} catch(err) {
+		console.error("ERROR: Selector:", p);
+		return;
+	}		
+	if(!elements.length) return;
+
+	let extended = Array.isArray(p[2]);
+	re_opt = this.reOpt(p[3], re_opt); // переопределение модификаторов
+
+	if(re_opt.debug) console.group("CSS:", "'"+p[1]+"'");
+	for(let e of elements)
+	{
+		if(!extended) {
+			e.textContent = p[2];
+			if(re_opt.debug) console.debug(e, ' --> ', p[2]);
+		} 
+		else {
+			// расширенный синтаксис
+			for(let sp of p[2]) {
+				if(!Array.isArray(sp) || (sp.length < 2)) // проверка синтаксиса
+					return -1;
+				try {
+					sub = e.querySelectorAll(sp[0]);
+				} catch(err) {
+					console.error("ERROR: Sub-Selector:", sp[0], p);
+				}
+				if(!sub || !sub.length) continue;
+
+				if(re_opt.debug) console.group("SUB:", "'"+sp[0]+"'");
+				for(let se of sub) {
+					se.textContent = sp[1];
+					if(re_opt.debug) console.debug(se, ' --> ', sp[1]);
+				}
+				if(re_opt.debug) console.groupEnd();
+			}
+		} // for sp
+	} // for e
+	if(re_opt.debug) console.groupEnd();
 }
 
 
@@ -1230,28 +1295,27 @@ replacer.txtReplacer = function(el, p, re_opt)
 
 	let dbg1st = 0;
 	try {
-		for(let e of el.querySelectorAll(p[1])) {
-			if(re_opt.debug && !dbg1st++) console.group("TXT:", p[1]);
-			let node;
-			switch(p[2]) {
-				case TYPE_FIRSTNODE: node = e.firstChild; break;
-				case TYPE_LASTNODE: node = e.lastChild; break;
-			}
-			if(node)
-				node.textContent = p[3];
-			if(re_opt.debug) {
-				if(node)
-					console.debug(e, ":REPLACED:", [p[3]]);
-				else
-					console.debug(e, ":NO NODE");
-			}
-		}
+		var elements = el.querySelectorAll(p[1]);
 	} catch(err) {
-		if(err.name != "SyntaxError") {
-			console.error(err);
-			throw err;
+		console.error("ERROR: Selector", p);
+		return;
+	}
+
+	for(let e of elements) {
+		if(re_opt.debug && !dbg1st++) console.group("TXT:", p[1]);
+		let node;
+		switch(p[2]) {
+			case TYPE_FIRSTNODE: node = e.firstChild; break;
+			case TYPE_LASTNODE: node = e.lastChild; break;
 		}
-		else if(this.debug) console.debug("ERROR: Selector?", p);
+		if(node)
+			node.textContent = p[3];
+		if(re_opt.debug) {
+			if(node)
+				console.debug(e, " --> ", p[3]);
+			else
+				console.debug(e, ": NO NODE");
+		}
 	}
 	if(dbg1st) console.groupEnd();
 }
@@ -1263,13 +1327,11 @@ replacer.regReplacer = function(el, p, re_opt)
 	/* 
 	реплейсер текста по regex 
 		p=["reg", query, param_arr, re_arr]
-		p=["reg", query, [param_arr1,...,param_arrN], re_arr_def]
+		p=["reg", query, [param_arr1,...,param_arrN], re_arr]
 
 		param_arr - массив параметров: [regex, text, re_arr]
 		re_arr - массив с комбинацией RE_* параметров [не обязательно]
-		re_arr_def - массив с комбинацией RE_* параметров по умолчанию для всей группы [не обязательно]
-
-		порядок и количество RE_* параметров в массиве не важен, по умолчанию: [RE_TEXT, RE_SINGLE, RE_BREAK]
+		внутренние re_opt переопределяют внешние
 	*/
 
 	if(p.length < 3 || !Array.isArray(p[2]) || (p.length > 3 && !Array.isArray(p[3])) || p.length > 4)
@@ -1282,20 +1344,25 @@ replacer.regReplacer = function(el, p, re_opt)
 	let dbg1st = 0;
 
 	try {
-	for(let e of el.querySelectorAll(p[1]))
+		var elements = el.querySelectorAll(p[1]);
+	} catch(err) {
+		console.error("ERROR: Selector", p);
+		return;
+	}
+	
+	for(let e of elements)
 	{
 		if(re_opt.debug) {
 			if(!dbg1st++) console.group("REG:", p[1]);
-			console.debug(" \nELM:", e);
+			console.debug("ELM:", e);
 		}
 		let re_cnt = 0; // кол-во активных regex (не сработавших)
 		let dobreak = false;
 		let dbgMsg = "";
 		for(let a of p[2]) 
 		{
-			if(!a.length)
-				continue;
-			if(a.length < 2) // проверка параметров
+			if(Array.isArray(a) && !a.length) continue; // empty
+			if(!Array.isArray(a) || a.length < 2) // проверка параметров
 			{
 				if(dbg1st) console.groupEnd();
 				return -2;
@@ -1338,13 +1405,6 @@ replacer.regReplacer = function(el, p, re_opt)
 		}
 	} // for e
 	if(dbg1st) console.groupEnd();	
-	} catch(err) {
-		if(err.name != "SyntaxError") {
-			console.error(err);
-			throw err;
-		}
-		else if(this.debug) console.debug("ERROR: Selector?", p);
-	}
 }
 
 // ----------------------------------------------------
@@ -1547,7 +1607,7 @@ var main = {
 	init: function()
 	// ----------------------------------------------------
 	{
-		console.log("Brchan Russifikator started");
+		console.log("BRchan Russifikator started");
 		console.debug("URL:", main.url);
 
 		// замена бразильской локализации
