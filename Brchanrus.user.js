@@ -59,7 +59,7 @@ replacer.cfg["main"] = [
 		['txt', 'div.boardlist > span > a[href="/create.php"]', TYPE_LASTNODE, ' Создать доску'],
 		['txt', 'div.boardlist > span > a[href="/mod.php"]', TYPE_LASTNODE, ' Админка'],
 		['txt', 'div.boardlist > span > a[href="/bugs.php"]', TYPE_LASTNODE, ' Сообщить об ошибке'],
-		['css', 'body > div > a[title="Opções"]', '[Настройки]'],
+		//['css', 'body > div > a[title="Opções"]', '[Настройки]'],
 
 		// Техобслуживание
 		['reg', 'body > div:nth-child(1) > span:not([class])', [
@@ -1266,12 +1266,13 @@ replacer.cssReplacer = function(el, p, re_opt)
 				}
 				if(!sub || !sub.length) continue;
 
-				if(re_opt.debug) console.group("SUB:", "'"+sp[0]+"'");
+				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
+				if(opt.debug) console.group("SUB:", "'"+sp[0]+"'");
 				for(let se of sub) {
-					se[re_opt.prop] = sp[1];
-					if(re_opt.debug) console.debug(se, ' --> ', sp[1]);
+					se[opt.prop] = sp[1];
+					if(opt.debug) console.debug(se, ' --> ', sp[1]);
 				}
-				if(re_opt.debug) console.groupEnd();
+				if(opt.debug) console.groupEnd();
 			}
 		} // for sp
 	} // for e
