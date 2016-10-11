@@ -1579,7 +1579,7 @@ var main = {
 		replacer.process("search_cat");
 		document.addEventListener("click", function() {
 			replacer.process("search_cat");
-		});
+		}, false);
 	},
 
 	moveReplies: function() {
