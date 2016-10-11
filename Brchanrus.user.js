@@ -77,10 +77,6 @@ replacer.cfg["main"] = [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
 			['Responder', 'Ответить']
 		], [RE_MULTI]],
-		['reg', 'div.options_tab > div > fieldset > legend', [
-			['Formatting Options', 'Опции форматирования'],
-			['Image hover', 'Всплывающие изображения']
-		]],
 
 		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]]], // ???
 		['reg', 'div.banner > a', [
@@ -801,7 +797,11 @@ replacer.cfg["search_cat"] = [
 // ==============================================================================================
 replacer.cfg["page_loaded"] = [
 	['', [
-		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все']
+		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все'],
+		['reg', 'div.options_tab > div > fieldset > legend', [
+			['Formatting Options', 'Опции форматирования'],
+			['Image hover', 'Всплывающие изображения']
+		]]
 	]]
 ];
 
