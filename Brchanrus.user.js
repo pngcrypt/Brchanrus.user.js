@@ -88,7 +88,7 @@ replacer.cfg["main"] = [
 		]],
 
 		// Посты
-		['nod', 'p.intro > label > span.name', 'Аноним', [RE_FIRST]],
+		['reg', 'p.intro > label > span.name', ['Anônimo', 'Аноним'], [RE_MULTI]],
 		['att', 'p.intro > a.post-btn', "title", 'Опции'],
 		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
 		['css', 'a#link-quick-reply', '[Ответить]'],
@@ -1352,18 +1352,19 @@ replacer.nodReplacer = function(el, p, re_opt)
 	if(re_opt.debug) console.group("NOD:", "'"+p[1]+"'");
 	for(let e of elements)
 	{
-		let node;
+		let node, dmsg;
 		if(!extended) {
 			if(re_opt.node < 0)
 				node = e.lastChild;
 			else
 				node = e.firstChild;
+			dmsg = ':' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 			if(node) {
-				if(re_opt.debug) console.debug(e, ':', (re_opt.node < 0 ? 'LAST' : 'FIRST'), ':', node, ' --> ', p[2]);
+				if(re_opt.debug) console.debug(e, dmsg, node, ' --> ', p[2]);
 				node[re_opt.prop] = p[2];
 			}
 			else
-				if(re_opt.debug) console.debug(e, ':', (re_opt.node < 0 ? 'LAST' : 'FIRST'), ': NOT FOUND');
+				if(re_opt.debug) console.debug(e, dmsg, ': NO NODE');
 		} 
 		else {
 			// расширенный синтаксис
@@ -1380,17 +1381,17 @@ replacer.nodReplacer = function(el, p, re_opt)
 				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
 				if(opt.debug) console.group("SUB:", "'"+sp[0]+"'");
 				for(let se of sub) {
-					let node;
 					if(opt.node < 0)
 						node = se.lastChild;
 					else
 						node = se.firstChild;
+					dmsg = ':' + (opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 					if(node) {
-						if(opt.debug) console.debug(se, ':', (opt.node < 0 ? 'LAST' : 'FIRST'), ':', node, ' --> ', sp[1]);
+						if(opt.debug) console.debug(se, dmsg, node, ' --> ', sp[1]);
 						node[opt.prop] = sp[1];
 					}
 					else
-						if(opt.debug) console.debug(se, ':', (opt.node < 0 ? 'LAST' : 'FIRST'), ': NOT FOUND');
+						if(opt.debug) console.debug(se, dmsg, ': NO NODE');
 				} // for se
 				if(opt.debug) console.groupEnd();
 			} // for sp
