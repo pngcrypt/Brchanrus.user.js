@@ -77,10 +77,6 @@ replacer.cfg["main"] = [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
 			['Responder', 'Ответить']
 		], [RE_MULTI]],
-		['reg', 'div.options_tab > div > fieldset > legend', [
-			['Formatting Options', 'Опции форматирования'],
-			['Image hover', 'Всплывающие изображения']
-		]],
 
 		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]]], // ???
 		['reg', 'div.banner > a', [
@@ -801,7 +797,11 @@ replacer.cfg["search_cat"] = [
 // ==============================================================================================
 replacer.cfg["page_loaded"] = [
 	['', [
-		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все']
+		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все'],
+		['reg', 'div.options_tab > div > fieldset > legend', [
+			['Formatting Options', 'Опции форматирования'],
+			['Image hover', 'Всплывающие изображения']
+		]]
 	]]
 ];
 
@@ -992,7 +992,6 @@ var l10n_rus = {
 	"Show formatting toolbar": "Показать панель форматирования",
 	"Download All": "Скачать всеl",
 	"Hide IDs": "Скрыть ID пользователей",
-	"Image hover": "При наведении курсора",
 	"Image hover on catalog": "При наведении курсора в каталоге тредов",
 	"Image hover should follow cursor": "Всплывать возле курсора",
 	"Number of simultaneous image downloads (0 to disable): ": "Количество одновременных загрузок (0 для отключения): ",
@@ -1026,7 +1025,6 @@ var l10n_rus = {
 	"Delete post": "Удалить пост",
 	"Delete file": "Удалить файл",
 	"Enable inlining": "При клике на ответы разворачивать их в посте",
-	"Formatting Options": "Настройки форматирования",
 	"Add Rule": "Добавить правило",
 	"Save Rules": "Сохранить правила",
 	"Revert": "Отмена",
