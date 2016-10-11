@@ -59,7 +59,6 @@ replacer.cfg["main"] = [
 		['txt', 'div.boardlist > span > a[href="/create.php"]', TYPE_LASTNODE, ' Создать доску'],
 		['txt', 'div.boardlist > span > a[href="/mod.php"]', TYPE_LASTNODE, ' Админка'],
 		['txt', 'div.boardlist > span > a[href="/bugs.php"]', TYPE_LASTNODE, ' Сообщить об ошибке'],
-		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все'],
 		['css', 'body > div > a[title="Opções"]', '[Настройки]'],
 
 		// Техобслуживание
@@ -792,10 +791,19 @@ replacer.cfg["search_cat"] = [
 	['', [
 		['reg', 'a#catalog_search_button', [
 			['Close', 'Закрыть'],
-			['Search', 'Искать']
+			['Search', 'Быстрый поиск']
 		]]
 	]]
 ]
+
+// ==============================================================================================
+// доп. перевод после полной загрузки страницы (после скриптов борды)
+// ==============================================================================================
+replacer.cfg["page_loaded"] = [
+	['', [
+		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все']
+	]]
+];
 
 // ==============================================================================================
 // переменные локализации (для скриптов: настройки, быстрый ответ, и т.п.) 
@@ -1074,7 +1082,7 @@ replacer.process = function(cfg, element, debug)
 		debug - включить отладку реплейсеров конфига (true/false)
 	*/
 
-	let perf = performance.now();
+	let starttime = Date.now();
 	if(!this.cfg[cfg]) {
 		if(this.debug) console.debug("ERROR: CFG NOT FOUND: ", cfg);
 		return;
@@ -1145,7 +1153,7 @@ replacer.process = function(cfg, element, debug)
 		}
 	}
 	if(this.debug) {
-		console.debug('Relaced in', Math.round(performance.now() - perf), "ms");
+		console.debug('Relaced in', Math.round(Date.now() - starttime), "ms");
 		console.groupEnd();
 	}	
 }
@@ -1243,7 +1251,7 @@ replacer.cssReplacer = function(el, p, re_opt)
 	for(let e of elements)
 	{
 		if(!extended) {
-			e.textContent = p[2];
+			e[re_opt.prop] = p[2];
 			if(re_opt.debug) console.debug(e, ' --> ', p[2]);
 		} 
 		else {
@@ -1260,7 +1268,7 @@ replacer.cssReplacer = function(el, p, re_opt)
 
 				if(re_opt.debug) console.group("SUB:", "'"+sp[0]+"'");
 				for(let se of sub) {
-					se.textContent = sp[1];
+					se[re_opt.prop] = sp[1];
 					if(re_opt.debug) console.debug(se, ' --> ', sp[1]);
 				}
 				if(re_opt.debug) console.groupEnd();
@@ -1437,52 +1445,66 @@ var main = {
 	url: window.location.pathname.substr(1) + window.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
 
 	// ----------------------------------------------------
+	onPageLoaded: function()
+	// ----------------------------------------------------
+	{
+		// сюда помещать код, который должен выполняться после скриптов борды (полной загрузки страницы)
+
+		// фикс ширины панели избранного
+		let el = document.querySelector('#watchlist');
+		if(el) el.style.width = 'auto';
+
+		// доп. перевод
+		replacer.process("page_loaded"); 
+
+		if(RE_DEBUG) console.debug('Page loaded in ', (Date.now() - main.starttime)/1000, "s");
+	},
+
+	// ----------------------------------------------------
 	onDocReady: function() 
 	// ----------------------------------------------------
 	{
-		setTimeout(function() { // даем отработать скриптам борды
+		// перевод всплывающих сообщений
+		main.fn.alert = window.alert;
+		window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
+		{
+			msg = {text: msg};
+			replacer.process("alert", msg, false);
 
-			// перевод всплывающих сообщений
-			main.fn.alert = window.alert;
-			window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
-			{
-				msg = {text: msg};
-				replacer.process("alert", msg, false);
+			//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+			main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+		};
 
-				//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-				main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
-			};
+		// очистка поля капчи при обновлении
+		main.fn.actually_load_captcha = window.actually_load_captcha;
+		window.actually_load_captcha = function(provider, extra)
+		{
+			main.fn.actually_load_captcha(provider, extra);
+			for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+				el.value = "";
+		};
 
-			// очистка поля капчи при обновлении
-			main.fn.actually_load_captcha = window.actually_load_captcha;
-			window.actually_load_captcha = function(provider, extra)
-			{
-				main.fn.actually_load_captcha(provider, extra);
-				for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
-					el.value = "";
-			};
+		if(window.jQuery) 
+		{
+			// перевод новых постов
+			$(document).on('new_post', function(e, post) {
+				replacer.process("new_post", post, false);
+				replacer.process("mod_buttons", post, false);
+				main.fixPostDate(post);
+				main.fixRedirect(post);
+				main.moveReplies();
+			});
+		}
 
-			if(window.jQuery) 
-			{
-				// перевод новых постов
-				$(document).on('new_post', function(e, post) {
-					replacer.process("new_post", post, false);
-					replacer.process("mod_buttons", post, false);
-					main.fixPostDate(post);
-					main.fixRedirect(post);
-					main.moveReplies();
-				});
-			}
+		// перевод страниц
+		replacer.process("main", document, false);
+		replacer.process("mod_buttons", document, false);
+		replacer.clear("main");
 
-			// перевод страниц
-			replacer.process("main", document, false);
-			replacer.process("mod_buttons", document, false);
-			replacer.clear("main");
+		main.fixThread();
+		main.fixCatalog();
 
-			main.fixThread();
-			main.fixCatalog();
-
-		}, 0); // setTimeout
+		setTimeout(main.onPageLoaded, 0);
 	},
 
 	// ----------------------------------------------------
@@ -1550,10 +1572,6 @@ var main = {
 			}*/
 			body.parentNode.insertBefore(files, body);
 		}
-
-		// фикс ширины панели избранного
-		let el = document.querySelector('#watchlist');
-		if(el) el.style.width = 'auto';
 	},
 
 	// ----------------------------------------------------
@@ -1607,6 +1625,7 @@ var main = {
 	init: function()
 	// ----------------------------------------------------
 	{
+		main.starttime = Date.now();
 		console.log("BRchan Russifikator started");
 		console.debug("URL:", main.url);
 
