@@ -163,7 +163,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Ошибки постинга
-	[/^post\.php/, [
+	[/^(post|bugs)\.php/, [
 		['reg', 'head > title', [
 			['Erro', 'Ошибка'],
 			['Denúncia enviada', 'Жалоба отправлена']
@@ -284,10 +284,13 @@ replacer.cfg["main"] = [
 
 	// багрепорты
 	[/^bugs\.php/, [
-		['reg', 'head > title', ['BRCHAN :: SUIDB', 'BRCHAN :: Багрепорт']],
+		['reg', 'head > title', ['BRCHAN :: SUIDB', 'Багрепорт']],
 		['reg', 'div.ban.oficial > h2', [/^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах']],
 		['reg', 'div.ban.oficial > p', [/^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>'], [RE_INNER]],
 		['reg', 'div.ban.oficial > form > table > tbody > tr > td', [
+			['Você errou o codigo de verificação', 'Неверный код подтверждения'],
+			[/Descreva em pelo menos (\d+) palavras o bug/, 'В описании должно быть не меньше $1 слов(а)'],
+			['Digite o código de verificação anti-robôs', 'Введите код анти-спама'],
 			['Detalhes', 'Подробности'],
 			['Anti-robô', 'Анти-Спам']
 		], [RE_INNER]],
