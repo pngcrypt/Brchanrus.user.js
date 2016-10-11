@@ -14,23 +14,25 @@
 // ==/UserScript==
 
 const TIME_CORR = 3 * 3600000; // коррекция даты постов (в мс)
-const TYPE_FIRSTNODE = 0;
-const TYPE_LASTNODE = 1;
 
 const RE_DEBUG = true;
 
-// типы замены по regex
+// типы замены контента
 const RE_TEXT = 'textContent'; // текст внутри элемента [по умолчанию] (все тэги будут удалены)
 const RE_INNER = 'innerHTML'; // html код внутри элемента
 const RE_OUTER = 'outerHTML'; // hmtl код, включая найденный элемент
 
 // режимы поиска строк по regex
-const RE_SINGLE = 11; // однократный [по умолчанию] (после замены regex исключается из дальнейшего поиска)
-const RE_MULTI = 12; // многократый (поиск во всех элементах)
+const RE_SINGLE = 10; // [по умолчанию] однократный (после замены regex исключается из дальнейшего поиска)
+const RE_MULTI = 11; // многократый (поиск во всех элементах)
 
 // режим прерывания поиска по regex
-const RE_BREAK = 21; // прерывать перебор на первом найденном regex [по умолчанию] (для текущего селектора)
-const RE_NOBREAK = 22; // перебирать все regex независимо от результата (для текущего селектора)
+const RE_NOBREAK = 20; // перебирать все regex независимо от результата (для текущего селектора)
+const RE_BREAK = 21; // [по умолчанию] прерывать перебор на первом найденном regex (для текущего селектора)
+
+// выбор дочернего узла (для 'nod')
+const RE_FIRST = 30; // [по умолчанию] первая нода
+const RE_LAST = 31; // последняя
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
@@ -53,13 +55,14 @@ replacer.cfg["main"] = [
 
 	[/^/, [
 		// Панель меню
-		['txt', 'div.boardlist > span > a[href="/"]', TYPE_LASTNODE, ' Главная'],
-		['txt', 'div.boardlist > span > a[href="/boards.html"]', TYPE_LASTNODE, ' Список досок'],
-		['txt', 'div.boardlist > span > a[href="/random.php"]', TYPE_LASTNODE, ' На случайную доску'],
-		['txt', 'div.boardlist > span > a[href="/create.php"]', TYPE_LASTNODE, ' Создать доску'],
-		['txt', 'div.boardlist > span > a[href="/mod.php"]', TYPE_LASTNODE, ' Админка'],
-		['txt', 'div.boardlist > span > a[href="/bugs.php"]', TYPE_LASTNODE, ' Сообщить об ошибке'],
-		//['css', 'body > div > a[title="Opções"]', '[Настройки]'],
+		['nod', 'div.boardlist > span', [
+			['a[href="/"]', ' Главная'],
+			['a[href="/boards.html"]', ' Список досок'],
+			['a[href="/random.php"]', ' На случайную доску'],
+			['a[href="/create.php"]', ' Создать доску'],
+			['a[href="/mod.php"]', ' Админка'],
+			['a[href="/bugs.php"]', ' Сообщить об ошибке'],
+		], [RE_LAST]],
 
 		// Техобслуживание
 		['reg', 'body > div:nth-child(1) > span:not([class])', [
@@ -85,9 +88,9 @@ replacer.cfg["main"] = [
 		]],
 
 		// Посты
-		['txt', 'p.intro > label > span.name', TYPE_FIRSTNODE, 'Аноним'],
+		['nod', 'p.intro > label > span.name', 'Аноним', [RE_FIRST]],
 		['att', 'p.intro > a.post-btn', "title", 'Опции'],
-		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: '],
+		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
 		['css', 'a#link-quick-reply', '[Ответить]'],
 
 		// Форма ответа
@@ -190,7 +193,7 @@ replacer.cfg["main"] = [
 	// Страница каталога доски
 	[/^\w+\/catalog\.html$/, [
 		['reg', 'head > title', ['Catalog', 'Каталог тредов']],
-		['txt', 'header > h1', TYPE_FIRSTNODE, 'Каталог тредов ('],
+		['nod', 'header > h1', 'Каталог тредов (', [RE_FIRST]],
 		['reg', 'body > span', ['Ordenar por', 'Сортировка по']],
 		['reg', 'body > span', ['Tamanho da imagem', 'Размер изображений']],
 
@@ -557,7 +560,7 @@ replacer.cfg["main"] = [
 	[/^mod\.php\?\/bans$/, [
 		['reg', 'head > title', ['Lista de bans', 'Список банов']],
 		['reg', 'header > h1', ['Lista de bans', 'Список банов']],
-		['txt', 'div.banlist-opts > div.checkboxes > label', TYPE_LASTNODE, 'Показать только активные баны'], // txt, т.к. на input висит обработчик
+		['nod', 'div.banlist-opts > div.checkboxes > label', 'Показать только активные баны', [RE_LAST]], // txt, т.к. на input висит обработчик
 		['att', 'input#search', 'placeholder', 'Искать...'],
 		['att', 'input#unban', 'value', 'Разбанить выделенных'],
 		[]
@@ -772,7 +775,7 @@ replacer.cfg["new_post"] = [
 	['', [
 		['reg', 'span.name', ['Anônimo', 'Аноним'], [RE_INNER, RE_MULTI]],
 		['reg', 'span.name > span', ['You', 'Вы'], [RE_MULTI]],
-		['txt', 'p.fileinfo', TYPE_FIRSTNODE, 'Файл: '],
+		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений]'],
 			['Responder', 'Ответить']
@@ -797,7 +800,7 @@ replacer.cfg["search_cat"] = [
 // ==============================================================================================
 replacer.cfg["page_loaded"] = [
 	['', [
-		['txt', 'div.boardlist > span > a[href="/tudo"]', TYPE_LASTNODE, 'Все'],
+		['nod', 'div.boardlist > span > a[href="/tudo"]', 'Все', [RE_LAST]],
 		['reg', 'div.options_tab > div > fieldset > legend', [
 			['Formatting Options', 'Опции форматирования'],
 			['Image hover', 'Всплывающие изображения']
@@ -1177,18 +1180,35 @@ replacer.reOpt = function(arr, def)
 	// возвращает объект модифицированных опций 
 
 	if(typeof(def) != 'object')
-		def={prop: RE_TEXT, single: true, break: true, debug: this.debug}; // новый объект с дефолтными параметрами
+		def = { // новый объект с параметрами по умолчанию
+			prop: RE_TEXT,
+			single: true,
+			break: true,
+			node: 0,	// RE_FIRST
+			debug: this.debug
+		}; 
+
 	if(!Array.isArray(arr))
 		return def; // возвращаем либо ссылку на дефолтный объект, либо новый объект
-	var opt={prop: def.prop, single: def.single, break: def.break, debug: def.debug}; // новый объект опций
+	
+	var opt= { // новый объект опций на основе дефолтного
+		prop: def.prop,
+		single: def.single,
+		break: def.break,
+		node: def.node,
+		debug: def.debug
+	}; 
 
 	for(let o of arr) {
 		switch(o) {
 			case RE_DEBUG: 	opt.debug = true; break;
 			case RE_SINGLE: opt.single = true; break;
-			case RE_MULTI: opt.single = false; break;
-			case RE_BREAK: opt.break = true; break;
-			case RE_NOBREAK: opt.break = false; break;
+			case RE_MULTI: 	opt.single = false; break;
+			case RE_BREAK: 	opt.break = true; break;
+			case RE_NOBREAK:opt.break = false; break;
+			case RE_FIRST: 	opt.node = 0; break;
+			case RE_LAST: 	opt.node = -1; break;
+
 			case RE_TEXT:
 			case RE_INNER:
 			case RE_OUTER:
@@ -1223,9 +1243,14 @@ replacer.cssReplacer = function(el, p, re_opt)
 // ----------------------------------------------------
 {
 	/*
-	реплейсер текста по селектору
+	реплейсер текста в дочерних узлах
 		p=["css", query, text, re_arr]
-		p=["css", query, [ [sub-query1, text1],...,[sub-queryN, textN] ], re_arr]
+		
+		p=["css", query, [ 
+			[sub-query1, text1, re_arr1],
+			...
+			[sub-queryN, textN, re_arrN]
+		], re_arr]
 
 		в расширенном синтаксисе sub-query - селекторы, для дочерних элементов от родительского (найденного по query)
 		re_arr - массив RE_* модификаторов [не обязательно]
@@ -1234,10 +1259,8 @@ replacer.cssReplacer = function(el, p, re_opt)
 	if(p.length < 3)
 		return -1;
 
-	var elements, sub;
-
 	try {
-		elements = el.querySelectorAll(p[1]);
+		var elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		console.error("ERROR: Selector:", p);
 		return;
@@ -1260,7 +1283,7 @@ replacer.cssReplacer = function(el, p, re_opt)
 				if(!Array.isArray(sp) || (sp.length < 2)) // проверка синтаксиса
 					return -1;
 				try {
-					sub = e.querySelectorAll(sp[0]);
+					var sub = e.querySelectorAll(sp[0]);
 				} catch(err) {
 					console.error("ERROR: Sub-Selector:", sp[0], p);
 				}
@@ -1273,12 +1296,11 @@ replacer.cssReplacer = function(el, p, re_opt)
 					if(opt.debug) console.debug(se, ' --> ', sp[1]);
 				}
 				if(opt.debug) console.groupEnd();
-			}
-		} // for sp
+			} // for sp
+		} // else
 	} // for e
 	if(re_opt.debug) console.groupEnd();
 }
-
 
 // ----------------------------------------------------
 replacer.attReplacer = function(el, p, re_opt)
@@ -1294,39 +1316,87 @@ replacer.attReplacer = function(el, p, re_opt)
 }
 
 // ----------------------------------------------------
-replacer.txtReplacer = function(el, p, re_opt)
+replacer.nodReplacer = function(el, p, re_opt)
 // ----------------------------------------------------
 {
-	// реплейсер текста дочерних узлов
-	// p=["txt", query, node_type, text]
-	if(p.length < 4)
+	/*
+	реплейсер текста в дочерних узлах
+		p=["nod", query, text, re_arr]
+
+		p=["nod", query, [ 
+			[sub-query1, text1, re_arr1],
+			...
+			[sub-queryN, textN, re_arrN]
+		], re_arr]
+
+		в расширенном синтаксисе sub-query - селекторы, для дочерних элементов от родительского (найденного по query)
+		re_arr - массив RE_* модификаторов [не обязательно]:
+			RE_FIRST - первая нода [по умолчанию]
+			RE_LAST - последняя нода
+	*/
+
+	if(p.length < 3)
 		return -1;
 
-	let dbg1st = 0;
 	try {
 		var elements = el.querySelectorAll(p[1]);
 	} catch(err) {
-		console.error("ERROR: Selector", p);
+		console.error("ERROR: Selector:", p);
 		return;
-	}
+	}		
+	if(!elements.length) return;
 
-	for(let e of elements) {
-		if(re_opt.debug && !dbg1st++) console.group("TXT:", p[1]);
+	let extended = Array.isArray(p[2]);
+	re_opt = this.reOpt(p[3], re_opt); // переопределение модификаторов
+
+	if(re_opt.debug) console.group("NOD:", "'"+p[1]+"'");
+	for(let e of elements)
+	{
 		let node;
-		switch(p[2]) {
-			case TYPE_FIRSTNODE: node = e.firstChild; break;
-			case TYPE_LASTNODE: node = e.lastChild; break;
-		}
-		if(node)
-			node.textContent = p[3];
-		if(re_opt.debug) {
-			if(node)
-				console.debug(e, " --> ", p[3]);
+		if(!extended) {
+			if(re_opt.node < 0)
+				node = e.lastChild;
 			else
-				console.debug(e, ": NO NODE");
-		}
-	}
-	if(dbg1st) console.groupEnd();
+				node = e.firstChild;
+			if(node) {
+				if(re_opt.debug) console.debug(e, ':', (re_opt.node < 0 ? 'LAST' : 'FIRST'), ':', node, ' --> ', p[2]);
+				node[re_opt.prop] = p[2];
+			}
+			else
+				if(re_opt.debug) console.debug(e, ':', (re_opt.node < 0 ? 'LAST' : 'FIRST'), ': NOT FOUND');
+		} 
+		else {
+			// расширенный синтаксис
+			for(let sp of p[2]) {
+				if(!Array.isArray(sp) || (sp.length < 2)) // проверка синтаксиса
+					return -1;
+				try {
+					var sub = e.querySelectorAll(sp[0]);
+				} catch(err) {
+					console.error("ERROR: Sub-Selector:", sp[0], p);
+				}
+				if(!sub || !sub.length) continue;
+
+				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
+				if(opt.debug) console.group("SUB:", "'"+sp[0]+"'");
+				for(let se of sub) {
+					let node;
+					if(opt.node < 0)
+						node = se.lastChild;
+					else
+						node = se.firstChild;
+					if(node) {
+						if(opt.debug) console.debug(se, ':', (opt.node < 0 ? 'LAST' : 'FIRST'), ':', node, ' --> ', sp[1]);
+						node[opt.prop] = sp[1];
+					}
+					else
+						if(opt.debug) console.debug(se, ':', (opt.node < 0 ? 'LAST' : 'FIRST'), ': NOT FOUND');
+				} // for se
+				if(opt.debug) console.groupEnd();
+			} // for sp
+		} // else
+	} // for e
+	if(re_opt.debug) console.groupEnd();
 }
 
 // ----------------------------------------------------
