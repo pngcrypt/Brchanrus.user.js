@@ -88,7 +88,7 @@ replacer.cfg["main"] = [
 		]],
 
 		// Посты
-		['nod', 'p.intro > label > span.name', 'Аноним', [RE_FIRST]],
+		['reg', 'p.intro > label > span.name', ['Anônimo', 'Аноним'], [RE_MULTI]],
 		['att', 'p.intro > a.post-btn', "title", 'Опции'],
 		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
 		['css', 'a#link-quick-reply', '[Ответить]'],
@@ -156,6 +156,7 @@ replacer.cfg["main"] = [
 
 	// доска tudo ("все")
 	[/^tudo\//, [
+		['css', 'head > title', 'Все доски'],
 		['css', 'header', [
 			['h1', 'Все доски'],
 			['div.subtitle', 'Здесь показываются треды и посты со всех досок']
@@ -163,7 +164,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Ошибки постинга
-	[/^post\.php/, [
+	[/^(post|bugs)\.php/, [
 		['reg', 'head > title', [
 			['Erro', 'Ошибка'],
 			['Denúncia enviada', 'Жалоба отправлена']
@@ -280,6 +281,22 @@ replacer.cfg["main"] = [
 		], [RE_INNER]],
 
 		[]
+	]],
+
+	// багрепорты
+	[/^bugs\.php/, [
+		['reg', 'head > title', ['BRCHAN :: SUIDB', 'Багрепорт']],
+		['reg', 'div.ban.oficial > h2', [/^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах']],
+		['reg', 'div.ban.oficial > p', [/^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>'], [RE_INNER]],
+		['reg', 'div.ban.oficial > form > table > tbody > tr > td', [
+			['Você errou o codigo de verificação', 'Неверный код подтверждения'],
+			[/Descreva em pelo menos (\d+) palavras o bug/, 'В описании должно быть не меньше $1 слов(а)'],
+			['Digite o código de verificação anti-robôs', 'Введите код анти-спама'],
+			['Detalhes', 'Подробности'],
+			['Anti-robô', 'Анти-Спам']
+		], [RE_INNER]],
+		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить'],
+		['reg', 'div.ban.oficial > h2', [/(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']]
 	]],
 
 	// Жалоба
@@ -779,8 +796,9 @@ replacer.cfg["new_post"] = [
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений]'],
 			['Responder', 'Ответить']
-		], [RE_MULTI]],
-	], []]
+		]],
+		['reg', 'div.post > span.omitted', [/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.']],
+	]]
 ];
 
 // ==============================================================================================
@@ -1352,18 +1370,19 @@ replacer.nodReplacer = function(el, p, re_opt)
 	if(re_opt.debug) console.group("NOD:", "'"+p[1]+"'");
 	for(let e of elements)
 	{
-		let node;
+		let node, dmsg;
 		if(!extended) {
 			if(re_opt.node < 0)
 				node = e.lastChild;
 			else
 				node = e.firstChild;
+			dmsg = ':' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 			if(node) {
-				if(re_opt.debug) console.debug(e, ':', (re_opt.node < 0 ? 'LAST' : 'FIRST'), ':', node, ' --> ', p[2]);
+				if(re_opt.debug) console.debug(e, dmsg, node, ' --> ', p[2]);
 				node[re_opt.prop] = p[2];
 			}
 			else
-				if(re_opt.debug) console.debug(e, ':', (re_opt.node < 0 ? 'LAST' : 'FIRST'), ': NOT FOUND');
+				if(re_opt.debug) console.debug(e, dmsg, ': NO NODE');
 		} 
 		else {
 			// расширенный синтаксис
@@ -1380,17 +1399,17 @@ replacer.nodReplacer = function(el, p, re_opt)
 				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
 				if(opt.debug) console.group("SUB:", "'"+sp[0]+"'");
 				for(let se of sub) {
-					let node;
 					if(opt.node < 0)
 						node = se.lastChild;
 					else
 						node = se.firstChild;
+					dmsg = ':' + (opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 					if(node) {
-						if(opt.debug) console.debug(se, ':', (opt.node < 0 ? 'LAST' : 'FIRST'), ':', node, ' --> ', sp[1]);
+						if(opt.debug) console.debug(se, dmsg, node, ' --> ', sp[1]);
 						node[opt.prop] = sp[1];
 					}
 					else
-						if(opt.debug) console.debug(se, ':', (opt.node < 0 ? 'LAST' : 'FIRST'), ': NOT FOUND');
+						if(opt.debug) console.debug(se, dmsg, ': NO NODE');
 				} // for se
 				if(opt.debug) console.groupEnd();
 			} // for sp
