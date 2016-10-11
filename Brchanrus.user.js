@@ -282,6 +282,19 @@ replacer.cfg["main"] = [
 		[]
 	]],
 
+	// багрепорты
+	[/^bugs\.php/, [
+		['reg', 'head > title', ['BRCHAN :: SUIDB', 'BRCHAN :: Багрепорт']],
+		['reg', 'div.ban.oficial > h2', [/^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах']],
+		['reg', 'div.ban.oficial > p', [/^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>'], [RE_INNER]],
+		['reg', 'div.ban.oficial > form > table > tbody > tr > td', [
+			['Detalhes', 'Подробности'],
+			['Anti-robô', 'Анти-Спам']
+		], [RE_INNER]],
+		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить'],
+		['reg', 'div.ban.oficial > h2', [/(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']]
+	]],
+
 	// Жалоба
 	[/^report\.php/, [
 		['reg', 'p', [/^Enter reason below/, 'Введите причину жалобы']]
