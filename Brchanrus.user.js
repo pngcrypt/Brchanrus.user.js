@@ -289,7 +289,13 @@ replacer.cfg["main"] = [
 			['Detalhes', 'Подробности'],
 			['Anti-robô', 'Анти-Спам']
 		], [RE_INNER]],
-		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить']
+		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить'],
+		['reg', 'div.ban.oficial > h2', /(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2'],
+
+		// сообщения об отправке
+		['reg', 'div.ban.oficial > div > h3', 'Seu formulário foi enviado!', 'Ваша форма отправлена!'],
+		['reg', 'div.ban.oficial > div', 'Obrigado por nos ajudar a melhorar o', 'Благодарим вас за помощь в улучшении', [RE_INNER]],
+		['reg', 'div.ban.oficial > div > a', 'Reportar mais bugs', 'Сообщить о других багах'],
 	]],
 
 	// Жалоба
@@ -670,10 +676,10 @@ replacer.cfg["main"] = [
 	[/^mod\.php\?\/recent/, [
 		['reg', 'head > title, header > h1', 'Mensagens recentes', 'Последние сообщения', [RE_MULTI]],
 		['reg', 'body > h4', /Viewing last (\d+) posts/, 'Отображаются последние $1 постов'],
-		['reg', 'body > p', /^View/, 'Показывать:'], [RE_INNER],
+		['reg', 'body > p', /^View/, 'Показывать:', [RE_INNER]],
 		['css', 'body > a#erase-local-data', 'Стереть локальные данные'], // wtf?
 		['reg', 'body > a[href^="/mod.php?/recent/"]', /Next (\d+) posts/, 'Следующие $1 постов'],
-		['reg', 'body > p.unimportant', /\(Não há posts ativos.+/, '(Больше новых сообщений нет)<br><a href="/mod.php?/recent/25">Вернуться</a>'], [RE_INNER],
+		['reg', 'body > p.unimportant', /\(Não há posts ativos.+/, '(Больше новых сообщений нет)<br><a href="/mod.php?/recent/25">Вернуться</a>', [RE_INNER]],
 		[]
 	]],
 
