@@ -277,7 +277,10 @@ replacer.cfg["main"] = [
 	// багрепорты
 	[/^bugs\.php/, [
 		['reg', 'head > title', 'BRCHAN :: SUIDB', 'Багрепорт'],
-		['reg', 'div.ban.oficial > h2', /^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах'],
+		['reg', 'div.ban.oficial > h2', [
+			[/^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах'],
+			[/(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']
+		]],
 		['reg', 'div.ban.oficial > p', /^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>', [RE_INNER]],
 		['reg', 'div.ban.oficial > form > table > tbody > tr > td', [
 			['Você errou o codigo de verificação', 'Неверный код подтверждения'],
@@ -286,8 +289,7 @@ replacer.cfg["main"] = [
 			['Detalhes', 'Подробности'],
 			['Anti-robô', 'Анти-Спам']
 		], [RE_INNER]],
-		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить'],
-		['reg', 'div.ban.oficial > h2', /(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']
+		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить']
 	]],
 
 	// Жалоба
@@ -306,9 +308,7 @@ replacer.cfg["main"] = [
 		['att', 'input[name="login"]', 'value', 'Войти'],
 
 		// Панель уведомлений
-		['reg', 'body > div.top_notice:first-child', [
-			[/You have(.+)an unread PM/, 'У вас есть$1Новые сообщения', [RE_INNER]]
-		]],
+		['reg', 'body > div.top_notice:first-child', /You have(.+)an unread PM/, 'У вас есть$1Новые сообщения', [RE_INNER]],
 
 		// Ошибки
 		['reg', 'head > title, header > h1', 'Erro', 'Ошибка', [RE_MULTI]],
