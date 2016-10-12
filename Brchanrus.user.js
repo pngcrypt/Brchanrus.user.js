@@ -605,7 +605,12 @@ replacer.cfg["main"] = [
 
 	// Админка - PM: входящие
 	[/^mod\.php\?\/inbox$/, [
-		['reg', 'head > title, header > h1', /Caixa de entrada \(((\d+) unread|empty)\)/, 'Входящие (новых: $1)', [RE_MULTI]],
+		['reg', 'head > title, header > h1', [
+			['Caixa de entrada', 'Входящие', [RE_NOBREAK]],
+			[/\((0 unread|empty)\)/, ''],
+			[/\((\d+) unread\)/, '(новых: $1)'],
+		], [RE_MULTI]],
+		
 		['reg', 'table.modlog > tbody > tr > th', [
 			['De', 'От'],
 			['Data', 'Дата'],
