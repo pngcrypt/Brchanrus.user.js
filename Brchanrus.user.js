@@ -75,20 +75,20 @@ replacer.cfg["main"] = [
 
 	// Любая доска / тред + для некоторых разделов админки (где отображаются посты)
 	[/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)|^mod\.php\?\/(recent|IP_less)\//, [
-		['reg', 'header > div.subtitle > p > a', [/Catálogo|Catalog/, 'Каталог тредов']],
+		['reg', 'header > div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
 			['Responder', 'Ответить']
 		], [RE_MULTI]],
 
-		['reg', 'div.banner', ['Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]]], // ???
+		['reg', 'div.banner', 'Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]], // ???
 		['reg', 'div.banner > a', [
 			['Voltar', 'Назад'],
 			['Ir ao rodapé', 'Вниз страницы']
 		]],
 
 		// Посты
-		['reg', 'p.intro > label > span.name', ['Anônimo', 'Аноним'], [RE_MULTI]],
+		['reg', 'p.intro > label > span.name', 'Anônimo', 'Аноним', [RE_MULTI]],
 		['att', 'p.intro > a.post-btn', "title", 'Опции'],
 		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
 		['css', 'a#link-quick-reply', '[Ответить]'],
@@ -114,19 +114,19 @@ replacer.cfg["main"] = [
 		['css', 'tr#oekaki > th', 'Рисовать'],
 		['css', 'tr#upload_embed > th', 'Ссылка на YouTube'],
 		['css', 'tr#options-row > th', 'Опции'],
-		['reg', 'form > table.post-table-options > tbody > tr > th', ['Senha', 'Пароль']],
+		['reg', 'form > table.post-table-options > tbody > tr > th', 'Senha', 'Пароль'],
 
-		['reg', 'tr#oekaki > td > a', ['Mostrar oekaki', 'начать']],
+		['reg', 'tr#oekaki > td > a', 'Mostrar oekaki', 'начать'],
 		['reg', 'table.post-table-options span.unimportant', [
 			['substitui arquivos', 'заменяет файл', [RE_MULTI, RE_NOBREAK]],
 			['(para remover arquivos e mensagens)', '(для удаления файлов и сообщений)'],
 			['(você também pode escrever sage no e-mail)', '(вы также можете писать sage в поле опций)'],
 			['(isso substitui a miniatura da sua imagem por uma interrogação)', '(это заменяет превью вашего изображения знаком вопроса)']
 		]],
-		['reg', 'tr#options-row > td > div.no-bump-option > label', ['Não bumpar', 'Не поднимать тред (сажа)', [RE_INNER]]],
-		['reg', 'tr#options-row > td > div.spoiler-images-option > label', ['Imagem spoiler', 'Скрыть превью изображения', [RE_INNER]]],
+		['reg', 'tr#options-row > td > div.no-bump-option > label', 'Não bumpar', 'Не поднимать тред (сажа)', [RE_INNER]],
+		['reg', 'tr#options-row > td > div.spoiler-images-option > label', 'Imagem spoiler', 'Скрыть превью изображения', [RE_INNER]],
 
-		['reg', 'table.post-table-options  p.unimportant', [/Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', [RE_INNER]]],
+		['reg', 'table.post-table-options  p.unimportant', /Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', [RE_INNER]],
 
 		// Навигация по страницам
 		['reg', 'body > div.pages', [
@@ -135,7 +135,7 @@ replacer.cfg["main"] = [
 			['Catálogo', 'Каталог тредов']
 		], [RE_INNER, RE_NOBREAK]],
 
-		['reg', 'div.body > span.toolong', [/Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER, RE_MULTI]]],
+		['reg', 'div.body > span.toolong', /Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER, RE_MULTI]],
 		['reg', 'div.post > span.omitted', [
 			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 			[/(\d+) mensage.s? omitidas?.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
@@ -151,7 +151,7 @@ replacer.cfg["main"] = [
 	// Любой тред
 	[/^\w+\/res\//, [
 		// добавить линк на нулевую 
-		['reg', 'body > header > h1', [/^(\/\w+\/)/, '<a href="../">$1</a>', [RE_INNER]]]
+		['reg', 'body > header > h1', /^(\/\w+\/)/, '<a href="../">$1</a>', [RE_INNER]]
 	]],
 
 	// доска tudo ("все")
@@ -175,7 +175,7 @@ replacer.cfg["main"] = [
 			['Denúncia enviada', 'Жалоба отправлена']
 		], [RE_INNER]],
 
-		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
+		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
 		['reg', 'body > div > h2', [
 			['IP detectado como proxy, proxies nao sao permitidos nessa board. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, [что произошла ошибка, свяжитесь с администрацией'],
 			['Senha incorreta', 'Неверный пароль']
@@ -193,10 +193,10 @@ replacer.cfg["main"] = [
 
 	// Страница каталога доски
 	[/^\w+\/catalog\.html$/, [
-		['reg', 'head > title', ['Catalog', 'Каталог тредов']],
+		['reg', 'head > title', 'Catalog', 'Каталог тредов'],
 		['nod', 'header > h1', 'Каталог тредов (', [RE_FIRST]],
-		['reg', 'body > span', ['Ordenar por', 'Сортировка по']],
-		['reg', 'body > span', ['Tamanho da imagem', 'Размер изображений']],
+		['reg', 'body > span', 'Ordenar por', 'Сортировка по'],
+		['reg', 'body > span', 'Tamanho da imagem', 'Размер изображений'],
 
 		['css', 'select#sort_by', [
 			['option[value="bump:desc"]', 'Активности'],
@@ -224,7 +224,7 @@ replacer.cfg["main"] = [
 
 		// Панель поиска
 		['css', 'aside > form > h2', 'Поиск'],
-		['reg', 'aside > form label.search-item.search-sfw', ['Ocultar', 'Скрыть', [RE_INNER]]],
+		['reg', 'aside > form label.search-item.search-sfw', 'Ocultar', 'Скрыть', [RE_INNER]],
 		['att', 'input#search-title-input', 'placeholder', 'Поиск названия...'],
 		['att', 'input#search-tag-input', 'placeholder', 'Поиск тэгов...'],
 		['css', 'button#search-submit', 'Искать'],
@@ -272,7 +272,7 @@ replacer.cfg["main"] = [
 			['Você errou o codigo de verificação', 'Неверный код подтверждения']
 		]],
 
-		['reg', 'body > div > p > a', ['Voltar', 'Назад']],
+		['reg', 'body > div > p > a', 'Voltar', 'Назад'],
 
 		['reg', 'body > p', [
 			['Sua board foi criada e está disponível em', 'Ваша доска была создана и доступна по адресу'],
@@ -285,9 +285,9 @@ replacer.cfg["main"] = [
 
 	// багрепорты
 	[/^bugs\.php/, [
-		['reg', 'head > title', ['BRCHAN :: SUIDB', 'Багрепорт']],
-		['reg', 'div.ban.oficial > h2', [/^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах']],
-		['reg', 'div.ban.oficial > p', [/^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>'], [RE_INNER]],
+		['reg', 'head > title', 'BRCHAN :: SUIDB', 'Багрепорт'],
+		['reg', 'div.ban.oficial > h2', /^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах'],
+		['reg', 'div.ban.oficial > p', /^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>'], [RE_INNER],
 		['reg', 'div.ban.oficial > form > table > tbody > tr > td', [
 			['Você errou o codigo de verificação', 'Неверный код подтверждения'],
 			[/Descreva em pelo menos (\d+) palavras o bug/, 'В описании должно быть не меньше $1 слов(а)'],
@@ -306,8 +306,8 @@ replacer.cfg["main"] = [
 
 	// Админка - логин / ошибки
 	[/^mod\.php\b/, [
-		['reg', 'head > title', ['Login', 'Вход']],
-		['reg', 'header > h1', ['Login', 'Вход']],
+		['reg', 'head > title', 'Login', 'Вход'],
+		['reg', 'header > h1', 'Login', 'Вход'],
 		['reg', 'body > form > table:nth-child(1) th', [
 			['Usuário', 'Логин'],
 			['Senha', 'Пароль']
@@ -320,10 +320,10 @@ replacer.cfg["main"] = [
 		]],
 
 		// Ошибки
-		['reg', 'head > title', ['Erro', 'Ошибка']],
-		['reg', 'header > h1', ['Erro', 'Ошибка', [RE_INNER]]],
-		['reg', 'body > h2', [/Login e\/ou senha inválido\(s\)/, 'Неверный логин или пароль']],
-		['reg', 'header > div.subtitle', ['Um erro ocorreu', 'Произошла ошибка']],
+		['reg', 'head > title', 'Erro', 'Ошибка'],
+		['reg', 'header > h1', 'Erro', 'Ошибка', [RE_INNER]],
+		['reg', 'body > h2', /Login e\/ou senha inválido\(s\)/, 'Неверный логин или пароль'],
+		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
 		['reg', 'body > div > h2', [
 			['Pagina não encontrada', 'Страница не найдена'],
 			['Login e/ou senha inválido', 'Неверный логин или пароль'],
@@ -334,26 +334,25 @@ replacer.cfg["main"] = [
 			[]
 		]],
 
-		['reg', 'div.subtitle > p > a', ['Voltar à dashboard', 'Назад к панели управления']],
-		['reg', 'body > div > p > a', ['Voltar', 'Назад']],
+		['reg', 'div.subtitle > p > a', 'Voltar à dashboard', 'Назад к панели управления'],
+		['reg', 'body > div > p > a', 'Voltar', 'Назад'],
 
 		[]
 	]],
 
 	// Админка - Главная
 	[/^mod\.php\?\/$/, [
-		['reg', 'head > title', ['Dashboard', 'Панель администрирования']],
-		['reg', 'header > h1', ['Dashboard', 'Панель администрирования']],
+		['reg', 'head > title', 'Dashboard', 'Панель администрирования'],
+		['reg', 'header > h1', 'Dashboard', 'Панель администрирования'],
 		['reg', 'fieldset > legend', [
 			['Mensagens', 'Сообщения'],
 			['Administração', 'Администрирование'],
 			['Boards', 'Доски'],
 			['Conta de usuário', 'Учетная запись']
 		]],
-		['reg', 'fieldset > ul > li', ['Quadro de noticias', 'Доска объявлений', [RE_INNER]]],
-		['reg', 'fieldset > ul > li > ul > li > a', ['Comunicado', 'Коммуникация']],
+		['reg', 'fieldset > ul > li', 'Quadro de noticias', 'Последние объявления', [RE_INNER]],
 		['reg', 'fieldset > ul > li > a', [
-			['Ver todas as noticias do quadro de noticias', 'Просмотр всех новостей'],
+			['Ver todas as noticias do quadro de noticias', 'Просмотр всех объявлений'],
 			[/Caixa de entrada \((\d+) unread\)/, 'Входящие (непрочитанных: $1)'],
 
 			[/Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)'],
@@ -368,15 +367,15 @@ replacer.cfg["main"] = [
 
 			['Logout', 'Выход']
 		]],
-		['reg', 'fieldset > ul > li > span', ['nome de usuário, email, senha', 'имя пользователя, адрес электронной почты, пароль']],
+		['reg', 'fieldset > ul > li > span', 'nome de usuário, email, senha', 'имя пользователя, адрес электронной почты, пароль'],
 
 		[]
 	]],
 
 	// Админка - Жалобы
 	[/^mod\.php\?\/reports\/?$/, [
-		['reg', 'head > title', [/Fila de denuncias\s+\((\d+)\)/, 'Поступившие жалобы ($1)']],
-		['reg', 'header > h1', [/Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)']],
+		['reg', 'head > title', /Fila de denuncias\s+\((\d+)\)/, 'Поступившие жалобы ($1)'],
+		['reg', 'header > h1', /Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)'],
 		['att', 'h2.report-header > a', 'title', 'Перейти в тред'],
 		['reg', 'h2.report-header', [
 			[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1'],
@@ -389,19 +388,19 @@ replacer.cfg["main"] = [
 		], [RE_MULTI]],
 		// TODO: title для Dismiss/Promote
 
-		['reg', 'ul.report-content-actions > li.report-content-action', [/Descartar todas denúncias a esse conteúdo(.+)Dismiss All/, 'Отклонить все жалобы к этому посту$1Отклонить все', [RE_INNER]]],
-		['reg', 'ul.report-content-actions > li.report-action', [/Promover todas denúncias locais para globais(.+>)Promote All/, 'Передать все жалобы к этому посту в глобальные$1Принять все', [RE_INNER]]],
-		['reg', 'ul.report-content-actions > li.report-content-action', [/Clean(.+)Ignorar e descartar denúncias locais dessa mensagem nessa board/, 'Очистить$1Игнорировать и удалить все местные жалобы в этом треде', [RE_INNER]]], // "
+		['reg', 'ul.report-content-actions > li.report-content-action', /Descartar todas denúncias a esse conteúdo(.+)Dismiss All/, 'Отклонить все жалобы к этому посту$1Отклонить все', [RE_INNER]],
+		['reg', 'ul.report-content-actions > li.report-action', /Promover todas denúncias locais para globais(.+>)Promote All/, 'Передать все жалобы к этому посту в глобальные$1Принять все', [RE_INNER]],
+		['reg', 'ul.report-content-actions > li.report-content-action', /Clean(.+)Ignorar e descartar denúncias locais dessa mensagem nessa board/, 'Очистить$1Игнорировать и удалить все местные жалобы в этом треде', [RE_INNER]], // "
 
-		['reg', 'body > p.unimportant', ['Não há denúncias no momento', 'На данный момент никаких жалоб нет']],
+		['reg', 'body > p.unimportant', 'Não há denúncias no momento', 'На данный момент никаких жалоб нет'],
 
 		[]
 	]],
 
 	// Админка - Настройка доски
 	[/^mod\.php\?\/settings\//, [
-		['reg', 'head > title', ['Configuração da board', 'Настройки доски']],
-		['reg', 'header > h1', ['Configuração da board', 'Настройки доски']],
+		['reg', 'head > title', 'Configuração da board', 'Настройки доски'],
+		['reg', 'header > h1', 'Configuração da board', 'Настройки доски'],
 		['css', 'body > p', 'Внимание: Некоторые изменения не вступят в силу до тех пор, пока не будет написан новый пост на доске.'],
 
 		['reg', 'form > table:nth-child(2) th', [
@@ -409,7 +408,7 @@ replacer.cfg["main"] = [
 			['Título', 'Название'],
 			['Subtítulo', 'Описание']
 		]],
-		['reg', 'form > table tr:nth-child(1) > td', ['não pode ser alterado', 'нельзя изменить']],
+		['reg', 'form > table tr:nth-child(1) > td', 'não pode ser alterado', 'нельзя изменить'],
 
 		['reg', 'form > table:nth-child(5) th', [
 			['Tipo de board', 'Тип доски'],
@@ -456,7 +455,7 @@ replacer.cfg["main"] = [
 			['Anúncio da board', 'Объявления для пользователей'],
 			[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', [RE_INNER]]
 		]],
-		['reg', 'form > table:nth-child(13) + p', [/A criação ou edição do seu tema.+/, 'После создания и редактирования вашей темы может потребоваться несколько часов, чтобы изменения вступили в силу (из-за cloudflare)']],
+		['reg', 'form > table:nth-child(13) + p', /A criação ou edição do seu tema.+/, 'После создания и редактирования вашей темы может потребоваться несколько часов, чтобы изменения вступили в силу (из-за cloudflare)'],
 
 		['reg', 'form > table#wf th', [
 			['Filtros', 'Фильтры'],
@@ -501,8 +500,8 @@ replacer.cfg["main"] = [
 
 	// Админка - Настройки доски - Пользовательские изображения
 	[/^mod\.php\?\/assets\//, [
-		['reg', 'head > title', ['Edit board assets', 'Редактирование изображений']],
-		['reg', 'header > h1', ['Edit board assets', 'Редактирование изображений']],
+		['reg', 'head > title', 'Edit board assets', 'Редактирование изображений'],
+		['reg', 'header > h1', 'Edit board assets', 'Редактирование изображений'],
 
 		['reg', 'form > p > small', [
 			[/^Todas as imagens padrões.+/, 'Все изображения должны быть в формате PNG или GIF и иметь размер файла не более 500 Кб'],
@@ -515,7 +514,7 @@ replacer.cfg["main"] = [
 			['arquivo deletado', 'файл удален'],
 			['arquivo deletado', 'нет файла']
 		]],
-		['reg', 'body > div > form > p', [/Imagem de .+ atual/, 'Текущее изображение', [RE_INNER, RE_MULTI]]],
+		['reg', 'body > div > form > p', /Imagem de .+ atual/, 'Текущее изображение', [RE_INNER, RE_MULTI]],
 		['att', 'input[type="submit"]', 'value', 'Сохранить изображения'],
 
 		[]
@@ -523,11 +522,11 @@ replacer.cfg["main"] = [
 
 	// Админка - Настройки доски - Модераторы
 	[/^mod\.php\?\/volunteers\//, [
-		['reg', 'head > title', ['Editar voluntários', 'Редактирование модераторов']],
-		['reg', 'header > h1', ['Editar voluntários', 'Редактирование модераторов']],
-		['reg', 'form > h2', ['Novo usuário', 'Новый модератор']],
-		['reg', 'body > div > h2', ['Voluntários atuais', 'Текущие модераторы']],
-		['reg', 'form > p > span.unimportant', [/Limite de (\d+) voluntários.+/, 'Лимит пользователей: $1. Убедитесь, что используете надежные пароли. Модератор может делать то же, что и админ, за исключением просмотра этой страницы, страницы банеров и страницы настройки доски.']],
+		['reg', 'head > title', 'Editar voluntários', 'Редактирование модераторов'],
+		['reg', 'header > h1', 'Editar voluntários', 'Редактирование модераторов'],
+		['reg', 'form > h2', 'Novo usuário', 'Новый модератор'],
+		['reg', 'body > div > h2', 'Voluntários atuais', 'Текущие модераторы'],
+		['reg', 'form > p > span.unimportant', /Limite de (\d+) voluntários.+/, 'Лимит пользователей: $1. Убедитесь, что используете надежные пароли. Модератор может делать то же, что и админ, за исключением просмотра этой страницы, страницы банеров и страницы настройки доски.'],
 		
 		['reg', 'input[type="submit"]', [
 			['Criar usuário', 'Добавить'],
@@ -539,8 +538,8 @@ replacer.cfg["main"] = [
 
 	// Админка - Редактирование учетной записи
 	[/^mod\.php\?\/users\//, [
-		['reg', 'head > title', ['Edit user profile', 'Учетная запись']],
-		['reg', 'header > h1', ['Edit user profile', 'Изменение учетной записи']],
+		['reg', 'head > title', 'Edit user profile', 'Учетная запись'],
+		['reg', 'header > h1', 'Edit user profile', 'Изменение учетной записи'],
 		['reg', 'table > tbody > tr > th', [
 			[/Usuário(.+)\(alerta:.+/, 'Логин$1(внимание: после изменения имени нужно войти заново,<br>имя в журнале событий также будет заменено на новое)'],
 			[/Senha(.+)\(novo.+/, 'Пароль$1(новый; не обязательно)'],
@@ -551,15 +550,15 @@ replacer.cfg["main"] = [
 
 	// Админка - Бан
 	[/^mod\.php\?\/\w+\/ban(&delete)?\//, [
-		['reg', 'head > title', ['Novo ban', 'Новый бан']],
-		['reg', 'header > h1', ['Novo ban', 'Новый бан']],
+		['reg', 'head > title', 'Novo ban', 'Новый бан'],
+		['reg', 'header > h1', 'Novo ban', 'Новый бан'],
 		['reg', 'table > tbody > tr > th > label', [
 			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', [RE_INNER]],
 			['Motivo', 'Причина'],
 			['Mensagem', 'Сообщение'],
 			['Tamanho', 'Длительность']			
 		]],
-		['reg', 'table > tbody > tr:nth-child(5) > th', ['Board', 'Доска']],
+		['reg', 'table > tbody > tr:nth-child(5) > th', 'Board', 'Доска'],
 		['reg', 'table > tbody > tr > td .unimportant', [
 			[/^Be careful.+/, 'Будьте осторожны с диапазоном адресов. Чем больше диапазон, тем больше пользователей он затронет'],
 			['público; anexado à mensagem', 'публичное; добавляется к посту'],
@@ -575,8 +574,8 @@ replacer.cfg["main"] = [
 
 	// Админка - Список банов
 	[/^mod\.php\?\/bans$/, [
-		['reg', 'head > title', ['Lista de bans', 'Список банов']],
-		['reg', 'header > h1', ['Lista de bans', 'Список банов']],
+		['reg', 'head > title', 'Lista de bans', 'Список банов'],
+		['reg', 'header > h1', 'Lista de bans', 'Список банов'],
 		['nod', 'div.banlist-opts > div.checkboxes > label', 'Показать только активные баны', [RE_LAST]], // txt, т.к. на input висит обработчик
 		['att', 'input#search', 'placeholder', 'Искать...'],
 		['att', 'input#unban', 'value', 'Разбанить выделенных'],
@@ -585,8 +584,8 @@ replacer.cfg["main"] = [
 
 	// Админка - PM: создание/ответ
 	[/^mod\.php\?\/(new_PM\/|PM\/\d+\/reply)/, [
-		['reg', 'head > title', [/Nova MP para (.+)/, 'Cообщение для $1']],
-		['reg', 'header > h1', [/Nova MP para (.+)/, 'Личное сообщение для $1']],
+		['reg', 'head > title', /Nova MP para (.+)/, 'Cообщение для $1'],
+		['reg', 'header > h1', /Nova MP para (.+)/, 'Личное сообщение для $1'],
 		['reg', 'table > tbody > tr > th', [
 			['To', 'Кому'],
 			['Message', 'Сообщение']
@@ -596,8 +595,8 @@ replacer.cfg["main"] = [
 
 	// Админка - PM: просмотр
 	[/^mod\.php\?\/PM\/\d+$/, [
-		['reg', 'head > title', [/Mensagem privada (.+)/, 'Личное cообщение $1']],
-		['reg', 'header > h1', [/Mensagem privada (.+)/, 'Личное сообщение $1']],
+		['reg', 'head > title', /Mensagem privada (.+)/, 'Личное cообщение $1'],
+		['reg', 'header > h1', /Mensagem privada (.+)/, 'Личное сообщение $1'],
 		['reg', 'table > tbody > tr > th', [
 			['De', 'От'],
 			['Data', 'Дата'],
@@ -611,13 +610,13 @@ replacer.cfg["main"] = [
 			['ago', 'назад']
 		], [RE_INNER, RE_NOBREAK]],
 		['att', 'input[name="delete"]', 'value', 'Удалить'],
-		['reg', 'form > ul > li > a', ['Responder com citação', 'Ответить с цитированием']],
+		['reg', 'form > ul > li > a', 'Responder com citação', 'Ответить с цитированием'],
 	]],
 
 	// Админка - PM: входящие
 	[/^mod\.php\?\/inbox$/, [
-		['reg', 'head > title', [/Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)']],
-		['reg', 'header > h1', [/Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)']],
+		['reg', 'head > title', /Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)'],
+		['reg', 'header > h1', /Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)'],
 		['reg', 'table.modlog > tbody > tr > th', [
 			['De', 'От'],
 			['Data', 'Дата'],
@@ -627,8 +626,8 @@ replacer.cfg["main"] = [
 
 	// Админка - Редактирование поста
 	[/^mod\.php\?\/\w+\/edit\//, [
-		['reg', 'head > title', ['Editar mensagem', 'Редактирование сообщения']],
-		['reg', 'header > h1', ['Editar mensagem', 'Редактирование сообщения']],
+		['reg', 'head > title', 'Editar mensagem', 'Редактирование сообщения'],
+		['reg', 'header > h1', 'Editar mensagem', 'Редактирование сообщения'],
 		['reg', 'table > tbody > tr > th', [
 			['Nome', 'Имя'],
 			['Tripcode', 'Трипкод'],
@@ -636,17 +635,17 @@ replacer.cfg["main"] = [
 			['Mensagem', 'Сообщение'],
 			['Embutir', 'Вставка'] // ???
 		]],
-		['reg', 'table > tbody > tr:nth-child(2) > td', ['Remove tripcode', 'Удалить трипкод', [RE_INNER]]],
+		['reg', 'table > tbody > tr:nth-child(2) > td', 'Remove tripcode', 'Удалить трипкод', [RE_INNER]],
 		['att', 'input[name="post"]', 'value', 'Сохранить'],
-		['reg', 'form > h2', ['Existing post', 'Существующий пост']],
+		['reg', 'form > h2', 'Existing post', 'Существующий пост'],
 		[]
 	]],
 
 
 	// Админка - История событий
 	[/^mod\.php\?\/log[:]/, [
-		['reg', 'head > title', ['Histórico da board', 'История событий']],
-		['reg', 'header > h1', ['Histórico da board', 'История событий доски']],
+		['reg', 'head > title', 'Histórico da board', 'История событий'],
+		['reg', 'header > h1', 'Histórico da board', 'История событий доски'],
 		['reg', 'table.modlog > tbody > tr > th', [
 			['Usuário', 'Имя'],
 			['Endereço de IP', 'IP-адрес'],
@@ -654,7 +653,7 @@ replacer.cfg["main"] = [
 			['Board', 'Доска'],
 			['Ação', 'Действие']
 		]],
-		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', ['hidden', 'скрыт'], [RE_INNER, RE_MULTI]], // ip
+		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', 'hidden', 'скрыт', [RE_INNER, RE_MULTI]], // ip
 		['reg', 'table.modlog > tbody > tr > td:nth-child(3)', [ // время
 			[/segundos?/, 'сек'],
 			[/minutos?/, 'мин'],
@@ -685,13 +684,13 @@ replacer.cfg["main"] = [
 
 	// Админка - Последние сообщения
 	[/^mod\.php\?\/recent/, [
-		['reg', 'head > title', ['Mensagens recentes', 'Последние сообщения']],
-		['reg', 'header > h1', ['Mensagens recentes', 'Последние сообщения']],
-		['reg', 'body > h4', [/Viewing last (\d+) posts/, 'Отображаются последние $1 постов']],
-		['reg', 'body > p', [/^View/, 'Показывать:'], [RE_INNER]],
+		['reg', 'head > title', 'Mensagens recentes', 'Последние сообщения'],
+		['reg', 'header > h1', 'Mensagens recentes', 'Последние сообщения'],
+		['reg', 'body > h4', /Viewing last (\d+) posts/, 'Отображаются последние $1 постов'],
+		['reg', 'body > p', /^View/, 'Показывать:'], [RE_INNER],
 		['css', 'body > a#erase-local-data', 'Стереть локальные данные'], // wtf?
-		['reg', 'body > a[href^="/mod.php?/recent/"]', [/Next (\d+) posts/, 'Следующие $1 постов']],
-		['reg', 'body > p.unimportant', [/\(Não há posts ativos.+/, '(Больше новых сообщений нет)<br><a href="/mod.php?/recent/25">Вернуться</a>'], [RE_INNER]],
+		['reg', 'body > a[href^="/mod.php?/recent/"]', /Next (\d+) posts/, 'Следующие $1 постов'],
+		['reg', 'body > p.unimportant', /\(Não há posts ativos.+/, '(Больше новых сообщений нет)<br><a href="/mod.php?/recent/25">Вернуться</a>'], [RE_INNER],
 		[]
 	]],
 
@@ -715,7 +714,7 @@ replacer.cfg["main"] = [
 		], [RE_MULTI]],
 
 		// причина
-		['reg', 'fieldset#bans table tr:nth-child(3) > td', [/^sem razão especificada/, '-- не указано --'], [RE_MULTI]],
+		['reg', 'fieldset#bans table tr:nth-child(3) > td', /^sem razão especificada/, '-- не указано --'], [RE_MULTI],
 
 		// виза (Equipe)
 		['reg', 'fieldset#bans table tr:nth-child(7) > td', [
@@ -725,6 +724,11 @@ replacer.cfg["main"] = [
 		['att', 'input[name="unban"]', 'value', 'Разбанить'],
 
 		[]
+	]],
+
+	[/^mod\.php\?\/noticeboard/, [
+		['reg', 'head > title', 'Quadro de noticias', 'Доска объявлений'],
+		['reg', 'header > h1', ['Quadro de noticias', 'Доска объявлений']]
 	]],
 
 	[]
@@ -790,14 +794,14 @@ replacer.cfg["alert"] = [
 // ==============================================================================================
 replacer.cfg["new_post"] = [
 	['', [
-		['reg', 'span.name', ['Anônimo', 'Аноним'], [RE_INNER, RE_MULTI]],
-		['reg', 'span.name > span', ['You', 'Вы'], [RE_MULTI]],
+		['reg', 'span.name', 'Anônimo', 'Аноним', [RE_INNER, RE_MULTI]],
+		['reg', 'span.name > span', 'You', 'Вы', [RE_MULTI]],
 		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений]'],
 			['Responder', 'Ответить']
 		]],
-		['reg', 'div.post > span.omitted', [/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.']],
+		['reg', 'div.post > span.omitted', /(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 	]]
 ];
 
@@ -1378,8 +1382,12 @@ replacer.nodReplacer = function(el, p, re_opt)
 				node = e.firstChild;
 			dmsg = ':' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 			if(node) {
-				if(re_opt.debug) console.debug(e, dmsg, node, ' --> ', p[2]);
-				node[re_opt.prop] = p[2];
+				if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && re_opt.prop == RE_TEXT)) {
+					if(re_opt.debug) console.debug(e, dmsg, node, ' --> ', p[2]);
+					node[re_opt.prop] = p[2];
+				} 
+				else
+					if(re_opt.debug) console.debug(e, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
 			}
 			else
 				if(re_opt.debug) console.debug(e, dmsg, ': NO NODE');
@@ -1405,8 +1413,12 @@ replacer.nodReplacer = function(el, p, re_opt)
 						node = se.firstChild;
 					dmsg = ':' + (opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 					if(node) {
-						if(opt.debug) console.debug(se, dmsg, node, ' --> ', sp[1]);
-						node[opt.prop] = sp[1];
+						if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && opt.prop == RE_TEXT)) {
+							if(opt.debug) console.debug(se, dmsg, node, ' --> ', sp[1]);
+							node[opt.prop] = sp[1];
+						} 
+						else
+							if(re_opt.debug) console.debug(se, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
 					}
 					else
 						if(opt.debug) console.debug(se, dmsg, ': NO NODE');
@@ -1424,19 +1436,25 @@ replacer.regReplacer = function(el, p, re_opt)
 {
 	/* 
 	реплейсер текста по regex 
-		p=["reg", query, param_arr, re_arr]
-		p=["reg", query, [param_arr1,...,param_arrN], re_arr]
+		p=["reg", query, regex, text, re_arr];
 
-		param_arr - массив параметров: [regex, text, re_arr]
+		p=["reg", query, [
+			[regex1, text1, re_arr1],
+			...
+			[regexN, textN, re_arrN],
+		], re_arr];
+
 		re_arr - массив с комбинацией RE_* параметров [не обязательно]
-		внутренние re_opt переопределяют внешние
+		внутренние re_arr переопределяют внешние
 	*/
 
-	if(p.length < 3 || !Array.isArray(p[2]) || (p.length > 3 && !Array.isArray(p[3])) || p.length > 4)
+	if(p.length < 3 || p.length > 5)
 		return -1;
 
-	if(!Array.isArray(p[2][0])) 
-		p[2] = [p[2]];
+	if(!Array.isArray(p[2]))
+		p.splice(2, 3, [[p[2], p[3], p[4]]]); // простой синтаксис, преобразуем в расширенный 
+	else if(p.length > 4 || !Array.isArray(p[2][0])) // расширенный, проверяем параметры
+		return -1;
 
 	re_opt = this.reOpt(p[3], re_opt); // модификаторы по умолчанию для группы regex
 	let dbg1st = 0;
@@ -1716,8 +1734,6 @@ var main = {
 	// ----------------------------------------------------
 	{
 		main.starttime = Date.now();
-		console.log("BRchan Russifikator started");
-		console.debug("URL:", main.url);
 
 		// замена бразильской локализации
 		Object.defineProperty(window, "l10n", {
@@ -1737,6 +1753,9 @@ var main = {
 		else {
 			main.onDocReady();
 		}
+
+		console.log("BRchan Russifikator started");
+		if(RE_DEBUG) console.debug("URL:", main.url);
 	}
 } // main
 
