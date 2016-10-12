@@ -278,7 +278,7 @@ replacer.cfg["main"] = [
 	[/^bugs\.php/, [
 		['reg', 'head > title', 'BRCHAN :: SUIDB', 'Багрепорт'],
 		['reg', 'div.ban.oficial > h2', /^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах'],
-		['reg', 'div.ban.oficial > p', /^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>'], [RE_INNER],
+		['reg', 'div.ban.oficial > p', /^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>', [RE_INNER]],
 		['reg', 'div.ban.oficial > form > table > tbody > tr > td', [
 			['Você errou o codigo de verificação', 'Неверный код подтверждения'],
 			[/Descreva em pelo menos (\d+) palavras o bug/, 'В описании должно быть не меньше $1 слов(а)'],
@@ -287,7 +287,7 @@ replacer.cfg["main"] = [
 			['Anti-robô', 'Анти-Спам']
 		], [RE_INNER]],
 		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить'],
-		['reg', 'div.ban.oficial > h2', [/(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']]
+		['reg', 'div.ban.oficial > h2', /(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']
 	]],
 
 	// Жалоба
@@ -695,13 +695,9 @@ replacer.cfg["main"] = [
 			['Expirado', 'Истек']
 		], [RE_MULTI]],
 
-		// причина
-		['reg', 'fieldset#bans table tr:nth-child(3) > td', /^sem razão especificada/, '-- не указано --', [RE_MULTI]],
-
-		// виза (Equipe)
-		['reg', 'fieldset#bans table tr:nth-child(7) > td', [
-			['Não', 'Нет']
-		], [RE_MULTI]],
+		['reg', 'fieldset#bans table tr:nth-child(3) > td', /^sem razão especificada/, '-- не указано --'], // причина
+		['reg', 'fieldset#bans table tr:nth-child(6) > td', 'nunca', 'никогда'], // Истекает
+		['reg', 'fieldset#bans table tr:nth-child(7) > td', 'Não', 'Нет'], // виза (Equipe)
 
 		['att', 'input[name="unban"]', 'value', 'Разбанить'],
 
