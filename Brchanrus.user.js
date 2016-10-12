@@ -641,7 +641,8 @@ replacer.cfg["main"] = [
 			[/segundos?/, 'сек'],
 			[/minutos?/, 'мин'],
 			[/horas?/, 'ч'],
-			[/dias?/, 'дн']
+			[/dias?/, 'дн'],
+			[/semana?/, 'нд']
 		], [RE_INNER, RE_MULTI]],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия.
 			[/^Edited post/, 'Редактирование поста'],
