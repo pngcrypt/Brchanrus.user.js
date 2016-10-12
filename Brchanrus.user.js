@@ -575,7 +575,7 @@ replacer.cfg["main"] = [
 			['To', 'Кому'],
 			['Message', 'Сообщение']
 		]],
-		['reg', 'input[type="submit"]', ['Enviar mensagem', 'Отправить'], [RE_OUTER]]
+		['att', 'input[type="submit"]', 'value', 'Отправить']
 	]],
 
 	// Админка - PM: просмотр
@@ -628,7 +628,7 @@ replacer.cfg["main"] = [
 
 	// Админка - История событий
 	[/^mod\.php\?\/log[:]/, [
-		['reg', 'head > title, header > h1', 'Histórico da board', 'История событий доски', [RE_INNER]],
+		['reg', 'head > title, header > h1', 'Histórico da board', 'История событий доски', [RE_MULTI]],
 		['reg', 'table.modlog > tbody > tr > th', [
 			['Usuário', 'Имя'],
 			['Endereço de IP', 'IP-адрес'],
