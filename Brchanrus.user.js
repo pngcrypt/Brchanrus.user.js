@@ -156,24 +156,16 @@ replacer.cfg["main"] = [
 
 	// доска tudo ("все")
 	[/^tudo\//, [
-		['css', 'head > title', 'Все доски'],
-		['css', 'header', [
-			['h1', 'Все доски'],
-			['div.subtitle', 'Здесь показываются треды и посты со всех досок']
-		]]
+		['css', 'head > title, header > h1', 'Все доски'],
+		['css', 'header > div.subtitle', 'Здесь показываются треды и посты со всех досок']
 	]],
 
 	// Ошибки постинга
 	[/^(post|bugs)\.php/, [
-		['reg', 'head > title', [
+		['reg', 'head > title, header > h1', [
 			['Erro', 'Ошибка'],
 			['Denúncia enviada', 'Жалоба отправлена']
-		]],
-
-		['reg', 'header > h1', [
-			['Erro', 'Ошибка'],
-			['Denúncia enviada', 'Жалоба отправлена']
-		], [RE_INNER]],
+		], [RE_INNER, RE_MULTI]],
 
 		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
 		['reg', 'body > div > h2', [
@@ -242,8 +234,7 @@ replacer.cfg["main"] = [
 
 	// Создание доски
 	[/^create\.php/, [
-		['css', 'head > title', 'Создание доски'],
-		['css', 'header > h1', 'Создание доски'],
+		['css', 'head > title, header > h1', 'Создание доски'],
 		['css', 'header > div.subtitle', 'создание пользовательской доски'], // ??? antes que alguém a crie
 
 		['reg', 'table.modlog > tbody > tr > th', [
@@ -301,13 +292,13 @@ replacer.cfg["main"] = [
 
 	// Жалоба
 	[/^report\.php/, [
-		['reg', 'p', [/^Enter reason below/, 'Введите причину жалобы']]
+		['reg', 'p', /^Enter reason below/, 'Введите причину жалобы'],
+		['att', 'form > input[name="report"]', 'value', 'Отправить'],
 	]],
 
 	// Админка - логин / ошибки
 	[/^mod\.php\b/, [
-		['reg', 'head > title', 'Login', 'Вход'],
-		['reg', 'header > h1', 'Login', 'Вход'],
+		['reg', 'head > title, header > h1', 'Login', 'Вход', [RE_MULTI]],
 		['reg', 'body > form > table:nth-child(1) th', [
 			['Usuário', 'Логин'],
 			['Senha', 'Пароль']
@@ -320,8 +311,7 @@ replacer.cfg["main"] = [
 		]],
 
 		// Ошибки
-		['reg', 'head > title', 'Erro', 'Ошибка'],
-		['reg', 'header > h1', 'Erro', 'Ошибка', [RE_INNER]],
+		['reg', 'head > title, header > h1', 'Erro', 'Ошибка', [RE_MULTI]],
 		['reg', 'body > h2', /Login e\/ou senha inválido\(s\)/, 'Неверный логин или пароль'],
 		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
 		['reg', 'body > div > h2', [
@@ -342,8 +332,7 @@ replacer.cfg["main"] = [
 
 	// Админка - Главная
 	[/^mod\.php\?\/$/, [
-		['reg', 'head > title', 'Dashboard', 'Панель администрирования'],
-		['reg', 'header > h1', 'Dashboard', 'Панель администрирования'],
+		['reg', 'head > title, header > h1', 'Dashboard', 'Панель администрирования', [RE_MULTI]],
 		['reg', 'fieldset > legend', [
 			['Mensagens', 'Сообщения'],
 			['Administração', 'Администрирование'],
@@ -351,7 +340,7 @@ replacer.cfg["main"] = [
 			['Conta de usuário', 'Учетная запись']
 		]],
 		['reg', 'fieldset > ul > li', 'Quadro de noticias', 'Последние объявления', [RE_INNER]],
-		['reg', 'fieldset > ul > li > a', [
+		['reg', 'fieldset > ul > li a', [
 			['Ver todas as noticias do quadro de noticias', 'Просмотр всех объявлений'],
 			[/Caixa de entrada \((\d+) unread\)/, 'Входящие (непрочитанных: $1)'],
 
@@ -374,8 +363,7 @@ replacer.cfg["main"] = [
 
 	// Админка - Жалобы
 	[/^mod\.php\?\/reports\/?$/, [
-		['reg', 'head > title', /Fila de denuncias\s+\((\d+)\)/, 'Поступившие жалобы ($1)'],
-		['reg', 'header > h1', /Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)'],
+		['reg', 'head > title, header > h1', /Fila de denuncias\s+\((\d+)\)/, 'Поступившие жалобы ($1)', [RE_MULTI]],
 		['att', 'h2.report-header > a', 'title', 'Перейти в тред'],
 		['reg', 'h2.report-header', [
 			[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1'],
@@ -399,8 +387,7 @@ replacer.cfg["main"] = [
 
 	// Админка - Настройка доски
 	[/^mod\.php\?\/settings\//, [
-		['reg', 'head > title', 'Configuração da board', 'Настройки доски'],
-		['reg', 'header > h1', 'Configuração da board', 'Настройки доски'],
+		['reg', 'head > title, header > h1', 'Configuração da board', 'Настройки доски', [RE_MULTI]],
 		['css', 'body > p', 'Внимание: Некоторые изменения не вступят в силу до тех пор, пока не будет написан новый пост на доске.'],
 
 		['reg', 'form > table:nth-child(2) th', [
@@ -423,8 +410,7 @@ replacer.cfg["main"] = [
 			[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', [RE_INNER]],
 			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', [RE_INNER]],
 			['Formatação matemática entre', 'Форматировать математику между'],
-			['Permitir upload de SWF', 'Разрешить загружать SWF'],
-			['Permitir upload de PDF', 'Разрешить загружать PDF'],
+			[/Permitir upload de (.+)/, 'Разрешить загружать $1', [RE_MULTI]],
 			[/^Permitir rolar dados\(roll\)/, 'Разрешить бросить кости (roll)'],
 			['Proibir usuários de repostar imagens repetidas', 'Запретить отправлять повторяющиеся изображения', [RE_MULTI, RE_NOBREAK]],
 			['(em toda a board)', '(по всей доске)'],
@@ -441,8 +427,8 @@ replacer.cfg["main"] = [
 			[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', [RE_INNER]],
 			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
 			[/^Permitir que o OP poste arquivos(.+)Não se aplica a imagens/, 'Разрешить прикреплять файлы к ОП-посту$1Не относится к изображениям', [RE_INNER]],
-			['Manter o nome original do arquivo', 'Показывать оригинальное имя файла'],
-			['Limite de imagens por post', 'Максимальное количество изображений в посте']
+			['Manter o nome original do arquivo', 'Показывать оригинальные имена файлов'],
+			['Limite de imagens por post', 'Максимальное количество прикреплённых файлов к посту']
 		]],
 
 		['reg', 'form > table:nth-child(8) th', [
@@ -481,8 +467,7 @@ replacer.cfg["main"] = [
 			['Registro completo', 'Полная запись']
 		]],
 
-		['css', 'select[name="max_newlines"] > option[value="0"]', 'Неограничено'], // Строк на пост
-		['css', 'select[name="hour_max_threads"] > option[value="none"]', 'Неограничено'], // Кол-во тредов в час
+		['css', 'select[name="max_newlines"] > option[value="0"], select[name="hour_max_threads"] > option[value="none"]', 'Неограничено'], // Строк на пост, Кол-во тредов в час
 
 		['att', 'input#wf_add', 'value', 'Добавить еще фильтр'],
 		['att', 'input#tag_add', 'value', 'Добавить еще тэг'],
@@ -500,8 +485,7 @@ replacer.cfg["main"] = [
 
 	// Админка - Настройки доски - Пользовательские изображения
 	[/^mod\.php\?\/assets\//, [
-		['reg', 'head > title', 'Edit board assets', 'Редактирование изображений'],
-		['reg', 'header > h1', 'Edit board assets', 'Редактирование изображений'],
+		['reg', 'head > title, header > h1', 'Edit board assets', 'Редактирование изображений', [RE_MULTI]],
 
 		['reg', 'form > p > small', [
 			[/^Todas as imagens padrões.+/, 'Все изображения должны быть в формате PNG или GIF и иметь размер файла не более 500 Кб'],
@@ -512,7 +496,7 @@ replacer.cfg["main"] = [
 			['Enviar nova imagem de', 'Выбрать изображение для', [RE_MULTI, RE_NOBREAK]],
 			['spoiler', 'спойлер'],
 			['arquivo deletado', 'файл удален'],
-			['arquivo deletado', 'нет файла']
+			['sem arquivo', 'нет файла']
 		]],
 		['reg', 'body > div > form > p', /Imagem de .+ atual/, 'Текущее изображение', [RE_INNER, RE_MULTI]],
 		['att', 'input[type="submit"]', 'value', 'Сохранить изображения'],
@@ -522,12 +506,16 @@ replacer.cfg["main"] = [
 
 	// Админка - Настройки доски - Модераторы
 	[/^mod\.php\?\/volunteers\//, [
-		['reg', 'head > title', 'Editar voluntários', 'Редактирование модераторов'],
-		['reg', 'header > h1', 'Editar voluntários', 'Редактирование модераторов'],
+		['reg', 'head > title, header > h1', 'Editar voluntários', 'Редактирование модераторов', [RE_MULTI]],
 		['reg', 'form > h2', 'Novo usuário', 'Новый модератор'],
 		['reg', 'body > div > h2', 'Voluntários atuais', 'Текущие модераторы'],
-		['reg', 'form > p > span.unimportant', /Limite de (\d+) voluntários.+/, 'Лимит пользователей: $1. Убедитесь, что используете надежные пароли. Модератор может делать то же, что и админ, за исключением просмотра этой страницы, страницы банеров и страницы настройки доски.'],
+		['reg', 'form > p > span.unimportant', /Limite de (\d+) voluntários.+/, 'Лимит пользователей: $1.<br>Убедитесь, что используете надежные пароли.<br>Модератор может делать то же, что и админ, за исключением просмотра этой страницы, страницы банеров и страницы настройки доски.', [RE_INNER]],
 		
+		['reg', 'tbody > tr > th', [
+			['Usuário', 'Пользователь'],
+			['Senha', 'Пароль']
+		]],
+
 		['reg', 'input[type="submit"]', [
 			['Criar usuário', 'Добавить'],
 			['Deletar selecionados', 'Удалить выделенных']
@@ -545,13 +533,12 @@ replacer.cfg["main"] = [
 			[/Senha(.+)\(novo.+/, 'Пароль$1(новый; не обязательно)'],
 			[/se você esquecer.+para (.+@brchan\.org).+/, 'если вы забыли свой пароль, напишите на $1<br> и попросите его сбросить. Адрес почты должен быть<br>тот же, связанный с учетной записью; по желанию)']
 		], [RE_INNER]],
-		['reg', 'input[type="submit"]', ['Salvar alterações', 'Сохранить изменения'], [RE_OUTER]]
+		['att', 'input[type="submit"]', 'value', 'Сохранить изменения'],
 	]],
 
 	// Админка - Бан
 	[/^mod\.php\?\/\w+\/ban(&delete)?\//, [
-		['reg', 'head > title', 'Novo ban', 'Новый бан'],
-		['reg', 'header > h1', 'Novo ban', 'Новый бан'],
+		['reg', 'head > title, header > h1', 'Novo ban', 'Новый бан', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th > label', [
 			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', [RE_INNER]],
 			['Motivo', 'Причина'],
@@ -574,8 +561,7 @@ replacer.cfg["main"] = [
 
 	// Админка - Список банов
 	[/^mod\.php\?\/bans$/, [
-		['reg', 'head > title', 'Lista de bans', 'Список банов'],
-		['reg', 'header > h1', 'Lista de bans', 'Список банов'],
+		['reg', 'head > title, header > h1', 'Lista de bans', 'Список банов', [RE_MULTI]],
 		['nod', 'div.banlist-opts > div.checkboxes > label', 'Показать только активные баны', [RE_LAST]], // txt, т.к. на input висит обработчик
 		['att', 'input#search', 'placeholder', 'Искать...'],
 		['att', 'input#unban', 'value', 'Разбанить выделенных'],
@@ -584,8 +570,7 @@ replacer.cfg["main"] = [
 
 	// Админка - PM: создание/ответ
 	[/^mod\.php\?\/(new_PM\/|PM\/\d+\/reply)/, [
-		['reg', 'head > title', /Nova MP para (.+)/, 'Cообщение для $1'],
-		['reg', 'header > h1', /Nova MP para (.+)/, 'Личное сообщение для $1'],
+		['reg', 'head > title, header > h1', /Nova MP para (.+)/, 'Личное сообщение для $1', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th', [
 			['To', 'Кому'],
 			['Message', 'Сообщение']
@@ -595,8 +580,7 @@ replacer.cfg["main"] = [
 
 	// Админка - PM: просмотр
 	[/^mod\.php\?\/PM\/\d+$/, [
-		['reg', 'head > title', /Mensagem privada (.+)/, 'Личное cообщение $1'],
-		['reg', 'header > h1', /Mensagem privada (.+)/, 'Личное сообщение $1'],
+		['reg', 'head > title, header > h1', /Mensagem privada (.+)/, 'Личное cообщение $1', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th', [
 			['De', 'От'],
 			['Data', 'Дата'],
@@ -615,19 +599,19 @@ replacer.cfg["main"] = [
 
 	// Админка - PM: входящие
 	[/^mod\.php\?\/inbox$/, [
-		['reg', 'head > title', /Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)'],
-		['reg', 'header > h1', /Caixa de entrada \((\d+) unread\)/, 'Входящие (новых: $1)'],
+		['reg', 'head > title, header > h1', /Caixa de entrada \(((\d+) unread|empty)\)/, 'Входящие (новых: $1)', [RE_MULTI]],
 		['reg', 'table.modlog > tbody > tr > th', [
 			['De', 'От'],
 			['Data', 'Дата'],
 			['Message snippet', 'Первью сообщения']
 		]],
+
+		['reg', 'body > p.unimportant', 'No private messages for you.', 'нет новых сообщений', [RE_MULTI]]
 	]],
 
 	// Админка - Редактирование поста
 	[/^mod\.php\?\/\w+\/edit\//, [
-		['reg', 'head > title', 'Editar mensagem', 'Редактирование сообщения'],
-		['reg', 'header > h1', 'Editar mensagem', 'Редактирование сообщения'],
+		['reg', 'head > title, header > h1', 'Editar mensagem', 'Редактирование сообщения', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th', [
 			['Nome', 'Имя'],
 			['Tripcode', 'Трипкод'],
@@ -644,8 +628,7 @@ replacer.cfg["main"] = [
 
 	// Админка - История событий
 	[/^mod\.php\?\/log[:]/, [
-		['reg', 'head > title', 'Histórico da board', 'История событий'],
-		['reg', 'header > h1', 'Histórico da board', 'История событий доски'],
+		['reg', 'head > title, header > h1', 'Histórico da board', 'История событий доски', [RE_INNER]],
 		['reg', 'table.modlog > tbody > tr > th', [
 			['Usuário', 'Имя'],
 			['Endereço de IP', 'IP-адрес'],
@@ -684,8 +667,7 @@ replacer.cfg["main"] = [
 
 	// Админка - Последние сообщения
 	[/^mod\.php\?\/recent/, [
-		['reg', 'head > title', 'Mensagens recentes', 'Последние сообщения'],
-		['reg', 'header > h1', 'Mensagens recentes', 'Последние сообщения'],
+		['reg', 'head > title, header > h1', 'Mensagens recentes', 'Последние сообщения', [RE_MULTI]],
 		['reg', 'body > h4', /Viewing last (\d+) posts/, 'Отображаются последние $1 постов'],
 		['reg', 'body > p', /^View/, 'Показывать:'], [RE_INNER],
 		['css', 'body > a#erase-local-data', 'Стереть локальные данные'], // wtf?
@@ -714,7 +696,7 @@ replacer.cfg["main"] = [
 		], [RE_MULTI]],
 
 		// причина
-		['reg', 'fieldset#bans table tr:nth-child(3) > td', /^sem razão especificada/, '-- не указано --'], [RE_MULTI],
+		['reg', 'fieldset#bans table tr:nth-child(3) > td', /^sem razão especificada/, '-- не указано --', [RE_MULTI]],
 
 		// виза (Equipe)
 		['reg', 'fieldset#bans table tr:nth-child(7) > td', [
@@ -727,8 +709,7 @@ replacer.cfg["main"] = [
 	]],
 
 	[/^mod\.php\?\/noticeboard/, [
-		['reg', 'head > title', 'Quadro de noticias', 'Доска объявлений'],
-		['reg', 'header > h1', ['Quadro de noticias', 'Доска объявлений']]
+		['reg', 'head > title, header > h1', 'Quadro de noticias', 'Доска объявлений', [RE_MULTI]]
 	]],
 
 	[]
