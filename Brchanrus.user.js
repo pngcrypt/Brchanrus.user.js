@@ -278,7 +278,7 @@ replacer.cfg["main"] = [
 	[/^bugs\.php/, [
 		['reg', 'head > title', 'BRCHAN :: SUIDB', 'Багрепорт'],
 		['reg', 'div.ban.oficial > h2', /^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах'],
-		['reg', 'div.ban.oficial > p', /^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>'], [RE_INNER],
+		['reg', 'div.ban.oficial > p', /^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>', [RE_INNER]],
 		['reg', 'div.ban.oficial > form > table > tbody > tr > td', [
 			['Você errou o codigo de verificação', 'Неверный код подтверждения'],
 			[/Descreva em pelo menos (\d+) palavras o bug/, 'В описании должно быть не меньше $1 слов(а)'],
@@ -287,7 +287,12 @@ replacer.cfg["main"] = [
 			['Anti-robô', 'Анти-Спам']
 		], [RE_INNER]],
 		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить'],
-		['reg', 'div.ban.oficial > h2', [/(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']]
+		['reg', 'div.ban.oficial > h2', /(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']
+
+		// сообщения об отправке
+		['reg', 'div.ban.oficial > div > h3', 'Seu formulário foi enviado!', 'Ваша форма отправлена!'],
+		['reg', 'div.ban.oficial > div', 'Obrigado por nos ajudar a melhorar o', 'Благодарим вас за помощь в улучшении', [RE_INNER]],
+		['reg', 'div.ban.oficial > div > a', 'Reportar mais bugs', 'Сообщить о других багах'],
 	]],
 
 	// Жалоба
@@ -575,7 +580,7 @@ replacer.cfg["main"] = [
 			['To', 'Кому'],
 			['Message', 'Сообщение']
 		]],
-		['reg', 'input[type="submit"]', ['Enviar mensagem', 'Отправить'], [RE_OUTER]]
+		['reg', 'input[type="submit"]', 'Enviar mensagem', 'Отправить', [RE_OUTER]]
 	]],
 
 	// Админка - PM: просмотр
@@ -628,7 +633,7 @@ replacer.cfg["main"] = [
 
 	// Админка - История событий
 	[/^mod\.php\?\/log[:]/, [
-		['reg', 'head > title, header > h1', 'Histórico da board', 'История событий доски', [RE_INNER]],
+		['reg', 'head > title, header > h1', 'Histórico da board', 'История событий доски', [RE_MULTI]],
 		['reg', 'table.modlog > tbody > tr > th', [
 			['Usuário', 'Имя'],
 			['Endereço de IP', 'IP-адрес'],
@@ -669,10 +674,10 @@ replacer.cfg["main"] = [
 	[/^mod\.php\?\/recent/, [
 		['reg', 'head > title, header > h1', 'Mensagens recentes', 'Последние сообщения', [RE_MULTI]],
 		['reg', 'body > h4', /Viewing last (\d+) posts/, 'Отображаются последние $1 постов'],
-		['reg', 'body > p', /^View/, 'Показывать:'], [RE_INNER],
+		['reg', 'body > p', /^View/, 'Показывать:', [RE_INNER]],
 		['css', 'body > a#erase-local-data', 'Стереть локальные данные'], // wtf?
 		['reg', 'body > a[href^="/mod.php?/recent/"]', /Next (\d+) posts/, 'Следующие $1 постов'],
-		['reg', 'body > p.unimportant', /\(Não há posts ativos.+/, '(Больше новых сообщений нет)<br><a href="/mod.php?/recent/25">Вернуться</a>'], [RE_INNER],
+		['reg', 'body > p.unimportant', /\(Não há posts ativos.+/, '(Больше новых сообщений нет)<br><a href="/mod.php?/recent/25">Вернуться</a>', [RE_INNER]],
 		[]
 	]],
 
