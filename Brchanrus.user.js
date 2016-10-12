@@ -287,7 +287,7 @@ replacer.cfg["main"] = [
 			['Anti-robô', 'Анти-Спам']
 		], [RE_INNER]],
 		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить'],
-		['reg', 'div.ban.oficial > h2', /(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']
+		['reg', 'div.ban.oficial > h2', /(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2'],
 
 		// сообщения об отправке
 		['reg', 'div.ban.oficial > div > h3', 'Seu formulário foi enviado!', 'Ваша форма отправлена!'],
