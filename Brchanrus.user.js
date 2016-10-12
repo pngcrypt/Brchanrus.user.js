@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            BRchan Rusifikator
-// @version         3.3
+// @version         3.3.1
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -1643,13 +1643,13 @@ var main = {
 		// Перемещает изображения в ОП посте в сам пост
 		for(let thread of document.querySelectorAll('div.thread')) {
 			let files = thread.getElementsByClassName('files')[0];
-			if(typeof files == 'undefined' || !files.hasChildNodes()) {
+			if(typeof files == 'undefined' || !files.children.length) {
 				continue;
 			}
 
 			let body = thread.getElementsByClassName('body')[0];
 
-			if(files.childNodes.length > 3) {
+			if(files.children.length > 1) {
 				files.style.display = 'inline-block';
 			}
 			else {
@@ -1695,7 +1695,7 @@ var main = {
 		for(let post of document.querySelectorAll('div.thread > div.post')) {
 			let replies = post.getElementsByClassName('mentioned')[0];
 			
-			if(typeof replies == 'undefined') {
+			if(typeof replies == 'undefined' || !replies.children.length) {
 				continue;
 			}
 
@@ -1727,10 +1727,15 @@ var main = {
 			set: function(value){}
 		});
 
-		if (document.addEventListener) {
-			document.addEventListener("DOMContentLoaded", main.onDocReady, false);
-		} else if (document.attachEvent) {
-			document.attachEvent("onreadystatechange", main.onDocReady);
+		if(document.readyState === 'loading') {
+			if (document.addEventListener) {
+				document.addEventListener("DOMContentLoaded", main.onDocReady, false);
+			} else if (document.attachEvent) {
+				document.attachEvent("onreadystatechange", main.onDocReady);
+			}
+		}
+		else {
+			main.onDocReady();
 		}
 	}
 } // main
