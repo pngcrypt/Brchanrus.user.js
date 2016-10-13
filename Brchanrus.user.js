@@ -13,6 +13,10 @@
 // @nocompat        Chrome
 // ==/UserScript==
 
+////////// wrapper /////////
+(function() {
+////////////////////////////
+
 const TIME_CORR = 3 * 3600000; // коррекция даты постов (в мс)
 
 const RE_DEBUG = true;
@@ -36,10 +40,12 @@ const RE_LAST = 31; // последняя
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
-console.debug = console.debug || console.log || function() {};
-console.error = console.error || console.log || function() {};
-console.group = console.group || function() { console.debug.apply(console, ["[+] -->"].concat(Array.from(arguments))) };
-console.groupEnd = console.groupEnd || function() { console.debug('[-] ---') };
+var win = typeof unsafeWindow != 'undefined' ? unsafeWindow: window;
+var con = win.console;
+con.debug = con.debug || con.log || function() {};
+con.error = con.error || con.log || function() {};
+con.group = con.group || function() { con.debug.apply(con, ["[+] -->"].concat(Array.from(arguments))); };
+con.groupEnd = con.groupEnd || function() { con.debug('[-] ---'); };
 
 function isArray(a) {return Array.isArray(a);}
 
@@ -1082,23 +1088,35 @@ var l10n_rus = {
 // ==============================================================================================
 
 // ----------------------------------------------------
-replacer.process = function(cfg, element, debug)
+replacer.process = function(cfg, element, debug, debug_rep)
 // ----------------------------------------------------
 {
 	/* 
 	произвести замену с использованием конфига с именем cfg
 		element - родительский элемент, по умолчанию document
-		debug - включить отладку реплейсеров конфига (true/false)
+		debug - включить отладку использованных url (по умолчанию == replacer.debug)
+		debug_rep - включить детальную отладку реплейсеров 
 	*/
 
 	let starttime = Date.now();
+
+	if(!this.debug) {
+		// если глобальная отладка запрещена, отключаем местную
+		debug = false; 
+		debug_rep = false;
+	}
+	else {
+		if(debug == undefined) debug = this.debug;
+		if(!debug) debug_rep = false;
+	}
+
 	if(!this.cfg[cfg]) {
-		if(this.debug) console.debug("ERROR: CFG NOT FOUND: ", cfg);
+		console.error("ERROR: CFG NOT FOUND: ", cfg);
 		return;
 	}
 
 	if(!element) element = document;
-	if(this.debug) console.group("["+cfg+"]: ", element);
+	if(debug) console.group("["+cfg+"]: ", element);
 
 	// в this.instance[] хранится кол-во запусков для каждого конфига (нужно для regex в частности)
 	if(!this.instance) this.instance = [];
@@ -1107,7 +1125,7 @@ replacer.process = function(cfg, element, debug)
 	this.instanceLocal = this.instance[cfg]; // кол-во запусков текущего конфига
 
 	let re_opt = this.reOpt(); // модификаторы по умолчанию
-	if(this.debug) re_opt.debug = !!debug; // если разрешена глобальная отладка, то меняем модификатор на переданный 
+	re_opt.debug = !!debug_rep; // отладка по умолчанию
 	let ucnt = 0;
 
 	for(let u of this.cfg[cfg]) // перебор всех url-групп в заданном конфиге
@@ -1127,7 +1145,7 @@ replacer.process = function(cfg, element, debug)
 		}
 
 		if(!main.url.match(u[0])) continue; // проверка url
-		if(this.debug) console.debug("URL-Match:", u[0]);
+		if(debug) console.debug("URL-Match:", u[0]);
 
 		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для url-группы
 		let recnt = 0;
@@ -1161,7 +1179,7 @@ replacer.process = function(cfg, element, debug)
 				break; // прерывание цикла перебора реплейсеров для текущего url
 		}
 	}
-	if(this.debug) {
+	if(debug) {
 		console.debug('Relaced in', Math.round(Date.now() - starttime), "ms");
 		console.groupEnd();
 	}	
@@ -1653,6 +1671,7 @@ var main = {
 		days: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 	},
 	url: window.location.pathname.substr(1) + window.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
+	doll: false,
 
 	// ----------------------------------------------------
 	onPageLoaded: function()
@@ -1660,12 +1679,19 @@ var main = {
 	{
 		// сюда помещать код, который должен выполняться после скриптов борды (полной загрузки страницы)
 
+		// доп. перевод
+		replacer.process("page_loaded"); 
+
 		// фикс ширины панели избранного
 		let el = document.querySelector('#watchlist');
 		if(el) el.style.width = 'auto';
 
-		// доп. перевод
-		replacer.process("page_loaded"); 
+		// обрабочтик добавления новых постов 
+		el = document.querySelector('body > form[name="postcontrols"]');
+		if(el) {
+			main.doll = (el.getAttribute('de-form') != undefined); // детект куклы
+			el.addEventListener ('DOMNodeInserted', main.onNewPost, false);
+		}
 
 		if(RE_DEBUG) console.debug('Page loaded in ', (Date.now() - main.starttime)/1000, "s");
 	},
@@ -1694,27 +1720,32 @@ var main = {
 				el.value = "";
 		};
 
-		if(window.jQuery) 
-		{
-			// перевод новых постов
-			$(document).on('new_post', function(e, post) {
-				replacer.process("new_post", post, false);
-				replacer.process("mod_buttons", post, false);
-				main.fixPostDate(post);
-				main.fixRedirect(post);
-				main.moveReplies();
-			});
-		}
-
 		// перевод страниц
-		replacer.process("main", document, false);
-		replacer.process("mod_buttons", document, false);
+		replacer.process("main", document, true);
+		replacer.process("mod_buttons", document, true);
 		replacer.clear("main");
 
 		main.fixThread();
 		main.fixCatalog();
 
 		setTimeout(main.onPageLoaded, 0);
+	},
+
+	// ----------------------------------------------------
+	onNewPost: function(event)
+	// ----------------------------------------------------
+	{
+		// отлавливаем добавление новых элементов на страницу
+		let el = event.target;
+		if(!el || el.nodeType != Node.ELEMENT_NODE || el.nodeName != 'DIV' || !el.id || !el.id.match(/^(reply|thread)_\d+$/))
+			return;
+
+		// новый пост в треде, или тред в /tudo/
+		replacer.process("new_post", el.target, false);
+		replacer.process("mod_buttons", el.target, false);
+		main.fixPostDate(el.target);
+		main.fixRedirect(el.target);
+		main.moveReplies();
 	},
 
 	// ----------------------------------------------------
@@ -1810,7 +1841,10 @@ var main = {
 		}, false);
 	},
 
-	moveReplies: function() {
+	// ----------------------------------------------------
+	moveReplies: function()
+	// ----------------------------------------------------
+	{
 		// Переместить ответы вниз поста
 		for(let post of document.querySelectorAll('div.thread > div.post')) {
 			let replies = post.getElementsByClassName('mentioned')[0];
@@ -1862,3 +1896,8 @@ var main = {
 } // main
 
 main.init();
+
+
+//////// wrapper end ////////
+})();
+////////////////////////////
