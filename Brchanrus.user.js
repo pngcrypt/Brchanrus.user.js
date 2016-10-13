@@ -1263,6 +1263,75 @@ replacer.reOpt = function(re_arr, def)
 */ 
 
 // ----------------------------------------------------
+replacer._regexReplacer = function(rx_arr, re_opt, callback_match)
+// ----------------------------------------------------
+{
+	/*
+	универсальная функция проверки значения по группе regex
+	
+	возвращает: 
+		< 0 - в случае ошибки синтаксиса
+		false - если не осталось активных regex
+		true - в противном случае
+
+	параметры:
+		rx_arr - массив regex: [ [regx1, text1, re_arr1], ..., [regxN, textN, re_arrN] ]
+		re_opt - объект RE_* модификаторов по умолчанию
+
+		callback_match - внешняя функция для сравнения и подстановки по regex:
+			function(rx, str, opt) {...}
+				rx - тек. regex;
+				str - строка для подстановки;
+				opt - объект RE_* модификаторов для тек. regex				
+			ф-ция должна вернуть true если regex сработал или false если нет
+	*/
+
+	let re_cnt = 0; // кол-во активных regex
+	let dobreak=false;
+	let dbgMsg;
+
+	 // перебор regex
+	for(let r of rx_arr) {
+		if(!isArray(r) || (r.length && r.length < 2) ) { // проверка параметров
+			return -3;
+		}
+		if(!r.length) continue; // empty
+
+		if(!r[3] || r[3] < this.instanceLocal) // проверка на активный regex
+			re_cnt++;
+		if(dobreak || r[3] == this.instanceLocal)
+			continue; // продолжаем подсчет активных regex
+
+		let opt = this.reOpt(r[2], re_opt); // переопределение модификаторов для репелейсера
+		dbgMsg = "";
+
+		if(callback_match(r[0], r[1], opt)) {
+			dbgMsg += ": FOUND";
+			if(opt.single) {
+				r[3] = this.instanceLocal; // выставляем флаг сработавшего regex
+				re_cnt--;
+				dbgMsg += ": REMOVED";
+			}
+			if(opt.break) {
+				dobreak = true; // прерываем цикл перебора regex
+				dbgMsg += ": BREAK";
+			}
+		}
+		else 
+			dbgMsg += ": NOT FOUND";
+
+		if(opt.debug) console.debug("..?: ", [r[0], r[1]], dbgMsg);
+	} // for r
+
+	if(re_cnt < 1) {
+		// прекращаем перебор элементов, т.к. не осталось активных regex
+		if(re_opt.debug) console.debug("STOP");
+		return false;
+	}
+	return true;
+}
+
+// ----------------------------------------------------
 replacer.cssReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
@@ -1397,62 +1466,33 @@ replacer.attReplacer = function(el, p, re_def)
 			// простой синтаксис
 			e.setAttribute(p[2], p[3]);
 			if(re_opt.debug) console.debug("ELM:", e, ' --> ', p[3]);
-			continue;
 		}
+		else {
+			// расширенный синтаксис
+			if(re_opt.debug) console.debug("ELM:", e);
+			let attr = e.getAttribute(p[2]); 
 
-		// расширенный синтаксис
-		let re_cnt = 0; // кол-во активных regex
-		let dobreak=false;
-		let attr = e.getAttribute(p[2]); // тек. значение атрибута элемента
-		if(re_opt.debug) console.debug("ELM:", e);
-		
-		 // перебор regex
-		for(let r of p[3]) {
-			if(!isArray(r) || ( r.length && r.length < 2) ) { // проверка параметров
+			// перебор группы regex
+			let ret = this._regexReplacer(p[3], re_opt, function(rx, str, opt) {
+				if(attr.match(rx)) {
+					attr = attr.replace(rx, str);
+					return true;
+				}
+				return false;
+			});
+
+			if(ret < 0) {
 				if(dbg1st) console.groupEnd();
-				return -3;
+				return ret;
 			}
-			if(!r.length) continue; // empty
-
-			if(!r[3] || r[3] < this.instanceLocal) // проверка на активный regex
-				re_cnt++;
-			if(dobreak || r[3] == this.instanceLocal)
-				continue; // продолжаем подсчет активных regex
-
-			let opt = this.reOpt(r[2], re_opt); // переопределение модификаторов для репелейсера
-			let dbgMsg = "";
-
-			if(attr.match(r[0])) 			{
-				e.setAttribute(p[2], r[1]);
-				dbgMsg += ": FOUND";
-				if(opt.single)
-				{
-					r[3] = this.instanceLocal; // выставляем флаг сработавшего regex
-					re_cnt--;
-					dbgMsg += ": REMOVED";
-				}
-				if(opt.break)
-				{
-					dobreak = true; // прерываем цикл перебора regex
-					dbgMsg += ": BREAK";
-				}
-			}
-			else 
-				dbgMsg += ": NOT FOUND";
-
-			if(opt.debug) console.debug("..?: ", [r[0], r[1]], dbgMsg);
-		} // for r
-
-		if(re_cnt < 1)
-		{
-			// прекращаем перебор элементов, т.к. не осталось активных regex
-			if(re_opt.debug) console.debug("STOP");
-			break;
+			e.setAttribute(p[2], attr);
+			if(!ret)
+				break;
 		}
-	} // for e
-
+	}
 	if(dbg1st) console.groupEnd();
 }
+
 
 // ----------------------------------------------------
 replacer.nodReplacer = function(el, p, re_def)
@@ -1592,53 +1632,23 @@ replacer.regReplacer = function(el, p, re_def)
 			if(!dbg1st++) console.group("REG:", p[1]);
 			console.debug("ELM:", e);
 		}
-		let re_cnt = 0; // кол-во активных regex (не сработавших)
-		let dobreak = false;
-		let dbgMsg = "";
-		for(let a of p[2])  // перебор regex
-		{
-			if(isArray(a) && !a.length) continue; // empty
-			if(!isArray(a) || a.length < 2) // проверка параметров
+
+		// перебор regex
+		let ret = this._regexReplacer(p[2], re_opt, function(rx, str, opt) {
+			if(e[opt.prop].match(rx))
 			{
-				if(dbg1st) console.groupEnd();
-				return -2;
+				e[opt.prop] = e[opt.prop].replace(rx, str);
+				return true;
 			}
+			return false;
+		});
 
-			if(!a[3] || a[3] < this.instanceLocal) // проверка на активный regex
-				re_cnt++;
-			if(dobreak || a[3] == this.instanceLocal)
-				continue; // продолжаем подсчет активных regex
-
-			let opt = replacer.reOpt(a[2], re_opt); // модификаторы для текущего regex
-
-			if(e[opt.prop].match(a[0]))
-			{
-				e[opt.prop] = e[opt.prop].replace(a[0], a[1]);
-				dbgMsg = ": FOUND";
-
-				if(opt.single)
-				{
-					a[3] = this.instanceLocal; // выставляем флаг сработавшего regex
-					re_cnt--;
-					dbgMsg += ": REMOVED";
-				}
-				if(opt.break)
-				{
-					dobreak = true; // прерываем цикл перебора regex
-					dbgMsg += ": BREAK";
-				}
-			}
-			else 
-				dbgMsg = ": NOT FOUND";
-
-			if(opt.debug) console.debug("..?:",  [a[0], a[1]], dbgMsg);
-		} // for a
-		if(re_cnt < 1)
-		{
-			// прекращаем перебор элементов, т.к. не осталось активных regex
-			if(re_opt.debug) console.debug("STOP");
-			break;
+		if(ret < 0) {
+			if(dbg1st) console.groupEnd();
+			return ret;
 		}
+		if(!ret)
+			break;
 	} // for e
 	if(dbg1st) console.groupEnd();	
 }
@@ -1721,7 +1731,7 @@ var main = {
 		};
 
 		// перевод страниц
-		replacer.process("main", document, true);
+		replacer.process("main", document, true, true);
 		replacer.process("mod_buttons", document, true);
 		replacer.clear("main");
 
