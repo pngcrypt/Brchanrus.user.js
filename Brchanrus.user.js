@@ -47,6 +47,7 @@ if(!console.group)
 		console.debug('[-] <<<');
 	}
 }
+function isArray(a) {return Array.isArray(a);}
 
 // ==============================================================================================
 // основной конифг перевода
@@ -109,7 +110,7 @@ replacer.cfg["main"] = [
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
 		['css', 'a.show-post-table-options', '[Показать опции]'],
-		['att', '#post-form-inner > form > table > tbody > tr > td > input[type="submit"]', 'value', [
+		['att', '#post-form-inner input[type="submit"]', 'value', [
 			['Responder', 'Отправить'],
 			['Novo tópico', 'Создать тред']
 		]],
@@ -212,7 +213,7 @@ replacer.cfg["main"] = [
 		// Статистика
 		['css', 'main > section > h2', 'Статистика'],
 		['reg', 'main > section > p', [
-			[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', RE_INNER],
+			[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', [RE_INNER]],
 			['Última atualização desta página', 'Последнее обновление страницы']
 		]],
 
@@ -1115,17 +1116,17 @@ replacer.process = function(cfg, element, debug)
 	if(this.debug) re_opt.debug = !!debug; // если разрешена глобальная отладка, то меняем модификатор на переданный 
 	let ucnt = 0;
 
-	for(let u of this.cfg[cfg]) // перебор всех групп url-regex в заданном конфиге
+	for(let u of this.cfg[cfg]) // перебор всех url-групп в заданном конфиге
 	{		
 		ucnt++;
 
-		if(Array.isArray(u) && !u.length) continue; // empty
+		if(isArray(u) && !u.length) continue; // empty
 
 		// проверка параметров
-		if(!Array.isArray(u) || u.length < 2 || !Array.isArray(u[1])) 
+		if(!isArray(u) || u.length < 2 || u.length > 3 || !isArray(u[1]) || (u.length == 3 && !isArray(u[2])) ) 
 		{
 			console.error("ERROR: Syntax: URL-group #"+ucnt+" : ", u);
-			if(Array.isArray(u))
+			if(isArray(u))
 				continue;
 			else
 				break;
@@ -1134,17 +1135,17 @@ replacer.process = function(cfg, element, debug)
 		if(!main.url.match(u[0])) continue; // проверка url
 		if(this.debug) console.debug("URL-Match:", u[0]);
 
-		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для группы url-regex
+		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для url-группы
 		let recnt = 0;
 
-		for(let r of u[1]) // перебор реплейсеров url-regex группы
+		for(let r of u[1]) // перебор реплейсеров url-группы
 		{
 			recnt++;
-			if(Array.isArray(r) && !r.length) continue; //empty
-			if(!Array.isArray(r) || r.length < 2)
+			if(isArray(r) && !r.length) continue; //empty
+			if(!isArray(r) || r.length < 2)
 			{
 				console.error("ERROR: Syntax: Replacer #"+recnt+" : ", r);
-				if(!Array.isArray(r))
+				if(!isArray(r))
 					break;
 				else
 					continue;
@@ -1163,7 +1164,7 @@ replacer.process = function(cfg, element, debug)
 				continue;
 			}
 			else if(err)
-				break; // прерывание цикла перебора реплейсеров для текущего url-regex
+				break; // прерывание цикла перебора реплейсеров для текущего url
 		}
 	}
 	if(this.debug) {
@@ -1199,7 +1200,7 @@ replacer.reOpt = function(re_arr, def)
 			debug: this.debug 	// replacer.debug
 		}; 
 
-	if(!Array.isArray(re_arr))
+	if(!isArray(re_arr))
 		return def; // возвращаем либо ссылку на дефолтный объект, либо новый объект
 	
 	var opt= { // новый объект опций на основе дефолтного
@@ -1246,7 +1247,7 @@ replacer.reOpt = function(re_arr, def)
 возвращаемые значения:
 	= 0 : нормальное завершение
 	< 0 : ошибка во входных параметрах (в консоль выдаст сообщения со строкой конфига)
-	> 0 : прервать перебор реплейсеров для текущего url-regex
+	> 0 : прервать перебор реплейсеров для текущей url-группы
 */ 
 
 // ----------------------------------------------------
@@ -1267,7 +1268,8 @@ replacer.cssReplacer = function(el, p, re_def)
 		re_arr - массив RE_* модификаторов [не обязательно]
 	*/
 
-	if(p.length < 3)
+
+	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[4])) )
 		return -1;
 
 	try {
@@ -1278,7 +1280,7 @@ replacer.cssReplacer = function(el, p, re_def)
 	}		
 	if(!elements.length) return;
 
-	let extended = Array.isArray(p[2]);
+	let extended = isArray(p[2]);
 	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
 	let dbg1st = 0;
 
@@ -1294,7 +1296,9 @@ replacer.cssReplacer = function(el, p, re_def)
 		else {
 			// расширенный синтаксис
 			for(let sp of p[2]) {
-				if(!Array.isArray(sp) || (sp.length < 2)) { // проверка синтаксиса
+				// проверка параметров
+				if(!isArray(sp) || sp.length < 2 || sp.length > 3 || (sp.length == 3 && !isArray(sp[2])) ) 
+				{ 
 					if(!dbg1st++) console.groupEnd();
 					return -1;
 				}
@@ -1343,7 +1347,7 @@ replacer.attReplacer = function(el, p, re_def)
 		re_arr - массив RE_* модификаторов (RE_SINGLE/MULTI/BREAK/NOBREAK/DEBUG)
 	*/
 
-	if(p.length < 4 || typeof(p[1]) != "string" || typeof(p[2]) != "string")
+	if(p.length < 4)
 		return -1;
 
 	let extended=false;
@@ -1355,9 +1359,9 @@ replacer.attReplacer = function(el, p, re_def)
 	} 
 	else { 
 		// расширенный (3)
-		if(p.length > 5 || !Array.isArray(p[3]) || !p[3].length)
+		if(p.length > 5 || !isArray(p[3]) || !p[3].length || (p.length == 5 && !isArray(p[4])) )
 			return -2;
-		if(!Array.isArray(p[3][0]))
+		if(!isArray(p[3][0]))
 			p[3] = [p[3]]; // упрощенный синтаксис (2) преобразуем в расширенный
 		extended = true;
 	}
@@ -1374,8 +1378,7 @@ replacer.attReplacer = function(el, p, re_def)
 	let re_opt = this.reOpt(p[4], re_def); // переопределение модификаторов группы
 	let dbg1st = 0;
 
-	for(let e of elements) { 
-
+	for(let e of elements) {
 		if(re_opt.debug && !dbg1st++) console.group("ATT:", p[1], " ..? ", [p[2]]);
 
 		if(!extended) {
@@ -1393,7 +1396,7 @@ replacer.attReplacer = function(el, p, re_def)
 		
 		 // перебор regex
 		for(let r of p[3]) {
-			if(!Array.isArray(r) || ( r.length && r.length < 2) ) { // проверка параметров
+			if(!isArray(r) || ( r.length && r.length < 2) ) { // проверка параметров
 				if(dbg1st) console.groupEnd();
 				return -3;
 			}
@@ -1459,7 +1462,7 @@ replacer.nodReplacer = function(el, p, re_def)
 			RE_LAST - последняя нода
 	*/
 
-	if(p.length < 3)
+	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[3])) )
 		return -1;
 
 	try {
@@ -1470,7 +1473,7 @@ replacer.nodReplacer = function(el, p, re_def)
 	}		
 	if(!elements.length) return;
 
-	let extended = Array.isArray(p[2]);
+	let extended = isArray(p[2]);
 	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
 
 	if(re_opt.debug) console.group("NOD:", p[1]);
@@ -1497,7 +1500,7 @@ replacer.nodReplacer = function(el, p, re_def)
 		else {
 			// расширенный синтаксис
 			for(let sp of p[2]) {
-				if(!Array.isArray(sp) || (sp.length < 2)) // проверка синтаксиса
+				if(!isArray(sp) || sp.length < 2 || sp.length > 3 || (sp.length == 3 && !isArray(sp[2]))) // проверка синтаксиса
 					return -1;
 				try {
 					var sub = e.querySelectorAll(sp[0]);
@@ -1553,9 +1556,12 @@ replacer.regReplacer = function(el, p, re_def)
 	if(p.length < 3 || p.length > 5)
 		return -1;
 
-	if(!Array.isArray(p[2]))
-		p.splice(2, 3, [[p[2], p[3], p[4]]]); // простой синтаксис, преобразуем в расширенный 
-	else if(p.length > 4 || !Array.isArray(p[2][0])) // расширенный, проверяем параметры
+	if(!isArray(p[2])) { // простой синтаксис
+		if(p.length == 5 && !isArray(p[4]))
+			return -1;
+		p.splice(2, 3, [[p[2], p[3], p[4]]]); // преобразуем в расширенный 
+	}
+	else if(p.length > 4 || !isArray(p[2][0])) // расширенный, проверяем параметры
 		return -1;
 
 	let re_opt = this.reOpt(p[3], re_def); // модификаторы по умолчанию для группы regex
@@ -1579,8 +1585,8 @@ replacer.regReplacer = function(el, p, re_def)
 		let dbgMsg = "";
 		for(let a of p[2])  // перебор regex
 		{
-			if(Array.isArray(a) && !a.length) continue; // empty
-			if(!Array.isArray(a) || a.length < 2) // проверка параметров
+			if(isArray(a) && !a.length) continue; // empty
+			if(!isArray(a) || a.length < 2) // проверка параметров
 			{
 				if(dbg1st) console.groupEnd();
 				return -2;
