@@ -36,17 +36,11 @@ const RE_LAST = 31; // последняя
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
-if(!console.debug) console.debug = console.log || function(){};
-if(!console.error) console.error = console.log || function(){};
-if(!console.group) 
-{
-	console.group = function() {
-		console.debug.apply(this, ["[+]",">>>"].concat(arguments));
-	}
-	console.groupEnd = function() {
-		console.debug('[-] <<<');
-	}
-}
+console.debug = console.debug || console.log || function() {};
+console.error = console.error || console.log || function() {};
+console.group = console.group || function() { console.debug.apply(console, ["[+] -->"].concat(Array.from(arguments))) };
+console.groupEnd = console.groupEnd || function() { console.debug('[-] ---') };
+
 function isArray(a) {return Array.isArray(a);}
 
 // ==============================================================================================
