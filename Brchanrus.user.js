@@ -1731,7 +1731,7 @@ var main = {
 		};
 
 		// перевод страниц
-		replacer.process("main", document, true, true);
+		replacer.process("main", document, true);
 		replacer.process("mod_buttons", document, true);
 		replacer.clear("main");
 
