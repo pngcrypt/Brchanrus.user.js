@@ -13,6 +13,10 @@
 // @nocompat        Chrome
 // ==/UserScript==
 
+////////// wrapper /////////
+(function() {
+////////////////////////////
+
 const TIME_CORR = 3 * 3600000; // коррекция даты постов (в мс)
 
 const RE_DEBUG = true;
@@ -36,17 +40,14 @@ const RE_LAST = 31; // последняя
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
-if(!console.debug) console.debug = console.log || function(){};
-if(!console.error) console.error = console.log || function(){};
-if(!console.group) 
-{
-	console.group = function() {
-		console.debug.apply(this, ["[+]",">>>"].concat(arguments));
-	}
-	console.groupEnd = function() {
-		console.debug('[-] <<<');
-	}
-}
+var win = typeof unsafeWindow != 'undefined' ? unsafeWindow: window;
+var con = win.console;
+con.debug = con.debug || con.log || function() {};
+con.error = con.error || con.log || function() {};
+con.group = con.group || function() { con.debug.apply(con, ["[+] -->"].concat(Array.from(arguments))); };
+con.groupEnd = con.groupEnd || function() { con.debug('[-] ---'); };
+
+function isArray(a) {return Array.isArray(a);}
 
 // ==============================================================================================
 // основной конифг перевода
@@ -109,8 +110,10 @@ replacer.cfg["main"] = [
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
 		['css', 'a.show-post-table-options', '[Показать опции]'],
-		['att', 'table.post-table > tbody > tr > td > input[value="Responder"]', 'value', 'Отправить'],
-		['att', 'table.post-table > tbody > tr > td > input[value="Novo tópico"]', 'value', 'Создать тред'],
+		['att', '#post-form-inner input[type="submit"]', 'value', [
+			['Responder', 'Отправить'],
+			['Novo tópico', 'Создать тред']
+		]],
 		['css', 'tr#oekaki > th', 'Рисовать'],
 		['css', 'tr#upload_embed > th', 'Ссылка на YouTube'],
 		['css', 'tr#options-row > th', 'Опции'],
@@ -210,7 +213,7 @@ replacer.cfg["main"] = [
 		// Статистика
 		['css', 'main > section > h2', 'Статистика'],
 		['reg', 'main > section > p', [
-			[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', RE_INNER],
+			[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', [RE_INNER]],
 			['Última atualização desta página', 'Последнее обновление страницы']
 		]],
 
@@ -522,12 +525,10 @@ replacer.cfg["main"] = [
 			['Senha', 'Пароль']
 		]],
 
-		['reg', 'input[type="submit"]', [
+		['att', 'body > div > form > p > input[type="submit"]', 'value', [
 			['Criar usuário', 'Добавить'],
 			['Deletar selecionados', 'Удалить выделенных']
-		], [RE_OUTER]],
-
-		[]
+		]]
 	]],
 
 	// Админка - Редактирование учетной записи
@@ -539,7 +540,7 @@ replacer.cfg["main"] = [
 			[/Senha(.+)\(novo.+/, 'Пароль$1(новый; не обязательно)'],
 			[/se você esquecer.+para (.+@brchan\.org).+/, 'если вы забыли свой пароль, напишите на $1<br> и попросите его сбросить. Адрес почты должен быть<br>тот же, связанный с учетной записью; по желанию)']
 		], [RE_INNER]],
-		['att', 'input[type="submit"]', 'value', 'Сохранить изменения'],
+		['att', 'input[type="submit"]', 'value', ['Salvar alterações', 'Сохранить изменения']],
 	]],
 
 	// Админка - Бан
@@ -581,7 +582,7 @@ replacer.cfg["main"] = [
 			['To', 'Кому'],
 			['Message', 'Сообщение']
 		]],
-		['att', 'input[type="submit"]', 'value', 'Отправить']
+		['att', 'input[type="submit"]', 'value', ['Enviar mensagem', 'Отправить']]
 	]],
 
 	// Админка - PM: просмотр
@@ -605,7 +606,12 @@ replacer.cfg["main"] = [
 
 	// Админка - PM: входящие
 	[/^mod\.php\?\/inbox$/, [
-		['reg', 'head > title, header > h1', /Caixa de entrada \(((\d+) unread|empty)\)/, 'Входящие (новых: $1)', [RE_MULTI]],
+		['reg', 'head > title, header > h1', [
+			['Caixa de entrada', 'Входящие', [RE_NOBREAK]],
+			[/\((0 unread|empty)\)/, ''],
+			[/\((\d+) unread\)/, '(новых: $1)'],
+		], [RE_MULTI]],
+
 		['reg', 'table.modlog > tbody > tr > th', [
 			['De', 'От'],
 			['Data', 'Дата'],
@@ -1082,23 +1088,35 @@ var l10n_rus = {
 // ==============================================================================================
 
 // ----------------------------------------------------
-replacer.process = function(cfg, element, debug)
+replacer.process = function(cfg, element, debug, debug_rep)
 // ----------------------------------------------------
 {
 	/* 
 	произвести замену с использованием конфига с именем cfg
 		element - родительский элемент, по умолчанию document
-		debug - включить отладку реплейсеров конфига (true/false)
+		debug - включить отладку использованных url (по умолчанию == replacer.debug)
+		debug_rep - включить детальную отладку реплейсеров 
 	*/
 
 	let starttime = Date.now();
+
+	if(!this.debug) {
+		// если глобальная отладка запрещена, отключаем местную
+		debug = false; 
+		debug_rep = false;
+	}
+	else {
+		if(debug == undefined) debug = this.debug;
+		if(!debug) debug_rep = false;
+	}
+
 	if(!this.cfg[cfg]) {
-		if(this.debug) console.debug("ERROR: CFG NOT FOUND: ", cfg);
+		console.error("ERROR: CFG NOT FOUND: ", cfg);
 		return;
 	}
 
 	if(!element) element = document;
-	if(this.debug) console.group("["+cfg+"]: ", element);
+	if(debug) console.group("["+cfg+"]: ", element);
 
 	// в this.instance[] хранится кол-во запусков для каждого конфига (нужно для regex в частности)
 	if(!this.instance) this.instance = [];
@@ -1107,39 +1125,39 @@ replacer.process = function(cfg, element, debug)
 	this.instanceLocal = this.instance[cfg]; // кол-во запусков текущего конфига
 
 	let re_opt = this.reOpt(); // модификаторы по умолчанию
-	if(this.debug) re_opt.debug = !!debug; // если разрешена глобальная отладка, то меняем модификатор на переданный 
+	re_opt.debug = !!debug_rep; // отладка по умолчанию
 	let ucnt = 0;
 
-	for(let u of this.cfg[cfg]) // перебор всех групп url-regex в заданном конфиге
+	for(let u of this.cfg[cfg]) // перебор всех url-групп в заданном конфиге
 	{		
 		ucnt++;
 
-		if(Array.isArray(u) && !u.length) continue; // empty
+		if(isArray(u) && !u.length) continue; // empty
 
 		// проверка параметров
-		if(!Array.isArray(u) || u.length < 2 || !Array.isArray(u[1])) 
+		if(!isArray(u) || u.length < 2 || u.length > 3 || !isArray(u[1]) || (u.length == 3 && !isArray(u[2])) ) 
 		{
 			console.error("ERROR: Syntax: URL-group #"+ucnt+" : ", u);
-			if(Array.isArray(u))
+			if(isArray(u))
 				continue;
 			else
 				break;
 		}
 
 		if(!main.url.match(u[0])) continue; // проверка url
-		if(this.debug) console.debug("URL-Match:", u[0]);
+		if(debug) console.debug("URL-Match:", u[0]);
 
-		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для группы url-regex
+		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для url-группы
 		let recnt = 0;
 
-		for(let r of u[1]) // перебор реплейсеров url-regex группы
+		for(let r of u[1]) // перебор реплейсеров url-группы
 		{
 			recnt++;
-			if(Array.isArray(r) && !r.length) continue; //empty
-			if(!Array.isArray(r) || r.length < 2)
+			if(isArray(r) && !r.length) continue; //empty
+			if(!isArray(r) || r.length < 2)
 			{
 				console.error("ERROR: Syntax: Replacer #"+recnt+" : ", r);
-				if(!Array.isArray(r))
+				if(!isArray(r))
 					break;
 				else
 					continue;
@@ -1158,11 +1176,11 @@ replacer.process = function(cfg, element, debug)
 				continue;
 			}
 			else if(err)
-				break; // прерывание цикла перебора реплейсеров для текущего url-regex
+				break; // прерывание цикла перебора реплейсеров для текущего url
 		}
 	}
-	if(this.debug) {
-		console.debug('Relaced in', Math.round(Date.now() - starttime), "ms");
+	if(debug) {
+		console.debug('Relaced in', main.timeDiff(starttime));
 		console.groupEnd();
 	}	
 }
@@ -1178,23 +1196,23 @@ replacer.clear = function(cfg)
 }
 
 // ----------------------------------------------------
-replacer.reOpt = function(arr, def)
+replacer.reOpt = function(re_arr, def)
 // ----------------------------------------------------
 {
-	// arr - массив модификаторов [RE_TEXT, RE_MULTI] и т.п. порядок значения не имеет
-	// def - объект опций по умолчанию {prop, single, break, debug} 
+	// re_arr - массив RE_* модификаторов (порядок и кол-во значения не имеет)
+	// def - объект опций по умолчанию {prop, single, break, node, debug} 
 	// возвращает объект модифицированных опций 
 
 	if(typeof(def) != 'object')
 		def = { // новый объект с параметрами по умолчанию
 			prop: RE_TEXT,
-			single: true,
-			break: true,
-			node: 0,	// RE_FIRST
-			debug: this.debug
+			single: true,		// RE_SINGLE
+			break: true,		// RE_BREAK
+			node: 0,			// RE_FIRST
+			debug: this.debug 	// replacer.debug
 		}; 
 
-	if(!Array.isArray(arr))
+	if(!isArray(re_arr))
 		return def; // возвращаем либо ссылку на дефолтный объект, либо новый объект
 	
 	var opt= { // новый объект опций на основе дефолтного
@@ -1205,9 +1223,9 @@ replacer.reOpt = function(arr, def)
 		debug: def.debug
 	}; 
 
-	for(let o of arr) {
+	for(let o of re_arr) {
 		switch(o) {
-			case RE_DEBUG: 	opt.debug = true; break;
+			case RE_DEBUG: 	opt.debug = RE_DEBUG; break;
 			case RE_SINGLE: opt.single = true; break;
 			case RE_MULTI: 	opt.single = false; break;
 			case RE_BREAK: 	opt.break = true; break;
@@ -1230,22 +1248,91 @@ replacer.reOpt = function(arr, def)
  ФУНКЦИИ РЕПЛЕЙСЕРОВ 
  для каждого типа реплейсера должна быть определена функция вида:
  
- replacer.<type>Repacler = function(el, params, re_opt) {...}
+ replacer.<type>Repacler = function(el, params, re_def) {...}
 
  где 
  	<type> - тип реплейсера (css, txt, reg и т.п.)
  	el - родительский элемент, в котором нужно производить поиск
  	params - массив параметров (из конфига) ["type", "css-selector", ....]  // type - тип реплейсера, дальше - параметры
- 	re_opt - объект RE_* модификаторов по умолчанию для текущего реплейсера
+ 	re_def - объект RE_* модификаторов по умолчанию для текущего реплейсера
 
 возвращаемые значения:
 	= 0 : нормальное завершение
 	< 0 : ошибка во входных параметрах (в консоль выдаст сообщения со строкой конфига)
-	> 0 : прервать перебор реплейсеров для текущего url-regex
+	> 0 : прервать перебор реплейсеров для текущей url-группы
 */ 
 
 // ----------------------------------------------------
-replacer.cssReplacer = function(el, p, re_opt)
+replacer._regexReplacer = function(rx_arr, re_opt, callback_match)
+// ----------------------------------------------------
+{
+	/*
+	универсальная функция проверки значения по группе regex
+	
+	возвращает: 
+		< 0 - в случае ошибки синтаксиса
+		false - если не осталось активных regex
+		true - в противном случае
+
+	параметры:
+		rx_arr - массив regex: [ [regx1, text1, re_arr1], ..., [regxN, textN, re_arrN] ]
+		re_opt - объект RE_* модификаторов по умолчанию
+
+		callback_match - внешняя функция для сравнения и подстановки по regex:
+			function(rx, str, opt) {...}
+				rx - тек. regex;
+				str - строка для подстановки;
+				opt - объект RE_* модификаторов для тек. regex				
+			ф-ция должна вернуть true если regex сработал или false если нет
+	*/
+
+	let re_cnt = 0; // кол-во активных regex
+	let dobreak=false;
+	let dbgMsg;
+
+	 // перебор regex
+	for(let r of rx_arr) {
+		if(!isArray(r) || (r.length && r.length < 2) ) { // проверка параметров
+			return -3;
+		}
+		if(!r.length) continue; // empty
+
+		if(!r[3] || r[3] < this.instanceLocal) // проверка на активный regex
+			re_cnt++;
+		if(dobreak || r[3] == this.instanceLocal)
+			continue; // продолжаем подсчет активных regex
+
+		let opt = this.reOpt(r[2], re_opt); // переопределение модификаторов для репелейсера
+		dbgMsg = "";
+
+		if(callback_match(r[0], r[1], opt)) {
+			dbgMsg += ": FOUND";
+			if(opt.single) {
+				r[3] = this.instanceLocal; // выставляем флаг сработавшего regex
+				re_cnt--;
+				dbgMsg += ": REMOVED";
+			}
+			if(opt.break) {
+				dobreak = true; // прерываем цикл перебора regex
+				dbgMsg += ": BREAK";
+			}
+		}
+		else 
+			dbgMsg += ": NOT FOUND";
+
+		if(opt.debug) console.debug("..?: ", [r[0], r[1]], dbgMsg);
+	} // for r
+
+	if(re_cnt < 1) {
+		// прекращаем перебор элементов, т.к. не осталось активных regex
+		if(re_opt.debug) console.debug("STOP");
+		return false;
+	}
+	return true;
+}
+
+// ----------------------------------------------------
+replacer.cssReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
 	/*
@@ -1262,7 +1349,8 @@ replacer.cssReplacer = function(el, p, re_opt)
 		re_arr - массив RE_* модификаторов [не обязательно]
 	*/
 
-	if(p.length < 3)
+
+	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[4])) )
 		return -1;
 
 	try {
@@ -1273,21 +1361,28 @@ replacer.cssReplacer = function(el, p, re_opt)
 	}		
 	if(!elements.length) return;
 
-	let extended = Array.isArray(p[2]);
-	re_opt = this.reOpt(p[3], re_opt); // переопределение модификаторов
+	let extended = isArray(p[2]);
+	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
+	let dbg1st = 0;
 
-	if(re_opt.debug) console.group("CSS:", "'"+p[1]+"'");
 	for(let e of elements)
 	{
 		if(!extended) {
 			e[re_opt.prop] = p[2];
-			if(re_opt.debug) console.debug(e, ' --> ', p[2]);
+			if(re_opt.debug) {
+				if(!dbg1st++) console.group("CSS:", p[1]);
+				console.debug("ELM:", e, ' --> ', p[2]);
+			}
 		} 
 		else {
 			// расширенный синтаксис
 			for(let sp of p[2]) {
-				if(!Array.isArray(sp) || (sp.length < 2)) // проверка синтаксиса
+				// проверка параметров
+				if(!isArray(sp) || sp.length < 2 || sp.length > 3 || (sp.length == 3 && !isArray(sp[2])) ) 
+				{ 
+					if(!dbg1st++) console.groupEnd();
 					return -1;
+				}
 				try {
 					var sub = e.querySelectorAll(sp[0]);
 				} catch(err) {
@@ -1295,34 +1390,112 @@ replacer.cssReplacer = function(el, p, re_opt)
 				}
 				if(!sub || !sub.length) continue;
 
+				let dbg2nd = 0;
 				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
-				if(opt.debug) console.group("SUB:", "'"+sp[0]+"'");
-				for(let se of sub) {
+
+				for(let se of sub) { // перебор потомков
 					se[opt.prop] = sp[1];
-					if(opt.debug) console.debug(se, ' --> ', sp[1]);
-				}
-				if(opt.debug) console.groupEnd();
+					if(opt.debug) {
+						if(!dbg1st++) console.group("CSS:", p[1]);
+						if(!dbg2nd++) console.group("SUB:", sp[0]);
+						console.debug("ELM:", se, ' --> ', sp[1]);
+					}
+				} 
+				if(dbg2nd) console.groupEnd();
 			} // for sp
 		} // else
 	} // for e
-	if(re_opt.debug) console.groupEnd();
+	if(dbg1st) console.groupEnd();
 }
 
 // ----------------------------------------------------
-replacer.attReplacer = function(el, p, re_opt)
+replacer.attReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
-	// реплейсер атрибутов
-	// p=["att", query, attr_name, text]
+	/*
+	реплейсер атрибутов
+		p=["att", query, attr_name, text]
+
+		p=["att", query, attr_name, [regex, text, re_arr]]
+
+		p=["att", query, attr_name, [
+			[regex1, text1, re_arr1],
+			...
+			[regexN, textN, re_arrN],
+		], re_arr]
+
+		в расширенном синтаксисе значение атрибута проверяется по regex и заменяется при совпадении
+		re_arr - массив RE_* модификаторов (RE_SINGLE/MULTI/BREAK/NOBREAK/DEBUG)
+	*/
+
 	if(p.length < 4)
 		return -1;
 
-	for(let e of el.querySelectorAll(p[1]))
-		e.setAttribute(p[2], p[3]);
+	let extended=false;
+
+	if(typeof(p[3]) == "string") { 
+		// сокращенный синтаксис (1)		
+		if(p.length > 4)
+			return -1;
+	} 
+	else { 
+		// расширенный (3)
+		if(p.length > 5 || !isArray(p[3]) || !p[3].length || (p.length == 5 && !isArray(p[4])) )
+			return -2;
+		if(!isArray(p[3][0]))
+			p[3] = [p[3]]; // упрощенный синтаксис (2) преобразуем в расширенный
+		extended = true;
+	}
+	
+	// выбираем элементы
+	try {
+		var elements = el.querySelectorAll(p[1]);
+	} catch(err) {
+		console.error("ERROR: Selector:", p);
+		return;
+	}
+	if(!elements.length) return;
+
+	let re_opt = this.reOpt(p[4], re_def); // переопределение модификаторов группы
+	let dbg1st = 0;
+
+	for(let e of elements) {
+		if(re_opt.debug && !dbg1st++) console.group("ATT:", p[1], " ..? ", [p[2]]);
+
+		if(!extended) {
+			// простой синтаксис
+			e.setAttribute(p[2], p[3]);
+			if(re_opt.debug) console.debug("ELM:", e, ' --> ', p[3]);
+		}
+		else {
+			// расширенный синтаксис
+			if(re_opt.debug) console.debug("ELM:", e);
+			let attr = e.getAttribute(p[2]); 
+
+			// перебор группы regex
+			let ret = this._regexReplacer(p[3], re_opt, function(rx, str, opt) {
+				if(attr.match(rx)) {
+					attr = attr.replace(rx, str);
+					return true;
+				}
+				return false;
+			});
+
+			if(ret < 0) {
+				if(dbg1st) console.groupEnd();
+				return ret;
+			}
+			e.setAttribute(p[2], attr);
+			if(!ret)
+				break;
+		}
+	}
+	if(dbg1st) console.groupEnd();
 }
 
+
 // ----------------------------------------------------
-replacer.nodReplacer = function(el, p, re_opt)
+replacer.nodReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
 	/*
@@ -1335,13 +1508,13 @@ replacer.nodReplacer = function(el, p, re_opt)
 			[sub-queryN, textN, re_arrN]
 		], re_arr]
 
-		в расширенном синтаксисе sub-query - селекторы, для дочерних элементов от родительского (найденного по query)
+		в расширенном синтаксисе: sub-query - селекторы, для дочерних элементов от родительского (найденного по query)
 		re_arr - массив RE_* модификаторов [не обязательно]:
 			RE_FIRST - первая нода [по умолчанию]
 			RE_LAST - последняя нода
 	*/
 
-	if(p.length < 3)
+	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[3])) )
 		return -1;
 
 	try {
@@ -1352,10 +1525,10 @@ replacer.nodReplacer = function(el, p, re_opt)
 	}		
 	if(!elements.length) return;
 
-	let extended = Array.isArray(p[2]);
-	re_opt = this.reOpt(p[3], re_opt); // переопределение модификаторов
+	let extended = isArray(p[2]);
+	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
 
-	if(re_opt.debug) console.group("NOD:", "'"+p[1]+"'");
+	if(re_opt.debug) console.group("NOD:", p[1]);
 	for(let e of elements)
 	{
 		let node, dmsg;
@@ -1364,7 +1537,7 @@ replacer.nodReplacer = function(el, p, re_opt)
 				node = e.lastChild;
 			else
 				node = e.firstChild;
-			dmsg = ':' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ':';
+			dmsg = ': ' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ' :';
 			if(node) {
 				if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && re_opt.prop == RE_TEXT)) {
 					if(re_opt.debug) console.debug(e, dmsg, node, ' --> ', p[2]);
@@ -1379,7 +1552,7 @@ replacer.nodReplacer = function(el, p, re_opt)
 		else {
 			// расширенный синтаксис
 			for(let sp of p[2]) {
-				if(!Array.isArray(sp) || (sp.length < 2)) // проверка синтаксиса
+				if(!isArray(sp) || sp.length < 2 || sp.length > 3 || (sp.length == 3 && !isArray(sp[2]))) // проверка синтаксиса
 					return -1;
 				try {
 					var sub = e.querySelectorAll(sp[0]);
@@ -1389,7 +1562,7 @@ replacer.nodReplacer = function(el, p, re_opt)
 				if(!sub || !sub.length) continue;
 
 				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
-				if(opt.debug) console.group("SUB:", "'"+sp[0]+"'");
+				if(opt.debug) console.group("SUB:", sp[0]);
 				for(let se of sub) {
 					if(opt.node < 0)
 						node = se.lastChild;
@@ -1415,7 +1588,7 @@ replacer.nodReplacer = function(el, p, re_opt)
 }
 
 // ----------------------------------------------------
-replacer.regReplacer = function(el, p, re_opt)
+replacer.regReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
 	/* 
@@ -1435,12 +1608,15 @@ replacer.regReplacer = function(el, p, re_opt)
 	if(p.length < 3 || p.length > 5)
 		return -1;
 
-	if(!Array.isArray(p[2]))
-		p.splice(2, 3, [[p[2], p[3], p[4]]]); // простой синтаксис, преобразуем в расширенный 
-	else if(p.length > 4 || !Array.isArray(p[2][0])) // расширенный, проверяем параметры
+	if(!isArray(p[2])) { // простой синтаксис
+		if(p.length == 5 && !isArray(p[4]))
+			return -1;
+		p.splice(2, 3, [[p[2], p[3], p[4]]]); // преобразуем в расширенный 
+	}
+	else if(p.length > 4 || !isArray(p[2][0])) // расширенный, проверяем параметры
 		return -1;
 
-	re_opt = this.reOpt(p[3], re_opt); // модификаторы по умолчанию для группы regex
+	let re_opt = this.reOpt(p[3], re_def); // модификаторы по умолчанию для группы regex
 	let dbg1st = 0;
 
 	try {
@@ -1456,59 +1632,29 @@ replacer.regReplacer = function(el, p, re_opt)
 			if(!dbg1st++) console.group("REG:", p[1]);
 			console.debug("ELM:", e);
 		}
-		let re_cnt = 0; // кол-во активных regex (не сработавших)
-		let dobreak = false;
-		let dbgMsg = "";
-		for(let a of p[2]) 
-		{
-			if(Array.isArray(a) && !a.length) continue; // empty
-			if(!Array.isArray(a) || a.length < 2) // проверка параметров
+
+		// перебор regex
+		let ret = this._regexReplacer(p[2], re_opt, function(rx, str, opt) {
+			if(e[opt.prop].match(rx))
 			{
-				if(dbg1st) console.groupEnd();
-				return -2;
+				e[opt.prop] = e[opt.prop].replace(rx, str);
+				return true;
 			}
+			return false;
+		});
 
-			if(!a[3] || a[3] < this.instanceLocal) // проверка на активный regex
-				re_cnt++;
-			if(dobreak || a[3] == this.instanceLocal)
-				continue; // продолжаем подсчет активных regex
-
-			let opt = replacer.reOpt(a[2], re_opt); // модификаторы для текущего regex
-
-			if(e[opt.prop].match(a[0]))
-			{
-				e[opt.prop] = e[opt.prop].replace(a[0], a[1]);
-				dbgMsg = ": FOUND";
-
-				if(opt.single)
-				{
-					a[3] = this.instanceLocal; // выставляем флаг сработавшего regex
-					re_cnt--;
-					dbgMsg += ": REMOVED";
-				}
-				if(opt.break)
-				{
-					dobreak = true; // прерываем цикл перебора regex
-					dbgMsg += ": BREAK";
-				}
-			}
-			else 
-				dbgMsg = ": NOT FOUND";
-
-			if(opt.debug) console.debug("FND:",  [a[0], a[1]], dbgMsg);
-		} // for a
-		if(re_cnt < 1)
-		{
-			// прекращаем перебор элементов, т.к. не осталось активных regex
-			if(re_opt.debug) console.debug("STOP");
-			break;
+		if(ret < 0) {
+			if(dbg1st) console.groupEnd();
+			return ret;
 		}
+		if(!ret)
+			break;
 	} // for e
 	if(dbg1st) console.groupEnd();	
 }
 
 // ----------------------------------------------------
-replacer.strReplacer = function(el, p, re_opt)
+replacer.strReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
 	// реплейсер текста в переданном объекте el {text}
@@ -1535,6 +1681,7 @@ var main = {
 		days: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 	},
 	url: window.location.pathname.substr(1) + window.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
+	doll: false,
 
 	// ----------------------------------------------------
 	onPageLoaded: function()
@@ -1542,14 +1689,21 @@ var main = {
 	{
 		// сюда помещать код, который должен выполняться после скриптов борды (полной загрузки страницы)
 
+		// доп. перевод
+		replacer.process("page_loaded"); 
+
 		// фикс ширины панели избранного
 		let el = document.querySelector('#watchlist');
 		if(el) el.style.width = 'auto';
 
-		// доп. перевод
-		replacer.process("page_loaded"); 
+		// обрабочтик добавления новых постов 
+		el = document.querySelector('body > form[name="postcontrols"]');
+		if(el) {
+			main.doll = (el.getAttribute('de-form') != undefined); // детект куклы
+			el.addEventListener ('DOMNodeInserted', main.onNewPost, false);
+		}
 
-		if(RE_DEBUG) console.debug('Page loaded in ', (Date.now() - main.starttime)/1000, "s");
+		if(RE_DEBUG) console.debug('Page loaded in ', main.timeDiff(main.starttime));
 	},
 
 	// ----------------------------------------------------
@@ -1576,27 +1730,33 @@ var main = {
 				el.value = "";
 		};
 
-		if(window.jQuery) 
-		{
-			// перевод новых постов
-			$(document).on('new_post', function(e, post) {
-				replacer.process("new_post", post, false);
-				replacer.process("mod_buttons", post, false);
-				main.fixPostDate(post);
-				main.fixRedirect(post);
-				main.moveReplies();
-			});
-		}
-
 		// перевод страниц
-		replacer.process("main", document, false);
-		replacer.process("mod_buttons", document, false);
+		replacer.process("main", document, true);
+		replacer.process("mod_buttons", document, true);
 		replacer.clear("main");
 
 		main.fixThread();
 		main.fixCatalog();
 
+		if(RE_DEBUG) console.debug('Pre-translation in ', main.timeDiff(main.starttime));
 		setTimeout(main.onPageLoaded, 0);
+	},
+
+	// ----------------------------------------------------
+	onNewPost: function(event)
+	// ----------------------------------------------------
+	{
+		// отлавливаем добавление новых элементов на страницу
+		let el = event.target;
+		if(!el || el.nodeType != Node.ELEMENT_NODE || el.nodeName != 'DIV' || !el.id || !el.id.match(/^(reply|thread)_\d+$/))
+			return;
+
+		// новый пост в треде, или тред в /tudo/
+		replacer.process("new_post", el.target, false);
+		replacer.process("mod_buttons", el.target, false);
+		main.fixPostDate(el.target);
+		main.fixRedirect(el.target);
+		main.moveReplies();
 	},
 
 	// ----------------------------------------------------
@@ -1692,7 +1852,10 @@ var main = {
 		}, false);
 	},
 
-	moveReplies: function() {
+	// ----------------------------------------------------
+	moveReplies: function()
+	// ----------------------------------------------------
+	{
 		// Переместить ответы вниз поста
 		for(let post of document.querySelectorAll('div.thread > div.post')) {
 			let replies = post.getElementsByClassName('mentioned')[0];
@@ -1703,7 +1866,7 @@ var main = {
 
 			if(!post.brr_init) {
 				let dsc = document.createTextNode('Ответы: ');
-				replies.insertBefore(dsc, replies.children[0]);
+				replies.insertBefore(dsc, replies.firstChild);
 				post.brr_init = true;
 			}
 			for(let i of replies.children) {
@@ -1714,10 +1877,22 @@ var main = {
  	},
 
 	// ----------------------------------------------------
+ 	timeDiff: function(timestart) 
+	// ----------------------------------------------------
+	{
+		// возвращает строку с разницей между текущим временем и заданным в сек или мс
+		let t = (Date.now() - timestart);
+		return ((t < 500) ? (t + "ms") : (t/1000 + "s"));
+ 	},
+
+	// ----------------------------------------------------
 	init: function()
 	// ----------------------------------------------------
 	{
 		main.starttime = Date.now();
+
+		console.log("BRchan Russifikator started");
+		if(RE_DEBUG) console.debug("URL:", main.url);
 
 		// замена бразильской локализации
 		Object.defineProperty(window, "l10n", {
@@ -1737,10 +1912,12 @@ var main = {
 		else {
 			main.onDocReady();
 		}
-
-		console.log("BRchan Russifikator started");
-		if(RE_DEBUG) console.debug("URL:", main.url);
 	}
 } // main
 
 main.init();
+
+
+//////// wrapper end ////////
+})();
+////////////////////////////
