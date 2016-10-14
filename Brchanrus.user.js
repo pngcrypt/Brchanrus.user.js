@@ -1180,7 +1180,7 @@ replacer.process = function(cfg, element, debug, debug_rep)
 		}
 	}
 	if(debug) {
-		console.debug('Relaced in', Math.round(Date.now() - starttime), "ms");
+		console.debug('Relaced in', main.timeDiff(starttime));
 		console.groupEnd();
 	}	
 }
@@ -1225,7 +1225,7 @@ replacer.reOpt = function(re_arr, def)
 
 	for(let o of re_arr) {
 		switch(o) {
-			case RE_DEBUG: 	opt.debug = true; break;
+			case RE_DEBUG: 	opt.debug = RE_DEBUG; break;
 			case RE_SINGLE: opt.single = true; break;
 			case RE_MULTI: 	opt.single = false; break;
 			case RE_BREAK: 	opt.break = true; break;
@@ -1703,7 +1703,7 @@ var main = {
 			el.addEventListener ('DOMNodeInserted', main.onNewPost, false);
 		}
 
-		if(RE_DEBUG) console.debug('Page loaded in ', (Date.now() - main.starttime)/1000, "s");
+		if(RE_DEBUG) console.debug('Page loaded in ', main.timeDiff(main.starttime));
 	},
 
 	// ----------------------------------------------------
@@ -1738,6 +1738,7 @@ var main = {
 		main.fixThread();
 		main.fixCatalog();
 
+		if(RE_DEBUG) console.debug('Pre-translation in ', main.timeDiff(main.starttime));
 		setTimeout(main.onPageLoaded, 0);
 	},
 
@@ -1873,6 +1874,15 @@ var main = {
 			}
 			post.appendChild(replies);
 		}
+ 	},
+
+	// ----------------------------------------------------
+ 	timeDiff: function(timestart) 
+	// ----------------------------------------------------
+	{
+		// возвращает строку с разницей между текущим временем и заданным в сек или мс
+		let t = (Date.now() - timestart);
+		return ((t < 500) ? (t + "ms") : (t/1000 + "s"));
  	},
 
 	// ----------------------------------------------------
