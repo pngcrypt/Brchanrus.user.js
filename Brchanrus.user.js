@@ -1752,10 +1752,10 @@ var main = {
 			return;
 
 		// новый пост в треде, или тред в /tudo/
-		replacer.process("new_post", el.target, false);
-		replacer.process("mod_buttons", el.target, false);
-		main.fixPostDate(el.target);
-		main.fixRedirect(el.target);
+		replacer.process("new_post", el, false);
+		replacer.process("mod_buttons", el, false);
+		main.fixPostDate(el);
+		main.fixRedirect(el);
 		main.moveReplies();
 	},
 
