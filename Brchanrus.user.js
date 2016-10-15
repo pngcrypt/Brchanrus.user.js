@@ -1832,7 +1832,6 @@ var main = {
 			doc.body.removeEventListener('DOMNodeInserted', main.dollDetecting, false); // отключаем обработчик
 			main.onDocReady();
 		}
-		// el.firebugIgnore != undefined
 	},
 
 	// ----------------------------------------------------
@@ -1845,7 +1844,7 @@ var main = {
 			return;
 
 		// добавлен новый пост; или подгружен новый тред в /tudo/
-		main.onNewPost(el); 
+		setTimeout(main.onNewPost, 0, el); // задержка, чтобы событие успело обработаться скриптами борды
 	},
 
 	// ----------------------------------------------------
@@ -1859,7 +1858,7 @@ var main = {
 
 		// добавлена новая главная форма (подгружена страница на нулевой)
 		el.addEventListener('DOMNodeInserted', main.onFormNodeInserted, false); // вешаем на нее обработчик новых постов
-		main.onNewPost(el); // вызываем обработку новых постов для формы
+		setTimeout(main.onNewPost, 0, el); // задержка, чтобы событие успело обработаться скриптами борды
 	},
 
 	// ----------------------------------------------------
@@ -1968,22 +1967,20 @@ var main = {
 		// Переместить ответы вниз поста
 		if(main.dollStatus > 0) return; // для куклы не нужно
 
-		for(let post of doc.querySelectorAll('div.thread > div.post')) {
-			let replies = post.getElementsByClassName('mentioned')[0];
-			
-			if(typeof replies == 'undefined' || !replies.children.length) {
+		for(let replies of doc.querySelectorAll('div.post > p.intro > span.mentioned')) {
+			if(!replies.children || !replies.children.length)
 				continue;
-			}
 
-			if(!post.brr_init) {
+			if(!replies.parentNode.brr_init) {
+				// первая обработка поста
 				let dsc = doc.createTextNode('Ответы: ');
 				replies.insertBefore(dsc, replies.firstChild);
-				post.brr_init = true;
+				replies.parentNode.brr_init = true; // p.intro
 			}
 			for(let i of replies.children) {
 				i.style.fontSize = 'inherit';
 			}
-			post.appendChild(replies);
+			replies.parentNode.parentNode.appendChild(replies); // div.post
 		}
  	},
 
