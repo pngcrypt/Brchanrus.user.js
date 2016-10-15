@@ -13,6 +13,12 @@
 // @nocompat        Chrome
 // ==/UserScript==
 
+/*
+TODO: 
+	- нумерация постов без куклы
+	- MutationObserver вместо DOMNodeInserted (нужно кроссбраузерно)
+*/
+
 ////////// wrapper /////////
 (function() {
 ////////////////////////////
@@ -40,14 +46,20 @@ const RE_LAST = 31; // последняя
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
-var win = typeof unsafeWindow != 'undefined' ? unsafeWindow: window;
-var con = win.console;
+this.win = typeof unsafeWindow != 'undefined' ? unsafeWindow : window;
+this.con = win.console;
+this.doc = win.document;
 con.debug = con.debug || con.log || function() {};
 con.error = con.error || con.log || function() {};
 con.group = con.group || function() { con.debug.apply(con, ["[+] -->"].concat(Array.from(arguments))); };
 con.groupEnd = con.groupEnd || function() { con.debug('[-] ---'); };
 
-function isArray(a) {return Array.isArray(a);}
+Object.defineProperty(this, "win", {writable: false});
+Object.defineProperty(this, "doc", {writable: false});
+Object.defineProperty(this, "con", {writable: false});
+
+function dbg() { if(RE_DEBUG) con.debug.apply(con, Array.from(arguments)); } // debug messages
+function isArray(a) { return Array.isArray(a); }
 
 // ==============================================================================================
 // основной конифг перевода
@@ -75,7 +87,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Любая доска / тред + для некоторых разделов админки (где отображаются посты)
-	[/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)|^mod\.php\?\/(recent|IP_less)\//, [
+	[/^(mod\.php\?\/|)[^/]+(\/?$|\/.+\.html)|^mod\.php\?\/(recent|IP_less)\//, [
 		['reg', 'header > div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
@@ -110,9 +122,9 @@ replacer.cfg["main"] = [
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
 		['css', 'a.show-post-table-options', '[Показать опции]'],
-		['att', '#post-form-inner input[type="submit"]', 'value', [
+		['att', 'table.post-table > tbody > tr > td > input[type="submit"]', 'value', [
 			['Responder', 'Отправить'],
-			['Novo tópico', 'Создать тред']
+			['Novo tópico', 'Отправить'] // кукла использует эту кнопку для ответов с нулевой
 		]],
 		['css', 'tr#oekaki > th', 'Рисовать'],
 		['css', 'tr#upload_embed > th', 'Ссылка на YouTube'],
@@ -151,10 +163,16 @@ replacer.cfg["main"] = [
 		[]
 	]],
 
-	// Любой тред
-	[/^\w+\/res\//, [
+	// Любой тред без модерки
+	[/^[^/]+\/res\//, [
 		// добавить линк на нулевую 
-		['reg', 'body > header > h1', /^(\/\w+\/)/, '<a href="../">$1</a>', [RE_INNER]]
+		['reg', 'body > header > h1', /^(\/[^/]+\/)/, '<a href="$1">$1</a>', [RE_INNER]]
+	]],
+
+	// Любой тред под модеркой
+	[/^mod\.php\?\/[^/]+\/res\//, [
+		// добавить линк на нулевую 
+		['reg', 'body > header > h1', /^(\/[^/]+\/)/, '<a href="/mod.php?$1">$1</a>', [RE_INNER]]
 	]],
 
 	// доска tudo ("все")
@@ -187,7 +205,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Страница каталога доски
-	[/^\w+\/catalog\.html$/, [
+	[/^[^/]+\/catalog\.html$/, [
 		['reg', 'head > title', 'Catalog', 'Каталог тредов'],
 		['nod', 'header > h1', 'Каталог тредов (', [RE_FIRST]],
 		['reg', 'body > span', 'Ordenar por', 'Сортировка по'],
@@ -544,7 +562,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Админка - Бан
-	[/^mod\.php\?\/\w+\/ban(&delete)?\//, [
+	[/^mod\.php\?\/[^/]+\/ban(&delete)?\//, [
 		['reg', 'head > title, header > h1', 'Novo ban', 'Новый бан', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th > label', [
 			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', [RE_INNER]],
@@ -622,7 +640,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Админка - Редактирование поста
-	[/^mod\.php\?\/\w+\/edit\//, [
+	[/^mod\.php\?\/[^/]+\/edit\//, [
 		['reg', 'head > title, header > h1', 'Editar mensagem', 'Редактирование сообщения', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th', [
 			['Nome', 'Имя'],
@@ -672,7 +690,7 @@ replacer.cfg["main"] = [
 			[/^Deleted file from post/, 'Удаление файла в посте'],
 			[/^Removed ban (#\d+) for/, 'Бан снят $1 для'],
 			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
-			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
+			[/^Created a new (.+) ban on (\/[^/]+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
 			[/^Created a new volunteer/, 'Добавлен новый модератор'],
 			[]
 		], [RE_MULTI]]
@@ -729,7 +747,7 @@ replacer.cfg["main"] = [
 // ==============================================================================================
 replacer.cfg["mod_buttons"] = [
 	// Любая доска / тред под модеркой
-	[/^mod\.php\?\/\w+(|\/|\/.+\.html)/, [
+	[/^mod\.php\?\/[^/]+(|\/|\/.+\.html)/, [
 		// кнопки модерирования
 		['reg', 'span.controls', [
 			['Spoiler em tudo', 'Скрыть превью всех изображений'],
@@ -784,15 +802,15 @@ replacer.cfg["alert"] = [
 // ==============================================================================================
 replacer.cfg["new_post"] = [
 	['', [
-		['reg', 'span.name', 'Anônimo', 'Аноним', [RE_INNER, RE_MULTI]],
-		['reg', 'span.name > span', 'You', 'Вы', [RE_MULTI]],
+		['reg', 'span.name', 'Anônimo', 'Аноним', [RE_INNER]],
+		['reg', 'span.name > span', 'You', 'Вы'],
 		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
 		['reg', 'p.intro > a:not([class])', [
-			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений]'],
-			['Responder', 'Ответить']
+			['Responder', 'Ответить'],
+			[/^\[Últimas (\d+) Mensagens\]/, '[Последние $1 сообщений]'],
 		]],
 		['reg', 'div.post > span.omitted', /(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
-	]]
+	], [RE_MULTI]]
 ];
 
 // ==============================================================================================
@@ -1111,12 +1129,12 @@ replacer.process = function(cfg, element, debug, debug_rep)
 	}
 
 	if(!this.cfg[cfg]) {
-		console.error("ERROR: CFG NOT FOUND: ", cfg);
+		con.error("ERROR: CFG NOT FOUND: ", cfg);
 		return;
 	}
 
-	if(!element) element = document;
-	if(debug) console.group("["+cfg+"]: ", element);
+	if(!element) element = doc;
+	if(debug) con.group("["+cfg+"]: ", element);
 
 	// в this.instance[] хранится кол-во запусков для каждого конфига (нужно для regex в частности)
 	if(!this.instance) this.instance = [];
@@ -1137,7 +1155,7 @@ replacer.process = function(cfg, element, debug, debug_rep)
 		// проверка параметров
 		if(!isArray(u) || u.length < 2 || u.length > 3 || !isArray(u[1]) || (u.length == 3 && !isArray(u[2])) ) 
 		{
-			console.error("ERROR: Syntax: URL-group #"+ucnt+" : ", u);
+			con.error("ERROR: Syntax: URL-group #"+ucnt+" : ", u);
 			if(isArray(u))
 				continue;
 			else
@@ -1145,7 +1163,7 @@ replacer.process = function(cfg, element, debug, debug_rep)
 		}
 
 		if(!main.url.match(u[0])) continue; // проверка url
-		if(debug) console.debug("URL-Match:", u[0]);
+		if(debug) con.debug("URL-Match:", u[0]);
 
 		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для url-группы
 		let recnt = 0;
@@ -1156,7 +1174,7 @@ replacer.process = function(cfg, element, debug, debug_rep)
 			if(isArray(r) && !r.length) continue; //empty
 			if(!isArray(r) || r.length < 2)
 			{
-				console.error("ERROR: Syntax: Replacer #"+recnt+" : ", r);
+				con.error("ERROR: Syntax: Replacer #"+recnt+" : ", r);
 				if(!isArray(r))
 					break;
 				else
@@ -1166,13 +1184,13 @@ replacer.process = function(cfg, element, debug, debug_rep)
 			let fn=r[0]+"Replacer";
 			if(!this[fn]) // проверка наличия функции реплейсера
 			{
-				console.error('ERROR: NO Replacer function for:', r);
+				con.error('ERROR: NO Replacer function for:', r);
 				continue;
 			}
 			let err = this[fn](element, r, opt); // вызов функции реплейсера
 			if(err < 0)
 			{
-				console.error("ERROR: Syntax"+err+": Replacer #"+recnt+" : ", r);
+				con.error("ERROR: Syntax"+err+": Replacer #"+recnt+" : ", r);
 				continue;
 			}
 			else if(err)
@@ -1180,8 +1198,8 @@ replacer.process = function(cfg, element, debug, debug_rep)
 		}
 	}
 	if(debug) {
-		console.debug('Relaced in', main.timeDiff(starttime));
-		console.groupEnd();
+		con.debug('Relaced in', main.timeDiff(starttime));
+		con.groupEnd();
 	}	
 }
 
@@ -1320,12 +1338,12 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_match)
 		else 
 			dbgMsg += ": NOT FOUND";
 
-		if(opt.debug) console.debug("..?: ", [r[0], r[1]], dbgMsg);
+		if(opt.debug) con.debug("..?: ", [r[0], r[1]], dbgMsg);
 	} // for r
 
 	if(re_cnt < 1) {
 		// прекращаем перебор элементов, т.к. не осталось активных regex
-		if(re_opt.debug) console.debug("STOP");
+		if(re_opt.debug) con.debug("STOP");
 		return false;
 	}
 	return true;
@@ -1356,7 +1374,7 @@ replacer.cssReplacer = function(el, p, re_def)
 	try {
 		var elements = el.querySelectorAll(p[1]);
 	} catch(err) {
-		console.error("ERROR: Selector:", p);
+		con.error("ERROR: Selector:", p);
 		return;
 	}		
 	if(!elements.length) return;
@@ -1370,8 +1388,8 @@ replacer.cssReplacer = function(el, p, re_def)
 		if(!extended) {
 			e[re_opt.prop] = p[2];
 			if(re_opt.debug) {
-				if(!dbg1st++) console.group("CSS:", p[1]);
-				console.debug("ELM:", e, ' --> ', p[2]);
+				if(!dbg1st++) con.group("CSS:", p[1]);
+				con.debug("ELM:", e, ' --> ', p[2]);
 			}
 		} 
 		else {
@@ -1380,13 +1398,13 @@ replacer.cssReplacer = function(el, p, re_def)
 				// проверка параметров
 				if(!isArray(sp) || sp.length < 2 || sp.length > 3 || (sp.length == 3 && !isArray(sp[2])) ) 
 				{ 
-					if(!dbg1st++) console.groupEnd();
+					if(!dbg1st++) con.groupEnd();
 					return -1;
 				}
 				try {
 					var sub = e.querySelectorAll(sp[0]);
 				} catch(err) {
-					console.error("ERROR: Sub-Selector:", sp[0], p);
+					con.error("ERROR: Sub-Selector:", sp[0], p);
 				}
 				if(!sub || !sub.length) continue;
 
@@ -1396,16 +1414,16 @@ replacer.cssReplacer = function(el, p, re_def)
 				for(let se of sub) { // перебор потомков
 					se[opt.prop] = sp[1];
 					if(opt.debug) {
-						if(!dbg1st++) console.group("CSS:", p[1]);
-						if(!dbg2nd++) console.group("SUB:", sp[0]);
-						console.debug("ELM:", se, ' --> ', sp[1]);
+						if(!dbg1st++) con.group("CSS:", p[1]);
+						if(!dbg2nd++) con.group("SUB:", sp[0]);
+						con.debug("ELM:", se, ' --> ', sp[1]);
 					}
 				} 
-				if(dbg2nd) console.groupEnd();
+				if(dbg2nd) con.groupEnd();
 			} // for sp
 		} // else
 	} // for e
-	if(dbg1st) console.groupEnd();
+	if(dbg1st) con.groupEnd();
 }
 
 // ----------------------------------------------------
@@ -1451,7 +1469,7 @@ replacer.attReplacer = function(el, p, re_def)
 	try {
 		var elements = el.querySelectorAll(p[1]);
 	} catch(err) {
-		console.error("ERROR: Selector:", p);
+		con.error("ERROR: Selector:", p);
 		return;
 	}
 	if(!elements.length) return;
@@ -1460,16 +1478,16 @@ replacer.attReplacer = function(el, p, re_def)
 	let dbg1st = 0;
 
 	for(let e of elements) {
-		if(re_opt.debug && !dbg1st++) console.group("ATT:", p[1], " ..? ", [p[2]]);
+		if(re_opt.debug && !dbg1st++) con.group("ATT:", p[1], " ..? ", [p[2]]);
 
 		if(!extended) {
 			// простой синтаксис
 			e.setAttribute(p[2], p[3]);
-			if(re_opt.debug) console.debug("ELM:", e, ' --> ', p[3]);
+			if(re_opt.debug) con.debug("ELM:", e, ' --> ', p[3]);
 		}
 		else {
 			// расширенный синтаксис
-			if(re_opt.debug) console.debug("ELM:", e);
+			if(re_opt.debug) con.debug("ELM:", e);
 			let attr = e.getAttribute(p[2]); 
 
 			// перебор группы regex
@@ -1482,7 +1500,7 @@ replacer.attReplacer = function(el, p, re_def)
 			});
 
 			if(ret < 0) {
-				if(dbg1st) console.groupEnd();
+				if(dbg1st) con.groupEnd();
 				return ret;
 			}
 			e.setAttribute(p[2], attr);
@@ -1490,7 +1508,7 @@ replacer.attReplacer = function(el, p, re_def)
 				break;
 		}
 	}
-	if(dbg1st) console.groupEnd();
+	if(dbg1st) con.groupEnd();
 }
 
 
@@ -1520,7 +1538,7 @@ replacer.nodReplacer = function(el, p, re_def)
 	try {
 		var elements = el.querySelectorAll(p[1]);
 	} catch(err) {
-		console.error("ERROR: Selector:", p);
+		con.error("ERROR: Selector:", p);
 		return;
 	}		
 	if(!elements.length) return;
@@ -1528,7 +1546,7 @@ replacer.nodReplacer = function(el, p, re_def)
 	let extended = isArray(p[2]);
 	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
 
-	if(re_opt.debug) console.group("NOD:", p[1]);
+	if(re_opt.debug) con.group("NOD:", p[1]);
 	for(let e of elements)
 	{
 		let node, dmsg;
@@ -1540,14 +1558,14 @@ replacer.nodReplacer = function(el, p, re_def)
 			dmsg = ': ' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ' :';
 			if(node) {
 				if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && re_opt.prop == RE_TEXT)) {
-					if(re_opt.debug) console.debug(e, dmsg, node, ' --> ', p[2]);
+					if(re_opt.debug) con.debug(e, dmsg, node, ' --> ', p[2]);
 					node[re_opt.prop] = p[2];
 				} 
 				else
-					if(re_opt.debug) console.debug(e, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
+					if(re_opt.debug) con.debug(e, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
 			}
 			else
-				if(re_opt.debug) console.debug(e, dmsg, ': NO NODE');
+				if(re_opt.debug) con.debug(e, dmsg, ': NO NODE');
 		} 
 		else {
 			// расширенный синтаксис
@@ -1557,12 +1575,12 @@ replacer.nodReplacer = function(el, p, re_def)
 				try {
 					var sub = e.querySelectorAll(sp[0]);
 				} catch(err) {
-					console.error("ERROR: Sub-Selector:", sp[0], p);
+					con.error("ERROR: Sub-Selector:", sp[0], p);
 				}
 				if(!sub || !sub.length) continue;
 
 				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
-				if(opt.debug) console.group("SUB:", sp[0]);
+				if(opt.debug) con.group("SUB:", sp[0]);
 				for(let se of sub) {
 					if(opt.node < 0)
 						node = se.lastChild;
@@ -1571,20 +1589,20 @@ replacer.nodReplacer = function(el, p, re_def)
 					dmsg = ':' + (opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 					if(node) {
 						if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && opt.prop == RE_TEXT)) {
-							if(opt.debug) console.debug(se, dmsg, node, ' --> ', sp[1]);
+							if(opt.debug) con.debug(se, dmsg, node, ' --> ', sp[1]);
 							node[opt.prop] = sp[1];
 						} 
 						else
-							if(re_opt.debug) console.debug(se, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
+							if(re_opt.debug) con.debug(se, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
 					}
 					else
-						if(opt.debug) console.debug(se, dmsg, ': NO NODE');
+						if(opt.debug) con.debug(se, dmsg, ': NO NODE');
 				} // for se
-				if(opt.debug) console.groupEnd();
+				if(opt.debug) con.groupEnd();
 			} // for sp
 		} // else
 	} // for e
-	if(re_opt.debug) console.groupEnd();
+	if(re_opt.debug) con.groupEnd();
 }
 
 // ----------------------------------------------------
@@ -1622,15 +1640,15 @@ replacer.regReplacer = function(el, p, re_def)
 	try {
 		var elements = el.querySelectorAll(p[1]);
 	} catch(err) {
-		console.error("ERROR: Selector", p);
+		con.error("ERROR: Selector", p);
 		return;
 	}
 	
 	for(let e of elements)
 	{
 		if(re_opt.debug) {
-			if(!dbg1st++) console.group("REG:", p[1]);
-			console.debug("ELM:", e);
+			if(!dbg1st++) con.group("REG:", p[1]);
+			con.debug("ELM:", e);
 		}
 
 		// перебор regex
@@ -1644,13 +1662,13 @@ replacer.regReplacer = function(el, p, re_def)
 		});
 
 		if(ret < 0) {
-			if(dbg1st) console.groupEnd();
+			if(dbg1st) con.groupEnd();
 			return ret;
 		}
 		if(!ret)
 			break;
 	} // for e
-	if(dbg1st) console.groupEnd();	
+	if(dbg1st) con.groupEnd();	
 }
 
 // ----------------------------------------------------
@@ -1665,10 +1683,10 @@ replacer.strReplacer = function(el, p, re_def)
 
 	if(el.text.match(p[1])) {
 		el.text = el.text.replace(p[1], p[2]);
-		//if(re_opt.debug) console.debug("STR:", p, ": FOUND\nSTOP");
+		//if(re_opt.debug) con.debug("STR:", p, ": FOUND\nSTOP");
 		return 1;
 	}
-	//if(re_opt.debug) console.debug("FND:", p, ": NOT FOUND");
+	//if(re_opt.debug) con.debug("FND:", p, ": NOT FOUND");
 }
 
 // ==============================================================================================
@@ -1680,8 +1698,9 @@ var main = {
 	ru: {
 		days: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 	},
-	url: window.location.pathname.substr(1) + window.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
-	doll: false,
+	url: win.location.pathname.substr(1) + win.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
+	dollStatus: 0, // статус куклы: 0 = отсутствует; -1 = отлкючена; 1 = включена
+
 
 	// ----------------------------------------------------
 	onPageLoaded: function()
@@ -1693,70 +1712,153 @@ var main = {
 		replacer.process("page_loaded"); 
 
 		// фикс ширины панели избранного
-		let el = document.querySelector('#watchlist');
-		if(el) el.style.width = 'auto';
+		let el = doc.querySelector('#watchlist');
+		if(el) el.style.width = 'auto';	
 
 		// обрабочтик добавления новых постов 
-		el = document.querySelector('body > form[name="postcontrols"]');
-		if(el) {
-			main.doll = (el.getAttribute('de-form') != undefined); // детект куклы
-			el.addEventListener ('DOMNodeInserted', main.onNewPost, false);
-		}
+		el = doc.body.querySelector('form[name="postcontrols"]');
+		if(el) el.addEventListener('DOMNodeInserted', main.onFormNodeInserted, false);
 
-		if(RE_DEBUG) console.debug('Page loaded in ', main.timeDiff(main.starttime));
+		// обработчик добавления главной формы (для куклы - подгрузка страниц на нулевой)
+		if(main.dollStatus > 0) doc.body.addEventListener('DOMNodeInserted', main.onBodyNodeInserted, false);
+
+		dbg('Page loaded in ', main.timeDiff(main.starttime));
 	},
 
 	// ----------------------------------------------------
 	onDocReady: function() 
 	// ----------------------------------------------------
 	{
+		// выполняется после готовности документа и детекта куклы (без загрузки ресурсов и запуска скриптов борды)
+		if(main._docready) return; // предовтращаем повторный запуск
+		main._docready = true;
+
+		if(main.dollStatus)	dbg('* DOLL detected. Status:', main.dollStatus < 0 ? "OFF" : "ON");
+
 		// перевод всплывающих сообщений
-		main.fn.alert = window.alert;
-		window.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
+		main.fn.alert = win.alert;
+		win.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
 		{
 			msg = {text: msg};
 			replacer.process("alert", msg, false);
 
-			//console.debug(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+			//dbg(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 			main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 		};
 
 		// очистка поля капчи при обновлении
-		main.fn.actually_load_captcha = window.actually_load_captcha;
-		window.actually_load_captcha = function(provider, extra)
+		main.fn.actually_load_captcha = win.actually_load_captcha;
+		win.actually_load_captcha = function(provider, extra)
 		{
 			main.fn.actually_load_captcha(provider, extra);
-			for(let el of document.querySelectorAll('form input[name="captcha_text"]'))
+			for(let el of doc.querySelectorAll('form input[name="captcha_text"]'))
 				el.value = "";
 		};
 
 		// перевод страниц
-		replacer.process("main", document, true);
-		replacer.process("mod_buttons", document, true);
+		replacer.process("main", doc, true);
+		replacer.process("mod_buttons", doc, true);
 		replacer.clear("main");
 
 		main.fixThread();
 		main.fixCatalog();
 
-		if(RE_DEBUG) console.debug('Pre-translation in ', main.timeDiff(main.starttime));
-		setTimeout(main.onPageLoaded, 0);
+		dbg('Pre-translation in ', main.timeDiff(main.starttime));
 	},
 
 	// ----------------------------------------------------
-	onNewPost: function(event)
+	onNewPost: function(el)
 	// ----------------------------------------------------
 	{
-		// отлавливаем добавление новых элементов на страницу
-		let el = event.target;
-		if(!el || el.nodeType != Node.ELEMENT_NODE || el.nodeName != 'DIV' || !el.id || !el.id.match(/^(reply|thread)_\d+$/))
-			return;
-
-		// новый пост в треде, или тред в /tudo/
+		// вызывается при добавлении: нового поста в треде; нового треда в /tudo/; новой главной формы (кукла, подгрузка страниц на нулевой) 
 		replacer.process("new_post", el, false);
 		replacer.process("mod_buttons", el, false);
 		main.fixPostDate(el);
 		main.fixRedirect(el);
 		main.moveReplies();
+	},
+
+	// ----------------------------------------------------
+	onPreDocReady: function(event) 
+	// ----------------------------------------------------
+	{
+		// первичная функция по готовности документа (для детектирования куклы)
+		main._docready_time = event.timeStamp; // запоминаем время срабатывания события
+
+		setTimeout(main.onPageLoaded, 1); // обработчик полной загрузки страницы
+
+		// пре-детект куклы (если ее скрипт выполняется до скрипта перевода, то ее форма уже на странице)
+		let el = doc.querySelector('div#de-main span#de-panel-buttons');
+		if(el) {
+			// нашли
+			main.dollStatus = (el.children.length > 1 ? 1 : -1); // проверяем статус куклы по кол-ву кнопок
+			main.onDocReady();
+			return;
+		}
+
+		// пост-детект куклы (либо ее скрипт запускается позже, либо ее нет), костыли короче
+		doc.body.addEventListener('DOMNodeInserted', main.dollDetecting, false); // вешаем обработчик на добавление элементов в BODY
+		setTimeout(main.onDocReady, 0); // если dollDetecting не отработает, то onDocReady выполнится после загрузки страницы (но до onPageLoaded)
+	},
+
+	// ----------------------------------------------------
+	dollDetecting: function(event) 
+	// ----------------------------------------------------
+	{
+		// вызывается при добавлении элементов в BODY (детектор куклы)
+
+		let el = event.target;
+		let stop = false;
+
+		//if(el) dbg(event.timeStamp, ':', el);
+
+		if(!main._doll && event.timeStamp - main._docready_time > 200) // таймаут для остановки этого безумия (в мс)
+			stop = true;
+		else if(el && el.nodeType == Node.ELEMENT_NODE && el.nodeName == 'DIV') {
+			if(el.id == 'de-svg-icons')
+				main._doll = true; // кукла найдена, отключаем проверку таймаута
+			else if(el.id == 'de-main') {
+				// найдена основная форма куклы
+				el = el.querySelector('#de-panel-buttons');
+				if(el) main.dollStatus = (el.children.length > 1 ? 1 : -1); // проверяем статус по кол-ву кнопок
+				stop = true;
+				// dbg('* DOLL detecetd in ', event.timeStamp - main._docready_time, 'ms');
+			}
+		}
+
+		if(stop) {
+			// кукла найдена или таймаут
+			if(!main.dollStatus) dbg('* DOLL detecting TIMEOUT');
+			doc.body.removeEventListener('DOMNodeInserted', main.dollDetecting, false); // отключаем обработчик
+			main.onDocReady();
+		}
+	},
+
+	// ----------------------------------------------------
+	onFormNodeInserted: function(event)
+	// ----------------------------------------------------
+	{
+		// вызывается при добавлении элемента в главную форму (детектор постов)
+		let el = event.target;
+		if(!el || el.nodeType != Node.ELEMENT_NODE || el.nodeName != 'DIV' || !el.id || !el.id.match(/^(reply|thread)_\d+$/))
+			return;
+
+		// добавлен новый пост; или подгружен новый тред в /tudo/
+		setTimeout(main.onNewPost, 0, el); // задержка, чтобы событие успело обработаться скриптами борды
+	},
+
+	// ----------------------------------------------------
+	onBodyNodeInserted: function(event)
+	// ----------------------------------------------------
+	{
+		//  вызывается при добавления элементов в BODY (только для куклы)
+		var el = event.target;
+		if(!el || el.nodeType != Node.ELEMENT_NODE || el.nodeName != 'FORM' || el.getAttribute('name') != 'postcontrols')
+			return;
+
+		// добавлена новая главная форма (подгружена страница на нулевой)
+		el.addEventListener('DOMNodeInserted', main.onFormNodeInserted, false); // вешаем на нее обработчик новых постов
+		setTimeout(main.onNewPost, 0, el); // задержка, чтобы событие успело обработаться скриптами борды
 	},
 
 	// ----------------------------------------------------
@@ -1772,7 +1874,9 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// дата и время постов (перевод + коррекция)
-		for(let el of (element ? element : document).querySelectorAll("p.intro time"))
+		if(main.dollStatus > 0) return; // для куклы не нужно
+
+		for(let el of (element ? element : doc).querySelectorAll("p.intro time"))
 		{
 			var t = new Date(el.getAttribute("datetime"));
 			t.setTime(t.getTime() + TIME_CORR);
@@ -1786,7 +1890,7 @@ var main = {
 	{
 		// удаление редиректа для внешних ссылок
 		let url="http://privatelink.de/?";
-		for(let el of (element ? element : document).querySelectorAll('a[href^="'+url+'"]'))
+		for(let el of (element ? element : doc).querySelectorAll('a[href^="'+url+'"]'))
 			el.setAttribute("href", el.getAttribute("href").substr(url.length));
 	},
 
@@ -1795,15 +1899,15 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// фиксы для любой доски/треда
-		if(!main.url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/))
+		if(!main.url.match(/^(mod\.php\?\/|)[^/]+(\/?$|\/.+\.html)/))
 			return;
 
-		main.fixPostDate(); // добавить дату постов в тредах
+		main.fixPostDate(); // коррекция даты постов в тредах
 		main.fixRedirect(); // удаление редиректов 
-		main.moveReplies();
+		main.moveReplies(); // перемещение ответов вниз
 
 		// Перемещает изображения в ОП посте в сам пост
-		for(let thread of document.querySelectorAll('div.thread')) {
+		for(let thread of doc.querySelectorAll('div.thread')) {
 			let files = thread.getElementsByClassName('files')[0];
 			if(typeof files == 'undefined' || !files.children.length) {
 				continue;
@@ -1831,11 +1935,11 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// фиксы для каталога тредов
-		if(!main.url.match(/^\w+\/catalog\.html/))
+		if(!main.url.match(/^[^/]+\/catalog\.html/))
 			return;
 
 		var t;
-		for(let el of document.querySelectorAll("div.mix")) 
+		for(let el of doc.querySelectorAll("div.mix")) 
 		{
 			if(!(t = el.getAttribute("data-time"))) // дата создания
 				continue;
@@ -1846,10 +1950,14 @@ var main = {
 		}
 
 		// кнопка поиска
-		replacer.process("search_cat");
-		document.addEventListener("click", function() {
-			replacer.process("search_cat");
-		}, false);
+		replacer.process("search_cat", doc, false);
+		let el = doc.querySelector('a#catalog_search_button');
+		if(el) {
+			// перевод при клике
+			doc.addEventListener("click", function() {
+				replacer.process("search_cat", doc, false);
+			}, false);
+		}
 	},
 
 	// ----------------------------------------------------
@@ -1857,22 +1965,22 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// Переместить ответы вниз поста
-		for(let post of document.querySelectorAll('div.thread > div.post')) {
-			let replies = post.getElementsByClassName('mentioned')[0];
-			
-			if(typeof replies == 'undefined' || !replies.children.length) {
-				continue;
-			}
+		if(main.dollStatus > 0) return; // для куклы не нужно
 
-			if(!post.brr_init) {
-				let dsc = document.createTextNode('Ответы: ');
+		for(let replies of doc.querySelectorAll('div.post > p.intro > span.mentioned')) {
+			if(!replies.children || !replies.children.length)
+				continue;
+
+			if(!replies.parentNode.brr_init) {
+				// первая обработка поста
+				let dsc = doc.createTextNode('Ответы: ');
 				replies.insertBefore(dsc, replies.firstChild);
-				post.brr_init = true;
+				replies.parentNode.brr_init = true; // p.intro
 			}
 			for(let i of replies.children) {
 				i.style.fontSize = 'inherit';
 			}
-			post.appendChild(replies);
+			replies.parentNode.parentNode.appendChild(replies); // div.post
 		}
  	},
 
@@ -1891,27 +1999,25 @@ var main = {
 	{
 		main.starttime = Date.now();
 
-		console.log("BRchan Russifikator started");
-		if(RE_DEBUG) console.debug("URL:", main.url);
+		con.log("BRchan Russifikator started");
+		dbg("URL:", main.url);
 
 		// замена бразильской локализации
-		Object.defineProperty(window, "l10n", {
+		Object.defineProperty(win, "l10n", {
 			get: function() {
 				return l10n_rus;
-			},
-			set: function(value){}
+			}
 		});
 
-		if(document.readyState === 'loading') {
-			if (document.addEventListener) {
-				document.addEventListener("DOMContentLoaded", main.onDocReady, false);
-			} else if (document.attachEvent) {
-				document.attachEvent("onreadystatechange", main.onDocReady);
+		if(doc.readyState === 'loading') {
+			if(doc.addEventListener) {
+				doc.addEventListener("DOMContentLoaded", main.onPreDocReady, false);
+			} else if(doc.attachEvent) {
+				doc.attachEvent("onreadystatechange", main.onPreDocReady); // для ie? а оно надо?
 			}
 		}
-		else {
-			main.onDocReady();
-		}
+		else
+			main.onPreDocReady();
 	}
 } // main
 
