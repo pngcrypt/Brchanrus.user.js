@@ -1806,13 +1806,18 @@ var main = {
 
 		//if(el) dbg(event.timeStamp, ':', el);
 
-		if(event.timeStamp - main._docready_time > 100) // таймаут для остановки этого безумия (в мс)
+		if(!main._doll && event.timeStamp - main._docready_time > 200) // таймаут для остановки этого безумия (в мс)
 			stop = true;
-		else if(el && el.nodeType == Node.ELEMENT_NODE && el.nodeName == 'DIV' && el.id == 'de-main') {
-			// кукла найдена
-			el = el.querySelector('#de-panel-buttons');
-			if(el) main.dollStatus = (el.children.length > 1 ? 1 : -1); // проверяем статус куклы по кол-ву кнопок
-			stop = true;
+		else if(el && el.nodeType == Node.ELEMENT_NODE && el.nodeName == 'DIV') {
+			if(el.id == 'de-svg-icons')
+				main._doll = true; // кукла найдена, отключаем проверку таймаута
+			else if(el.id == 'de-main') {
+				// найдена основная форма куклы
+				el = el.querySelector('#de-panel-buttons');
+				if(el) main.dollStatus = (el.children.length > 1 ? 1 : -1); // проверяем статус по кол-ву кнопок
+				stop = true;
+				// dbg('* DOLL detecetd in ', event.timeStamp - main._docready_time, 'ms');
+			}
 		}
 
 		if(stop) {
