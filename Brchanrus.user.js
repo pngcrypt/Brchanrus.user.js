@@ -87,7 +87,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Любая доска / тред + для некоторых разделов админки (где отображаются посты)
-	[/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)|^mod\.php\?\/(recent|IP_less)\//, [
+	[/^(mod\.php\?\/|)[^/]+(\/?$|\/.+\.html)|^mod\.php\?\/(recent|IP_less)\//, [
 		['reg', 'header > div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
 		['reg', 'p.intro > a:not([class])', [
 			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
@@ -163,10 +163,16 @@ replacer.cfg["main"] = [
 		[]
 	]],
 
-	// Любой тред
-	[/^\w+\/res\//, [
+	// Любой тред без модерки
+	[/^[^/]+\/res\//, [
 		// добавить линк на нулевую 
-		['reg', 'body > header > h1', /^(\/\w+\/)/, '<a href="../">$1</a>', [RE_INNER]]
+		['reg', 'body > header > h1', /^(\/[^/]+\/)/, '<a href="$1">$1</a>', [RE_INNER]]
+	]],
+
+	// Любой тред под модеркой
+	[/^mod\.php\?\/[^/]+\/res\//, [
+		// добавить линк на нулевую 
+		['reg', 'body > header > h1', /^(\/[^/]+\/)/, '<a href="/mod.php?$1">$1</a>', [RE_INNER]]
 	]],
 
 	// доска tudo ("все")
@@ -199,7 +205,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Страница каталога доски
-	[/^\w+\/catalog\.html$/, [
+	[/^[^/]+\/catalog\.html$/, [
 		['reg', 'head > title', 'Catalog', 'Каталог тредов'],
 		['nod', 'header > h1', 'Каталог тредов (', [RE_FIRST]],
 		['reg', 'body > span', 'Ordenar por', 'Сортировка по'],
@@ -556,7 +562,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Админка - Бан
-	[/^mod\.php\?\/\w+\/ban(&delete)?\//, [
+	[/^mod\.php\?\/[^/]+\/ban(&delete)?\//, [
 		['reg', 'head > title, header > h1', 'Novo ban', 'Новый бан', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th > label', [
 			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', [RE_INNER]],
@@ -634,7 +640,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Админка - Редактирование поста
-	[/^mod\.php\?\/\w+\/edit\//, [
+	[/^mod\.php\?\/[^/]+\/edit\//, [
 		['reg', 'head > title, header > h1', 'Editar mensagem', 'Редактирование сообщения', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th', [
 			['Nome', 'Имя'],
@@ -684,7 +690,7 @@ replacer.cfg["main"] = [
 			[/^Deleted file from post/, 'Удаление файла в посте'],
 			[/^Removed ban (#\d+) for/, 'Бан снят $1 для'],
 			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
-			[/^Created a new (.+) ban on (\/\w+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
+			[/^Created a new (.+) ban on (\/[^/]+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
 			[/^Created a new volunteer/, 'Добавлен новый модератор'],
 			[]
 		], [RE_MULTI]]
@@ -741,7 +747,7 @@ replacer.cfg["main"] = [
 // ==============================================================================================
 replacer.cfg["mod_buttons"] = [
 	// Любая доска / тред под модеркой
-	[/^mod\.php\?\/\w+(|\/|\/.+\.html)/, [
+	[/^mod\.php\?\/[^/]+(|\/|\/.+\.html)/, [
 		// кнопки модерирования
 		['reg', 'span.controls', [
 			['Spoiler em tudo', 'Скрыть превью всех изображений'],
@@ -1894,7 +1900,7 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// фиксы для любой доски/треда
-		if(!main.url.match(/^(mod\.php\?\/|)\w+(\/?$|\/.+\.html)/))
+		if(!main.url.match(/^(mod\.php\?\/|)[^/]+(\/?$|\/.+\.html)/))
 			return;
 
 		main.fixPostDate(); // коррекция даты постов в тредах
@@ -1930,7 +1936,7 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// фиксы для каталога тредов
-		if(!main.url.match(/^\w+\/catalog\.html/))
+		if(!main.url.match(/^[^/]+\/catalog\.html/))
 			return;
 
 		var t;
