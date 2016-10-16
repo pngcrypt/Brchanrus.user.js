@@ -64,6 +64,23 @@ function isArray(a) { return Array.isArray(a); }
 // ==============================================================================================
 // основной конифг перевода
 // ==============================================================================================
+/*
+	общий синтаксис конфига:
+	
+	replacer.cfg["cfg_name"] = [
+		[url-regex1, [ [replacer1.1], ..., [replacer1.N] ], re_arr1],
+		...
+		[url-regexM, [ [replacerM.1], ..., [replacerM.N] ], re_arrM],
+	];
+
+	где:
+		cfg_name - имя создаваемого конфига
+		url-regex - regex для проверки текущего URL страницы (если совпадает, то происходит обработка вложенной группы реплейсеров)
+		replacer - массив с параметрами реплейсера (тип, css-селектор и т.п.)
+				подробнее синтаксис каждого типа реплейсера см. в функциях реплейсеров (nodReplacer, cssReplacer, regReplacer и т.п.)
+		re_arr - массив RE_* модификаторов по умолчанию для всех реплейсеров заданной группы url-regex
+
+*/
 replacer.cfg["main"] = [
 
 	[/^/, [
@@ -1354,7 +1371,7 @@ replacer.cssReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
 	/*
-	реплейсер текста в дочерних узлах
+	реплейсер контента по заданному селектору
 		p=["css", query, text, re_arr]
 		
 		p=["css", query, [ 
@@ -1431,7 +1448,7 @@ replacer.attReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
 	/*
-	реплейсер атрибутов
+	реплейсер атрибута элемента
 		p=["att", query, attr_name, text]
 
 		p=["att", query, attr_name, [regex, text, re_arr]]
@@ -1610,7 +1627,7 @@ replacer.regReplacer = function(el, p, re_def)
 // ----------------------------------------------------
 {
 	/* 
-	реплейсер текста по regex 
+	реплейсер контента по regex 
 		p=["reg", query, regex, text, re_arr];
 
 		p=["reg", query, [
@@ -1767,14 +1784,14 @@ var main = {
 	},
 
 	// ----------------------------------------------------
-	onNewPost: function(el)
+	onNewPost: function(parent)
 	// ----------------------------------------------------
 	{
 		// вызывается при добавлении: нового поста в треде; нового треда в /tudo/; новой главной формы (кукла, подгрузка страниц на нулевой) 
-		replacer.process("new_post", el, false);
-		replacer.process("mod_buttons", el, false);
-		main.fixPostDate(el);
-		main.fixRedirect(el);
+		replacer.process("new_post", parent, false);
+		replacer.process("mod_buttons", parent, false);
+		main.fixPostDate(parent);
+		main.fixRedirect(parent);
 		main.moveReplies();
 	},
 
@@ -1870,13 +1887,13 @@ var main = {
 	},
 	
 	// ----------------------------------------------------
-	fixPostDate: function(element) 
+	fixPostDate: function(parent) 
 	// ----------------------------------------------------
 	{
 		// дата и время постов (перевод + коррекция)
 		if(main.dollStatus > 0) return; // для куклы не нужно
 
-		for(let el of (element ? element : doc).querySelectorAll("p.intro time"))
+		for(let el of (parent ? parent : doc).querySelectorAll("p.intro time"))
 		{
 			var t = new Date(el.getAttribute("datetime"));
 			t.setTime(t.getTime() + TIME_CORR);
@@ -1885,28 +1902,22 @@ var main = {
 	},
 
 	// ----------------------------------------------------
-	fixRedirect: function(element)
+	fixRedirect: function(parent)
 	// ----------------------------------------------------
 	{
 		// удаление редиректа для внешних ссылок
 		let url="http://privatelink.de/?";
-		for(let el of (element ? element : doc).querySelectorAll('a[href^="'+url+'"]'))
+		for(let el of (parent ? parent : doc).querySelectorAll('a[href^="'+url+'"]'))
 			el.setAttribute("href", el.getAttribute("href").substr(url.length));
 	},
 
 	// ----------------------------------------------------
-	fixThread: function()
+	fixPostImages: function()
 	// ----------------------------------------------------
 	{
-		// фиксы для любой доски/треда
-		if(!main.url.match(/^(mod\.php\?\/|)[^/]+(\/?$|\/.+\.html)/))
-			return;
-
-		main.fixPostDate(); // коррекция даты постов в тредах
-		main.fixRedirect(); // удаление редиректов 
-		main.moveReplies(); // перемещение ответов вниз
-
 		// Перемещает изображения в ОП посте в сам пост
+		if(main.dollStatus > 0) return; // для куклы не нужно
+
 		for(let thread of doc.querySelectorAll('div.thread')) {
 			let files = thread.getElementsByClassName('files')[0];
 			if(typeof files == 'undefined' || !files.children.length) {
@@ -1931,6 +1942,20 @@ var main = {
 	},
 
 	// ----------------------------------------------------
+	fixThread: function()
+	// ----------------------------------------------------
+	{
+		// фиксы для любой доски/треда
+		if(!main.url.match(/^(mod\.php\?\/|)[^/]+(\/?$|\/.+\.html)/))
+			return;
+
+		main.fixPostDate(); // коррекция даты постов в тредах
+		main.fixPostImages(); 
+		main.fixRedirect(); // удаление редиректов 
+		main.moveReplies(); // перемещение ответов вниз
+	},
+
+	// ----------------------------------------------------
 	fixCatalog: function()
 	// ----------------------------------------------------
 	{
@@ -1938,6 +1963,7 @@ var main = {
 		if(!main.url.match(/^[^/]+\/catalog\.html/))
 			return;
 
+		// добавить дату создания треда
 		var t;
 		for(let el of doc.querySelectorAll("div.mix")) 
 		{
@@ -1961,13 +1987,13 @@ var main = {
 	},
 
 	// ----------------------------------------------------
-	moveReplies: function()
+	moveReplies: function(parent)
 	// ----------------------------------------------------
 	{
 		// Переместить ответы вниз поста
 		if(main.dollStatus > 0) return; // для куклы не нужно
 
-		for(let replies of doc.querySelectorAll('div.post > p.intro > span.mentioned')) {
+		for(let replies of (parent ? parent || doc).querySelectorAll('div.thread > div.post > p.intro > span.mentioned')) {
 			if(!replies.children || !replies.children.length)
 				continue;
 
@@ -2002,7 +2028,7 @@ var main = {
 		con.log("BRchan Russifikator started");
 		dbg("URL:", main.url);
 
-		// замена бразильской локализации
+		// замена бразильской локализации (подмена переменной l10n)
 		Object.defineProperty(win, "l10n", {
 			get: function() {
 				return l10n_rus;
