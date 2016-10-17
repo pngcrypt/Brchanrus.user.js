@@ -16,7 +16,9 @@
 /*
 TODO: 
 	- нумерация постов без куклы
-	- MutationObserver вместо DOMNodeInserted (нужно кроссбраузерно)
+	- 'nod': в расширенном regex вместо sub-query
+	- 'css': сделать возможность вложенности других реплейсеров (дерево селекторов, рекурсия)
+	- формат даты делать без toLocaleDateString
 */
 
 ////////// wrapper /////////
@@ -103,25 +105,14 @@ replacer.cfg["main"] = [
 		[]
 	]],
 
-	// Любая доска / тред + для некоторых разделов админки (где отображаются посты)
-	[/^(mod\.php\?\/|)[^/]+(\/?$|\/.+\.html)|^mod\.php\?\/(recent|IP_less)\//, [
+	// Любая доска / тред
+	[/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$/, [
 		['reg', 'header > div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
-		['reg', 'p.intro > a:not([class])', [
-			[/^\[Últimas (\d+) Mensagens/, '[Последние $1 сообщений'],
-			['Responder', 'Ответить']
-		], [RE_MULTI]],
-
-		['reg', 'div.banner', 'Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]], // ???
+		['reg', 'div.banner', 'Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]],
 		['reg', 'div.banner > a', [
 			['Voltar', 'Назад'],
 			['Ir ao rodapé', 'Вниз страницы']
 		]],
-
-		// Посты
-		['reg', 'p.intro > label > span.name', 'Anônimo', 'Аноним', [RE_MULTI]],
-		['att', 'p.intro > a.post-btn', "title", 'Опции'],
-		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
-		['css', 'a#link-quick-reply', '[Ответить]'],
 
 		// Форма ответа
 		['reg', 'table.post-table > tbody > tr > th', [
@@ -167,15 +158,10 @@ replacer.cfg["main"] = [
 			['Catálogo', 'Каталог тредов']
 		], [RE_INNER, RE_NOBREAK]],
 
-		['reg', 'div.body > span.toolong', /Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER, RE_MULTI]],
-		['reg', 'div.post > span.omitted', [
-			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
-			[/(\d+) mensage.s? omitidas?.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
-		], [RE_MULTI]],
-
 		['css',	'a#thread-return',	'[Назад]'],
 		['css',	'a#thread-top',		'[Вверх]'],
 		['css',	'a#thread-catalog',	'[Каталог тредов]'],
+		['css',	'a#link-quick-reply',	'[Ответить]'],
 
 		[]
 	]],
@@ -407,27 +393,43 @@ replacer.cfg["main"] = [
 
 	// Админка - Жалобы
 	[/^mod\.php\?\/reports\/?$/, [
-		['reg', 'head > title, header > h1', /Fila de denuncias\s+\((\d+)\)/, 'Поступившие жалобы ($1)', [RE_MULTI]],
+		['reg', 'head > title, header > h1', /Fila de denuncias\s+\((\d+)\)/, 'Поступившие жалобы ($1)'],
+		['reg', 'body > p.unimportant', 'Não há denúncias no momento', 'На данный момент никаких жалоб нет', [RE_SINGLE]],
+
 		['att', 'h2.report-header > a', 'title', 'Перейти в тред'],
 		['reg', 'h2.report-header', [
 			[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1'],
 			[/thread repotado (\d+) vez\(es\)/, 'жалоб на тред: $1']
 		], [RE_INNER]],
 
+		['reg', 'div.report span.detail-name', 'Data da denúncia', 'Дата поступления:'],
 		['reg', 'ul.report-actions > li.report-action > a', [
 			['Dismiss', 'Отклонить'],
 			['Promote', 'Принять']
-		], [RE_MULTI]],
-		// TODO: title для Dismiss/Promote
+		]],
 
-		['reg', 'ul.report-content-actions > li.report-content-action', /Descartar todas denúncias a esse conteúdo(.+)Dismiss All/, 'Отклонить все жалобы к этому посту$1Отклонить все', [RE_INNER]],
-		['reg', 'ul.report-content-actions > li.report-action', /Promover todas denúncias locais para globais(.+>)Promote All/, 'Передать все жалобы к этому посту в глобальные$1Принять все', [RE_INNER]],
-		['reg', 'ul.report-content-actions > li.report-content-action', /Clean(.+)Ignorar e descartar denúncias locais dessa mensagem nessa board/, 'Очистить$1Игнорировать и удалить все местные жалобы в этом треде', [RE_INNER]], // "
+		// Кнопки
+		['reg', 'ul.report-content-actions > li.report-content-action', /^Clean/, 'Очистить', [RE_INNER]],
+		['reg', 'ul.report-actions a.action-item, ul.report-content-actions a.content-action-item', [
+			['Dismiss All', 'Отклонить все'],
+			['Promote All', 'Принять все'],
+			['Clean', 'Очистить']
+		]],
 
-		['reg', 'body > p.unimportant', 'Não há denúncias no momento', 'На данный момент никаких жалоб нет'],
+		// Подсказки к кнопкам
+		['att', 'ul.report-actions a.action-item', 'title', [
+			['Descartar denúncia', 'Отклонить жалобу'],
+			['Descartar todas denúncias deste IP', 'Отклонить все жалобы с этого IP'],
+			['Promover denúncia local para global', 'Передать жалобу администраторам']
+		]],
+		['att', 'ul.report-content-actions a.content-action-item', 'title', [
+			['Descartar todas denúncias a esse conteúdo', 'Отклонить все жалобы к этому посту'],
+			['Promover todas denúncias locais para globais', 'Передать все жалобы к этому посту администраторам'],
+			['Ignorar e descartar denúncias locais dessa mensagem nessa board', 'Игнорировать и удалить все жалобы в этом треде']
+		]],
 
 		[]
-	]],
+	], [RE_MULTI]],
 
 	// Админка - Настройка доски
 	[/^mod\.php\?\/settings\//, [
@@ -815,18 +817,23 @@ replacer.cfg["alert"] = [
 ];
 
 // ==============================================================================================
-// перевод новых постов
+// перевод постов (начальный перевод + новые)
 // ==============================================================================================
 replacer.cfg["new_post"] = [
-	['', [
+	// любая доска/тред + для некоторых разделов админки (где есть посты)
+	[/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$|^mod\.php\?\/(recent|IP_less)\//, [
 		['reg', 'span.name', 'Anônimo', 'Аноним', [RE_INNER]],
 		['reg', 'span.name > span', 'You', 'Вы'],
 		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
+		['reg', 'div.body > span.toolong', /Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER]],
 		['reg', 'p.intro > a:not([class])', [
 			['Responder', 'Ответить'],
 			[/^\[Últimas (\d+) Mensagens\]/, '[Последние $1 сообщений]'],
 		]],
-		['reg', 'div.post > span.omitted', /(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
+		['reg', 'div.post > span.omitted', [
+			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
+			[/(\d+) mensage.s? omitidas?.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
+		]]
 	], [RE_MULTI]]
 ];
 
@@ -878,7 +885,7 @@ var l10n_rus = {
 	"Delete": "Удалить",
 	"Reason": "Причина",
 	"Report": "Жалоба",
-	"Global report": "Жалоба администраторам",
+	"Global report": "Жалоба админам",
 	"Click reply to view.": "Нажмите ответ для просмотра",
 	"Click to expand": "Нажмите чтобы раскрыть",
 	"Hide expanded replies": "Скрыть раскрытые ответы",
@@ -1072,7 +1079,7 @@ var l10n_rus = {
 	"Enable gallery mode": "Включить режим галереи",
 	"Disable gallery mode": "Выключить режим галереи",
 	"Hide post": "Скрывать пост",
-	"Add filter": "Добавить фильтр",
+	"Add filter": "Фильтровать",
 	"Delete post": "Удалить пост",
 	"Delete file": "Удалить файл",
 	"Enable inlining": "При клике на ответы разворачивать их в посте",
@@ -1162,6 +1169,7 @@ replacer.process = function(cfg, element, debug, debug_rep)
 	let re_opt = this.reOpt(); // модификаторы по умолчанию
 	re_opt.debug = !!debug_rep; // отладка по умолчанию
 	let ucnt = 0;
+	let matches = 0;
 
 	for(let u of this.cfg[cfg]) // перебор всех url-групп в заданном конфиге
 	{		
@@ -1181,6 +1189,7 @@ replacer.process = function(cfg, element, debug, debug_rep)
 
 		if(!main.url.match(u[0])) continue; // проверка url
 		if(debug) con.debug("URL-Match:", u[0]);
+		matches++;
 
 		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для url-группы
 		let recnt = 0;
@@ -1215,7 +1224,10 @@ replacer.process = function(cfg, element, debug, debug_rep)
 		}
 	}
 	if(debug) {
-		con.debug('Relaced in', main.timeDiff(starttime));
+		if(matches)
+			con.debug('Relaced in', main.timeDiff(starttime));
+		else
+			con.debug('No matches');
 		con.groupEnd();
 	}	
 }
@@ -1717,6 +1729,7 @@ var main = {
 	},
 	url: win.location.pathname.substr(1) + win.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
 	dollStatus: 0, // статус куклы: 0 = отсутствует; -1 = отлкючена; 1 = включена
+	observer: undefined,
 
 
 	// ----------------------------------------------------
@@ -1724,6 +1737,7 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// сюда помещать код, который должен выполняться после скриптов борды (полной загрузки страницы)
+		main.dollGetStatus();
 
 		// доп. перевод
 		replacer.process("page_loaded"); 
@@ -1733,11 +1747,10 @@ var main = {
 		if(el) el.style.width = 'auto';	
 
 		// обрабочтик добавления новых постов 
-		el = doc.body.querySelector('form[name="postcontrols"]');
-		if(el) el.addEventListener('DOMNodeInserted', main.onFormNodeInserted, false);
+		main.listenNewPosts();
 
-		// обработчик добавления главной формы (для куклы - подгрузка страниц на нулевой)
-		if(main.dollStatus > 0) doc.body.addEventListener('DOMNodeInserted', main.onBodyNodeInserted, false);
+		// обработчик добавления главной формы (для куклы: подгрузка страниц на нулевой)
+		main.listenNewForms();
 
 		dbg('Page loaded in ', main.timeDiff(main.starttime));
 	},
@@ -1746,11 +1759,10 @@ var main = {
 	onDocReady: function() 
 	// ----------------------------------------------------
 	{
-		// выполняется после готовности документа и детекта куклы (без загрузки ресурсов и запуска скриптов борды)
-		if(main._docready) return; // предовтращаем повторный запуск
-		main._docready = true;
+		// выполняется после готовности документа (без загрузки ресурсов и запуска скриптов борды)
 
-		if(main.dollStatus)	dbg('* DOLL detected. Status:', main.dollStatus < 0 ? "OFF" : "ON");
+		main.dollGetStatus();
+		dbg('* Doll status:', !main.dollStatus ? "not found" : (main.dollStatus > 0 ? "ON" : "OFF"));
 
 		// перевод всплывающих сообщений
 		main.fn.alert = win.alert;
@@ -1772,19 +1784,19 @@ var main = {
 				el.value = "";
 		};
 
-		// перевод страниц
+		// основной перевод страниц
 		replacer.process("main", doc, true);
-		replacer.process("mod_buttons", doc, true);
 		replacer.clear("main");
-
-		main.fixThread();
+		main.onNewPosts(doc.body); // вызываем обработчик новых постов для всей страницы (перевод + фиксы)
 		main.fixCatalog();
+
+		setTimeout(main.onPageLoaded, 0);
 
 		dbg('Pre-translation in ', main.timeDiff(main.starttime));
 	},
 
 	// ----------------------------------------------------
-	onNewPost: function(parent)
+	onNewPosts: function(parent)
 	// ----------------------------------------------------
 	{
 		// вызывается при добавлении: нового поста в треде; нового треда в /tudo/; новой главной формы (кукла, подгрузка страниц на нулевой) 
@@ -1792,100 +1804,87 @@ var main = {
 		replacer.process("mod_buttons", parent, false);
 		main.fixPostDate(parent);
 		main.fixRedirect(parent);
-		main.moveReplies();
+		if(parent.id && parent.id.match(/^reply_/))
+			main.moveReplies(parent.parentNode); // если это новый пост, обрабатываем весь тред
+		else {
+			// тред или форма
+			main.fixOPImages(parent); 
+			main.moveReplies(parent);
+		}
 	},
 
 	// ----------------------------------------------------
-	onPreDocReady: function(event) 
+	dollGetStatus: function(de_main)
 	// ----------------------------------------------------
 	{
-		// первичная функция по готовности документа (для детектирования куклы)
-		main._docready_time = event.timeStamp; // запоминаем время срабатывания события
-
-		setTimeout(main.onPageLoaded, 1); // обработчик полной загрузки страницы
-
-		// пре-детект куклы (если ее скрипт выполняется до скрипта перевода, то ее форма уже на странице)
-		let el = doc.querySelector('div#de-main span#de-panel-buttons');
-		if(el) {
-			// нашли
-			main.dollStatus = (el.children.length > 1 ? 1 : -1); // проверяем статус куклы по кол-ву кнопок
-			main.onDocReady();
-			return;
+		// ищет панель куклы на страницы, обновляет статус в main.dollStatus
+		main.dollStatus = 0;
+		if(!de_main) {
+			de_main = doc.querySelector('div#de-main');
+			if(!de_main) return;
 		}
 
-		// пост-детект куклы (либо ее скрипт запускается позже, либо ее нет), костыли короче
-		doc.body.addEventListener('DOMNodeInserted', main.dollDetecting, false); // вешаем обработчик на добавление элементов в BODY
-		setTimeout(main.onDocReady, 0); // если dollDetecting не отработает, то onDocReady выполнится после загрузки страницы (но до onPageLoaded)
+		let el = de_main.querySelector('span#de-panel-buttons');
+		main.dollStatus = (el && el.children.length > 1) ? 1 : -1; // проверяем статус по кол-ву кнопок
 	},
 
 	// ----------------------------------------------------
-	dollDetecting: function(event) 
+	listenNewPosts: function(parent)
 	// ----------------------------------------------------
 	{
-		// вызывается при добавлении элементов в BODY (детектор куклы)
+		// создать обработчик добавления новых постов в заданный элемент (parent)
+		// если parent не задан, ищется первая форма треда на странице
+		if(!parent) {
+			parent = doc.body.querySelector('form[name="postcontrols"]');
+			if(!parent) return;
+		}
 
-		let el = event.target;
-		let stop = false;
-
-		//if(el) dbg(event.timeStamp, ':', el);
-
-		if(!main._doll && event.timeStamp - main._docready_time > 200) // таймаут для остановки этого безумия (в мс)
-			stop = true;
-		else if(el && el.nodeType == Node.ELEMENT_NODE && el.nodeName == 'DIV') {
-			if(el.id == 'de-svg-icons')
-				main._doll = true; // кукла найдена, отключаем проверку таймаута
-			else if(el.id == 'de-main') {
-				// найдена основная форма куклы
-				el = el.querySelector('#de-panel-buttons');
-				if(el) main.dollStatus = (el.children.length > 1 ? 1 : -1); // проверяем статус по кол-ву кнопок
-				stop = true;
-				// dbg('* DOLL detecetd in ', event.timeStamp - main._docready_time, 'ms');
+		let tudo = !!(main.url.match(/^tudo\//));
+		//dbg('* Listening posts... /tudo/ is ', tudo);
+		let observer = new MutationObserver( function(mutations) {
+			// вызываетя при добавлении любых элементов в форму треда
+			for(let m of mutations) {
+				for(let ch of m.addedNodes) { 
+					// перебор добавленных элементов
+					if( ch.nodeName == 'DIV' && ch.id && ( (!tudo && ch.id.match(/^reply_/)) || (tudo && ch.id.match(/^thread_/)) ) ) 
+						setTimeout(main.onNewPosts, 0, ch); // вызов события для новых постов в треде или треда в tudo
+				}
 			}
-		}
+		});
 
-		if(stop) {
-			// кукла найдена или таймаут
-			if(!main.dollStatus) dbg('* DOLL detecting TIMEOUT');
-			doc.body.removeEventListener('DOMNodeInserted', main.dollDetecting, false); // отключаем обработчик
-			main.onDocReady();
-		}
+		// запуск обработчика
+		if(observer) observer.observe(parent, {attributes: false, childList: true, characterData: false, subtree: true}); // слушать добавление всех элементов (в т.ч. и вложенных)
 	},
 
 	// ----------------------------------------------------
-	onFormNodeInserted: function(event)
+	listenNewForms: function()
 	// ----------------------------------------------------
 	{
-		// вызывается при добавлении элемента в главную форму (детектор постов)
-		let el = event.target;
-		if(!el || el.nodeType != Node.ELEMENT_NODE || el.nodeName != 'DIV' || !el.id || !el.id.match(/^(reply|thread)_\d+$/))
+		// создать обработчик добавления новых форм тредов (для куклы: подгрузка страниц на нулевой)
+
+		if(main.dollStatus < 1) return;
+		if(!main.url.match(/^(mod\.php\?\/)?(?!tudo)[^/]+\/?(|[^/]+\.html)$/)) // любая страница доски, кроме /tudo/
 			return;
 
-		// добавлен новый пост; или подгружен новый тред в /tudo/
-		setTimeout(main.onNewPost, 0, el); // задержка, чтобы событие успело обработаться скриптами борды
+		// dbg('* Listening forms...');
+		let observer = new MutationObserver(function(mutations){
+			// вызываетя при добавлении любых элементов в body (прямых потомков)
+			for(let m of mutations) {
+				for(let ch of m.addedNodes) { 
+					//dbg(ch);
+					// перебор добавленных элементов, поиск формы
+					if(ch.nodeName && ch.nodeName == 'FORM' && ch.getAttribute('name') == 'postcontrols') {
+						main.listenNewPosts(ch); // вешаем на форму обработчик добавления постов
+						setTimeout(main.onNewPosts, 0, ch); // вызов события для новой формы
+					}
+				}
+			}
+		});
+
+		// запуск обработчика
+		if(observer) observer.observe(doc.body, {attributes: false, childList: true, characterData: false, subtree: false}); // слушать добавление только прямых потомков
 	},
 
-	// ----------------------------------------------------
-	onBodyNodeInserted: function(event)
-	// ----------------------------------------------------
-	{
-		//  вызывается при добавления элементов в BODY (только для куклы)
-		var el = event.target;
-		if(!el || el.nodeType != Node.ELEMENT_NODE || el.nodeName != 'FORM' || el.getAttribute('name') != 'postcontrols')
-			return;
-
-		// добавлена новая главная форма (подгружена страница на нулевой)
-		el.addEventListener('DOMNodeInserted', main.onFormNodeInserted, false); // вешаем на нее обработчик новых постов
-		setTimeout(main.onNewPost, 0, el); // задержка, чтобы событие успело обработаться скриптами борды
-	},
-
-	// ----------------------------------------------------
-	timeLocaleString: function(time)
-	// ----------------------------------------------------
-	{
-		// форматирование даты (time - объект Date)
-		return (time.toLocaleDateString() + " (" + main.ru.days[time.getDay()] + ") " + time.toLocaleTimeString());
-	},
-	
 	// ----------------------------------------------------
 	fixPostDate: function(parent) 
 	// ----------------------------------------------------
@@ -1893,12 +1892,11 @@ var main = {
 		// дата и время постов (перевод + коррекция)
 		if(main.dollStatus > 0) return; // для куклы не нужно
 
-		for(let el of (parent ? parent : doc).querySelectorAll("p.intro time"))
-		{
-			var t = new Date(el.getAttribute("datetime"));
+		main.arrQuerySelectorAll(parent, 'p.intro time', function(el) {
+			var t = new Date(el.getAttribute("datetime")); // TODO: вынести new за функцию
 			t.setTime(t.getTime() + TIME_CORR);
 			el.innerText = main.timeLocaleString(t);
-		}
+		});
 	},
 
 	// ----------------------------------------------------
@@ -1907,24 +1905,20 @@ var main = {
 	{
 		// удаление редиректа для внешних ссылок
 		let url="http://privatelink.de/?";
-		for(let el of (parent ? parent : doc).querySelectorAll('a[href^="'+url+'"]'))
+		main.arrQuerySelectorAll(parent, 'div.thread a[href^="'+url+'"]', function(el) {
 			el.setAttribute("href", el.getAttribute("href").substr(url.length));
+		});
 	},
 
 	// ----------------------------------------------------
-	fixPostImages: function()
+	fixOPImages: function(parent)
 	// ----------------------------------------------------
 	{
 		// Перемещает изображения в ОП посте в сам пост
 		if(main.dollStatus > 0) return; // для куклы не нужно
 
-		for(let thread of doc.querySelectorAll('div.thread')) {
-			let files = thread.getElementsByClassName('files')[0];
-			if(typeof files == 'undefined' || !files.children.length) {
-				continue;
-			}
-
-			let body = thread.getElementsByClassName('body')[0];
+		main.arrQuerySelectorAll(parent, 'div.files:first-child', function(files) {
+			let body = files.nextElementSibling.getElementsByClassName('body')[0]; // nextElementSibling - следующий за files элемент (д.б. div.post.op)
 
 			if(files.children.length > 1) {
 				files.style.display = 'inline-block';
@@ -1933,26 +1927,8 @@ var main = {
 				body.style.overflow = 'auto';
 				body.parentNode.style.overflow = 'auto'; // На нулевой смещает ответы под оп пост
 			}
-
-			/*for(i of files.getElementsByClassName('post-image')) {
-				i.style.margin = '0';
-			}*/
 			body.parentNode.insertBefore(files, body);
-		}
-	},
-
-	// ----------------------------------------------------
-	fixThread: function()
-	// ----------------------------------------------------
-	{
-		// фиксы для любой доски/треда
-		if(!main.url.match(/^(mod\.php\?\/|)[^/]+(\/?$|\/.+\.html)/))
-			return;
-
-		main.fixPostDate(); // коррекция даты постов в тредах
-		main.fixPostImages(); 
-		main.fixRedirect(); // удаление редиректов 
-		main.moveReplies(); // перемещение ответов вниз
+		});
 	},
 
 	// ----------------------------------------------------
@@ -1991,11 +1967,14 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// Переместить ответы вниз поста
-		if(main.dollStatus > 0) return; // для куклы не нужно
+		//if(main.dollStatus > 0) return; // для куклы не нужно
 
-		for(let replies of (parent ? parent || doc).querySelectorAll('div.thread > div.post > p.intro > span.mentioned')) {
+		main.arrQuerySelectorAll(parent, 'div.post > p.intro > span.mentioned', function(replies) {
+
 			if(!replies.children || !replies.children.length)
-				continue;
+				return;
+
+			//dbg('* Replies moved:', replies.children.length, replies.parentNode.parentNode);
 
 			if(!replies.parentNode.brr_init) {
 				// первая обработка поста
@@ -2007,9 +1986,17 @@ var main = {
 				i.style.fontSize = 'inherit';
 			}
 			replies.parentNode.parentNode.appendChild(replies); // div.post
-		}
+		});
  	},
 
+	// ----------------------------------------------------
+	timeLocaleString: function(time)
+	// ----------------------------------------------------
+	{
+		// форматирование даты (time - объект Date)
+		return (time.toLocaleDateString() + " (" + main.ru.days[time.getDay()] + ") " + time.toLocaleTimeString());
+	},
+	
 	// ----------------------------------------------------
  	timeDiff: function(timestart) 
 	// ----------------------------------------------------
@@ -2020,11 +2007,37 @@ var main = {
  	},
 
 	// ----------------------------------------------------
+	arrQuerySelectorAll: function(arr_el, query, callback)
+	// ----------------------------------------------------
+	{
+		/*
+		arr_el - элемент или список элементов (NodeList), для каждого из которых вызывается .querySelectorAll(query)
+		callback - функция для обработки всех полученных потомков: function(child)
+		если arr_el не задан, подразумевается document
+		*/
+
+		if(!arr_el)	
+			arr_el = [doc];
+		else if(!arr_el.item) 
+			arr_el = [arr_el];
+		for(let parent of arr_el)
+			for(let child of parent.querySelectorAll(query))
+				callback(child);
+	},
+
+	// ----------------------------------------------------
 	init: function()
 	// ----------------------------------------------------
 	{
-		main.starttime = Date.now();
+		// основная инициализация
 
+		let el = document.head.querySelector('title');
+		if(el && el.innerText.match('CloudFlare')) { // не запускаемся на странице с клаудфларой
+			dbg('CloudFlare...'); 
+			return;
+		}
+
+		main.starttime = Date.now();
 		con.log("BRchan Russifikator started");
 		dbg("URL:", main.url);
 
@@ -2037,13 +2050,13 @@ var main = {
 
 		if(doc.readyState === 'loading') {
 			if(doc.addEventListener) {
-				doc.addEventListener("DOMContentLoaded", main.onPreDocReady, false);
+				doc.addEventListener("DOMContentLoaded", main.onDocReady, false);
 			} else if(doc.attachEvent) {
-				doc.attachEvent("onreadystatechange", main.onPreDocReady); // для ie? а оно надо?
+				doc.attachEvent("onreadystatechange", main.onDocReady); // для ie? а оно надо?
 			}
 		}
 		else
-			main.onPreDocReady();
+			main.onDocReady();
 	}
 } // main
 
