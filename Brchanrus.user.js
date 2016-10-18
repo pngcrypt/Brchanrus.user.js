@@ -18,14 +18,19 @@ TODO:
 	- нумерация постов без куклы
 	- 'nod': в расширенном regex вместо sub-query
 	- 'css': сделать возможность вложенности других реплейсеров (дерево селекторов, рекурсия)
-	- формат даты делать без toLocaleDateString
 */
 
 ////////// wrapper /////////
 (function() {
+'use strict';
 ////////////////////////////
 
-const TIME_CORR = 3 * 3600000; // коррекция даты постов (в мс)
+const TIME_CORR = 6; // коррекция времени (смещение в часах от бразильского для нужного часового пояса; положительное или отрицательно)
+const TIME_BR = -3; // часовой пояс Бразилии (НЕ МЕНЯТЬ!)
+
+// формат вывода даты
+const DATE_FORMAT = "_d/_n/_y (_w) _h:_i:_s"; // _d - день; _n - месяц; _y - год (2 цифры); _Y - год (4 цифры); _w - день недели (сокр.); _h - часы; _i - минуты; _s - секунды
+
 
 const RE_DEBUG = true;
 
@@ -48,17 +53,17 @@ const RE_LAST = 31; // последняя
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
-this.win = typeof unsafeWindow != 'undefined' ? unsafeWindow : window;
-this.con = win.console;
-this.doc = win.document;
+window.win = typeof unsafeWindow != 'undefined' ? unsafeWindow : window;
+window.con = win.console;
+window.doc = win.document;
 con.debug = con.debug || con.log || function() {};
 con.error = con.error || con.log || function() {};
 con.group = con.group || function() { con.debug.apply(con, ["[+] -->"].concat(Array.from(arguments))); };
 con.groupEnd = con.groupEnd || function() { con.debug('[-] ---'); };
 
-Object.defineProperty(this, "win", {writable: false});
-Object.defineProperty(this, "doc", {writable: false});
-Object.defineProperty(this, "con", {writable: false});
+Object.defineProperty(window, "win", {writable: false});
+Object.defineProperty(window, "doc", {writable: false});
+Object.defineProperty(window, "con", {writable: false});
 
 function dbg() { if(RE_DEBUG) con.debug.apply(con, Array.from(arguments)); } // debug messages
 function isArray(a) { return Array.isArray(a); }
@@ -635,6 +640,7 @@ replacer.cfg["main"] = [
 			[/minutos?/, 'мин'],
 			[/horas?/, 'ч'],
 			[/dias?/, 'дн'],
+			[/semanas?/, 'нед']
 			['ago', 'назад']
 		], [RE_INNER, RE_NOBREAK]],
 		['att', 'input[name="delete"]', 'value', 'Удалить'],
@@ -691,7 +697,7 @@ replacer.cfg["main"] = [
 			[/minutos?/, 'мин'],
 			[/horas?/, 'ч'],
 			[/dias?/, 'дн'],
-			[/semana?/, 'нд']
+			[/semanas?/, 'нед']
 		], [RE_INNER, RE_MULTI]],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия.
 			[/^Edited post/, 'Редактирование поста'],
@@ -823,7 +829,7 @@ replacer.cfg["new_post"] = [
 	// любая доска/тред + для некоторых разделов админки (где есть посты)
 	[/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$|^mod\.php\?\/(recent|IP_less)\//, [
 		['reg', 'span.name', 'Anônimo', 'Аноним', [RE_INNER]],
-		['reg', 'span.name > span', 'You', 'Вы'],
+		//['reg', 'span.name > span', 'You', 'Вы'],
 		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
 		['reg', 'div.body > span.toolong', /Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER]],
 		['reg', 'p.intro > a:not([class])', [
@@ -847,7 +853,7 @@ replacer.cfg["search_cat"] = [
 			['Search', 'Быстрый поиск']
 		]]
 	]]
-]
+];
 
 // ==============================================================================================
 // доп. перевод после полной загрузки страницы (после скриптов борды)
@@ -1067,7 +1073,8 @@ var l10n_rus = {
 	"Untrusted code pasted here could do malicious things such as spam the site under your IP.": "Ненадежный код может осуществлять вредоностные действия. Например, отправлять спам с вашего IP.",
 	"Save custom Javascript": "Сохранить пользовательский скрипт",
 	"Enter your own Javascript code here...": "Введите сюда код вашего скрипта...",
-	"(You)": "(Вы)",
+	//"(You)": "(Вы)",
+	"(You)": "(You)",
 	"Use tree view by default": "Использовать TreeView по умолчанию",
 	"Show top boards": "Показывать ТОП досок",
 	"Loop videos by default": "Бесконечное воспроизведение по умолчанию",
@@ -1148,7 +1155,7 @@ replacer.process = function(cfg, element, debug, debug_rep)
 		debug_rep = false;
 	}
 	else {
-		if(debug == undefined) debug = this.debug;
+		if(debug === undefined) debug = this.debug;
 		if(!debug) debug_rep = false;
 	}
 
@@ -1230,7 +1237,7 @@ replacer.process = function(cfg, element, debug, debug_rep)
 			con.debug('No matches');
 		con.groupEnd();
 	}	
-}
+};
 
 // ----------------------------------------------------
 replacer.clear = function(cfg)
@@ -1240,7 +1247,7 @@ replacer.clear = function(cfg)
 	if(!this.cfg[cfg]) return;
 	this.cfg[cfg] = [];
 	this.instance[cfg]  = 0;
-}
+};
 
 // ----------------------------------------------------
 replacer.reOpt = function(re_arr, def)
@@ -1288,7 +1295,7 @@ replacer.reOpt = function(re_arr, def)
 		}
 	}
 	return opt;
-}
+};
 
 /*
 // ----------------------------------------------------
@@ -1376,7 +1383,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_match)
 		return false;
 	}
 	return true;
-}
+};
 
 // ----------------------------------------------------
 replacer.cssReplacer = function(el, p, re_def)
@@ -1400,8 +1407,9 @@ replacer.cssReplacer = function(el, p, re_def)
 	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[4])) )
 		return -1;
 
+	let elements;
 	try {
-		var elements = el.querySelectorAll(p[1]);
+		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
 		return;
@@ -1430,8 +1438,9 @@ replacer.cssReplacer = function(el, p, re_def)
 					if(!dbg1st++) con.groupEnd();
 					return -1;
 				}
+				let sub;
 				try {
-					var sub = e.querySelectorAll(sp[0]);
+					sub = e.querySelectorAll(sp[0]);
 				} catch(err) {
 					con.error("ERROR: Sub-Selector:", sp[0], p);
 				}
@@ -1453,7 +1462,7 @@ replacer.cssReplacer = function(el, p, re_def)
 		} // else
 	} // for e
 	if(dbg1st) con.groupEnd();
-}
+};
 
 // ----------------------------------------------------
 replacer.attReplacer = function(el, p, re_def)
@@ -1495,8 +1504,9 @@ replacer.attReplacer = function(el, p, re_def)
 	}
 	
 	// выбираем элементы
+	var elements;
 	try {
-		var elements = el.querySelectorAll(p[1]);
+		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
 		return;
@@ -1538,7 +1548,7 @@ replacer.attReplacer = function(el, p, re_def)
 		}
 	}
 	if(dbg1st) con.groupEnd();
-}
+};
 
 
 // ----------------------------------------------------
@@ -1564,8 +1574,9 @@ replacer.nodReplacer = function(el, p, re_def)
 	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[3])) )
 		return -1;
 
+	var elements;
 	try {
-		var elements = el.querySelectorAll(p[1]);
+		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
 		return;
@@ -1601,8 +1612,9 @@ replacer.nodReplacer = function(el, p, re_def)
 			for(let sp of p[2]) {
 				if(!isArray(sp) || sp.length < 2 || sp.length > 3 || (sp.length == 3 && !isArray(sp[2]))) // проверка синтаксиса
 					return -1;
+				let sub;
 				try {
-					var sub = e.querySelectorAll(sp[0]);
+					sub = e.querySelectorAll(sp[0]);
 				} catch(err) {
 					con.error("ERROR: Sub-Selector:", sp[0], p);
 				}
@@ -1632,7 +1644,7 @@ replacer.nodReplacer = function(el, p, re_def)
 		} // else
 	} // for e
 	if(re_opt.debug) con.groupEnd();
-}
+};
 
 // ----------------------------------------------------
 replacer.regReplacer = function(el, p, re_def)
@@ -1666,8 +1678,9 @@ replacer.regReplacer = function(el, p, re_def)
 	let re_opt = this.reOpt(p[3], re_def); // модификаторы по умолчанию для группы regex
 	let dbg1st = 0;
 
+	let elements;
 	try {
-		var elements = el.querySelectorAll(p[1]);
+		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector", p);
 		return;
@@ -1698,7 +1711,7 @@ replacer.regReplacer = function(el, p, re_def)
 			break;
 	} // for e
 	if(dbg1st) con.groupEnd();	
-}
+};
 
 // ----------------------------------------------------
 replacer.strReplacer = function(el, p, re_def)
@@ -1716,7 +1729,7 @@ replacer.strReplacer = function(el, p, re_def)
 		return 1;
 	}
 	//if(re_opt.debug) con.debug("FND:", p, ": NOT FOUND");
-}
+};
 
 // ==============================================================================================
 // MAIN
@@ -1890,12 +1903,14 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// дата и время постов (перевод + коррекция)
-		if(main.dollStatus > 0) return; // для куклы не нужно
+		//if(main.dollStatus > 0) return; // для куклы не нужно
 
+		let t, time = new Date();
 		main.arrQuerySelectorAll(parent, 'p.intro time', function(el) {
-			var t = new Date(el.getAttribute("datetime")); // TODO: вынести new за функцию
-			t.setTime(t.getTime() + TIME_CORR);
-			el.innerText = main.timeLocaleString(t);
+			if(!(t = el.getAttribute("datetime")))
+				return;
+			time.setTime(Date.parse(t));
+			el.innerText = main.timeFormat(time);
 		});
 	},
 
@@ -1940,15 +1955,15 @@ var main = {
 			return;
 
 		// добавить дату создания треда
-		var t;
+		let t, time = new Date();
 		for(let el of doc.querySelectorAll("div.mix")) 
 		{
-			if(!(t = el.getAttribute("data-time"))) // дата создания
+			if(!(t = el.getAttribute("data-time"))) // дата создания (в GMT+0)
 				continue;
-			t = new Date(t*1000 - 3600000);
+			time.setTime(t*1000); 
 			if(!(el = el.querySelector("strong"))) 
 				continue;
-			el.innerHTML = el.innerHTML + "<br><small>"+ main.timeLocaleString(t); + "</small>";
+			el.innerHTML = el.innerHTML + "<br><small>"+ main.timeFormat(time, true) + "</small>";
 		}
 
 		// кнопка поиска
@@ -1990,11 +2005,44 @@ var main = {
  	},
 
 	// ----------------------------------------------------
-	timeLocaleString: function(time)
+	timeFormat: function(time, isGMT)
 	// ----------------------------------------------------
 	{
-		// форматирование даты (time - объект Date)
-		return (time.toLocaleDateString() + " (" + main.ru.days[time.getDay()] + ") " + time.toLocaleTimeString());
+		// возвращает строку с форматированой датой (time - объект Date)
+		// isGMT - true если время задано в GMT+0, иначе - время задано в бразильском часовом поясе
+
+		time.setTime(time.getTime() + TIME_CORR*3600000 + (isGMT ? TIME_BR*3600000 : 0)); // коррекция часового пояса
+
+		let aDate = {
+			"Y": time.getUTCFullYear(), 				// год (4 цифры)
+			"y": time.getUTCFullYear() % 100, 			// год (2 цифры)
+			"n": ("0"+time.getUTCMonth()).substr(-2),	// месяц (цифрами)
+			"d": ("0"+time.getUTCDate()).substr(-2),	// день
+			"w": main.ru.days[time.getDay()], 		// день недели (строка, сокр.)
+			"h": ("0"+time.getUTCHours()).substr(-2),	// часы
+			"i": ("0"+time.getUTCMinutes()).substr(-2), // минуты
+			"s": ("0"+time.getUTCSeconds()).substr(-2)  // секунды
+		};		
+
+		// формирование строки даты по заданному формату
+		let sDate = "";
+		let delim = false;
+		for(let c of DATE_FORMAT) {
+			if(delim) {
+				delim = false;
+				if(c in aDate) {
+					sDate += aDate[c];
+					continue;
+				}
+				sDate += '_';
+			}
+			if(c != '_') 
+				sDate += c;
+			else
+				delim = true;
+		}
+
+		return sDate;
 	},
 	
 	// ----------------------------------------------------
@@ -2003,7 +2051,7 @@ var main = {
 	{
 		// возвращает строку с разницей между текущим временем и заданным в сек или мс
 		let t = (Date.now() - timestart);
-		return ((t < 500) ? (t + "ms") : (t/1000 + "s"));
+		return ((t < 900) ? (t + "ms") : (t/1000 + "s"));
  	},
 
 	// ----------------------------------------------------
@@ -2058,7 +2106,7 @@ var main = {
 		else
 			main.onDocReady();
 	}
-} // main
+}; // main
 
 main.init();
 
