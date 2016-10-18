@@ -1504,7 +1504,7 @@ replacer.attReplacer = function(el, p, re_def)
 	}
 	
 	// выбираем элементы
-	var elements;
+	let elements;
 	try {
 		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
@@ -1574,7 +1574,7 @@ replacer.nodReplacer = function(el, p, re_def)
 	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[3])) )
 		return -1;
 
-	var elements;
+	let elements;
 	try {
 		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
@@ -1930,10 +1930,13 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// Перемещает изображения в ОП посте в сам пост
-		if(main.dollStatus > 0) return; // для куклы не нужно
+		//if(main.dollStatus > 0) return; // для куклы не нужно
 
-		main.arrQuerySelectorAll(parent, 'div.files:first-child', function(files) {
-			let body = files.nextElementSibling.getElementsByClassName('body')[0]; // nextElementSibling - следующий за files элемент (д.б. div.post.op)
+		main.arrQuerySelectorAll(parent, 'div.post.op', function(op) {
+			let files = op.previousElementSibling; // получаем элемент перед div.post.op - д.б. div.files
+			if(!files || files.nodeName != 'DIV' || files.className != 'files') 
+				return;
+			let body = op.getElementsByClassName('body')[0];
 
 			if(files.children.length > 1) {
 				files.style.display = 'inline-block';
