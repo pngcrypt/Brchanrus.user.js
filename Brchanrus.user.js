@@ -15,9 +15,11 @@
 
 /*
 TODO: 
-	- нумерация постов без куклы
+	- "mod_buttons" - доперевести
+	- шаблон поиска/замены времени в regex: модификатор RE_TIME (указывает наличие шаблона). сам шаблон: (:<time>n d y h i s) - ndyhis - заменяются на (\d+). пробел - на \D+
 	- 'nod': в расширенном regex вместо sub-query
 	- 'css': сделать возможность вложенности других реплейсеров (дерево селекторов, рекурсия)
+	- нумерация постов без куклы
 */
 
 ////////// wrapper /////////
@@ -51,19 +53,21 @@ const RE_BREAK = 21; // [по умолчанию] прерывать переб�
 const RE_FIRST = 30; // [по умолчанию] первая нода
 const RE_LAST = 31; // последняя
 
+const RE_TIME = 40; // флаг наличия в regex шаблона для подстановки времени 
+
 var replacer = {cfg:[], debug:RE_DEBUG};
 
-window.win = typeof unsafeWindow != 'undefined' ? unsafeWindow : window;
-window.con = win.console;
-window.doc = win.document;
+var win = typeof unsafeWindow != 'undefined' ? unsafeWindow : window;
+var con = win.console;
+var doc = win.document;
 con.debug = con.debug || con.log || function() {};
 con.error = con.error || con.log || function() {};
 con.group = con.group || function() { con.debug.apply(con, ["[+] -->"].concat(Array.from(arguments))); };
 con.groupEnd = con.groupEnd || function() { con.debug('[-] ---'); };
 
-Object.defineProperty(window, "win", {writable: false});
+/*Object.defineProperty(window, "win", {writable: false});
 Object.defineProperty(window, "doc", {writable: false});
-Object.defineProperty(window, "con", {writable: false});
+Object.defineProperty(window, "con", {writable: false});*/
 
 function dbg() { if(RE_DEBUG) con.debug.apply(con, Array.from(arguments)); } // debug messages
 function isArray(a) { return Array.isArray(a); }
@@ -121,12 +125,12 @@ replacer.cfg["main"] = [
 
 		// Форма ответа
 		['reg', 'table.post-table > tbody > tr > th', [
-			['Nome', 'Имя'],
 			['Opções', 'Опции'],
 			['Assunto', 'Тема/Имя'],
 			['Mensagem', 'Сообщение'],
 			['Verificação', 'Капча'],
-			['Arquivo', 'Файл']
+			['Arquivo', 'Файл'],
+			['Nome', 'Имя']
 		]],
 		['css', 'table.post-table > tbody > tr > td', [
 			['div.format-text > a', 'ВСТАВИТЬ'],
@@ -773,14 +777,19 @@ replacer.cfg["main"] = [
 replacer.cfg["mod_buttons"] = [
 	// Любая доска / тред под модеркой
 	[/^mod\.php\?\/[^/]+(|\/|\/.+\.html)/, [
-		// кнопки модерирования
-		['reg', 'span.controls', [
+		// кнопки модерирования прикрепленных файлов
+		['att', 'div.thread > div > div.files span.controls > a', 'title', [
+			['Apagar arquivo', 'Удалить файл'],
+			['Arquivo spoiler', 'Скрыть превью изображения']
+		]],
+		// кнопки модерирования оп-поста или поста
+		['att', 'div.post.op > p.intro > span.controls.op > a, div.post > span.controls > a', 'title', [
 			['Spoiler em tudo', 'Скрыть превью всех изображений'],
-			['Arquivo spoiler', 'Скрыть превью изображения'],
 			['Apagar todos os posts do IP', 'Удалить все сообщения этого IP'],
-			['"Apagar"', '"Удалить пост"'],
-			['"Banir"', '"Забанить"'],
-			['"Banir e Apagar"', '"Забанить и удалить сообщение"'],
+			[/^Apagar$/, 'Удалить пост'],
+			['Banir e Apagar', 'Забанить и удалить сообщение'],
+			[/^Banir$/, 'Забанить'],
+			['Editar mensagem', 'Редактировать'],
 			['Fixar thread', 'Закрепить тред'],
 			['Desafixar thread', 'Открепить тред'],
 			['Impedir bump', 'Запретить поднимать тред'],
@@ -788,19 +797,16 @@ replacer.cfg["mod_buttons"] = [
 			['Trancar thread', 'Закрыть тред'],
 			['Destrancar thread', 'Открыть тред'],
 			['Make thread cycle', 'Включить циклическую очистку (удаление старых после бамплимита)'],
-			['Make thread not cycle', 'Отключить циклическую очистку'],
-			['Editar mensagem', 'Редактировать'],
-			['Apagar arquivo', 'Удалить файл'],
+			['Make thread not cycle', 'Отключить циклическую очистку']
+		]],
 
-			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений в посте?'],
+/*			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений в посте?'],
 			['Tem certeza que desejar tornar o arquivo spoiler?', 'Вы уверены, что хотите скрыть превью изображеня?'],
 			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
 			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
 			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
-		], [RE_INNER, RE_MULTI, RE_NOBREAK]],
-
-		[]
-	]]
+*/		[]
+	], [RE_MULTI]]
 ];
 
 // ==============================================================================================
@@ -1263,29 +1269,34 @@ replacer.reOpt = function(re_arr, def)
 			single: true,		// RE_SINGLE
 			break: true,		// RE_BREAK
 			node: 0,			// RE_FIRST
+			time: false,		// RE_TIME
 			debug: this.debug 	// replacer.debug
 		}; 
 
 	if(!isArray(re_arr))
 		return def; // возвращаем либо ссылку на дефолтный объект, либо новый объект
+	else if(!re_arr.RE)
+		re_arr.RE = {}; // добавляем к массиву модификаторов объект для внутренних переменных (для разных нужд)
 	
 	var opt= { // новый объект опций на основе дефолтного
 		prop: def.prop,
 		single: def.single,
 		break: def.break,
 		node: def.node,
+		time: def.time,
 		debug: def.debug
 	}; 
 
 	for(let o of re_arr) {
 		switch(o) {
-			case RE_DEBUG: 	opt.debug = RE_DEBUG; break;
 			case RE_SINGLE: opt.single = true; break;
 			case RE_MULTI: 	opt.single = false; break;
 			case RE_BREAK: 	opt.break = true; break;
 			case RE_NOBREAK:opt.break = false; break;
 			case RE_FIRST: 	opt.node = 0; break;
 			case RE_LAST: 	opt.node = -1; break;
+			case RE_TIME: 	opt.time = true; break;
+			case RE_DEBUG: 	opt.debug = RE_DEBUG; break;
 
 			case RE_TEXT:
 			case RE_INNER:
@@ -1330,6 +1341,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_match)
 
 	параметры:
 		rx_arr - массив regex: [ [regx1, text1, re_arr1], ..., [regxN, textN, re_arrN] ]
+		str - строка, в которой будет производиться поиск
 		re_opt - объект RE_* модификаторов по умолчанию
 
 		callback_match - внешняя функция для сравнения и подстановки по regex:
@@ -1338,7 +1350,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_match)
 				str - строка для подстановки;
 				opt - объект RE_* модификаторов для тек. regex				
 			ф-ция должна вернуть true если regex сработал или false если нет
-	*/
+*/
 
 	let re_cnt = 0; // кол-во активных regex
 	let dobreak=false;
@@ -1346,23 +1358,26 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_match)
 
 	 // перебор regex
 	for(let r of rx_arr) {
-		if(!isArray(r) || (r.length && r.length < 2) ) { // проверка параметров
+		if(!isArray(r) || (r.length && r.length < 2 || r.length > 3) ) { // проверка параметров
 			return -3;
 		}
 		if(!r.length) continue; // empty
 
-		if(!r[3] || r[3] < this.instanceLocal) // проверка на активный regex
+		if(!isArray(r[2])) r[2] = []; // массив RE-модификаторов для regex (если нет - создаем пустой)
+		let opt = this.reOpt(r[2], re_opt); // переопределение модификаторов для репелейсера
+		let RE = r[2].RE;
+
+		if(!RE.instance || RE.instance < this.instanceLocal) // проверка на активный regex
 			re_cnt++;
-		if(dobreak || r[3] == this.instanceLocal)
+		if(dobreak || RE.instance == this.instanceLocal)
 			continue; // продолжаем подсчет активных regex
 
-		let opt = this.reOpt(r[2], re_opt); // переопределение модификаторов для репелейсера
 		dbgMsg = "";
 
 		if(callback_match(r[0], r[1], opt)) {
 			dbgMsg += ": FOUND";
 			if(opt.single) {
-				r[3] = this.instanceLocal; // выставляем флаг сработавшего regex
+				RE.instance = this.instanceLocal; // выставляем флаг сработавшего regex
 				re_cnt--;
 				dbgMsg += ": REMOVED";
 			}
@@ -1374,7 +1389,8 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_match)
 		else 
 			dbgMsg += ": NOT FOUND";
 
-		if(opt.debug) con.debug("..?: ", [r[0], r[1]], dbgMsg);
+		// if(opt.debug) con.debug("..?: ", [r[0], r[1]], dbgMsg);
+		if(opt.debug) con.debug("..?: ", r, dbgMsg);
 	} // for r
 
 	if(re_cnt < 1) {
@@ -1425,7 +1441,7 @@ replacer.cssReplacer = function(el, p, re_def)
 		if(!extended) {
 			e[re_opt.prop] = p[2];
 			if(re_opt.debug) {
-				if(!dbg1st++) con.group("CSS:", p[1]);
+				if(!dbg1st++) con.group("CSS:", p[1], elements.length+" element(s)");
 				con.debug("ELM:", e, ' --> ', p[2]);
 			}
 		} 
@@ -1452,8 +1468,8 @@ replacer.cssReplacer = function(el, p, re_def)
 				for(let se of sub) { // перебор потомков
 					se[opt.prop] = sp[1];
 					if(opt.debug) {
-						if(!dbg1st++) con.group("CSS:", p[1]);
-						if(!dbg2nd++) con.group("SUB:", sp[0]);
+						if(!dbg1st++) con.group("CSS:", p[1], elements.length+" element(s)");
+						if(!dbg2nd++) con.group("SUB:", sp[0], sub.length+" element(s)");
 						con.debug("ELM:", se, ' --> ', sp[1]);
 					}
 				} 
@@ -1517,7 +1533,7 @@ replacer.attReplacer = function(el, p, re_def)
 	let dbg1st = 0;
 
 	for(let e of elements) {
-		if(re_opt.debug && !dbg1st++) con.group("ATT:", p[1], " ..? ", [p[2]]);
+		if(re_opt.debug && !dbg1st++) con.group("ATT:", p[1], " ..? ", [p[2]], elements.length+" element(s)");
 
 		if(!extended) {
 			// простой синтаксис
@@ -1527,24 +1543,28 @@ replacer.attReplacer = function(el, p, re_def)
 		else {
 			// расширенный синтаксис
 			if(re_opt.debug) con.debug("ELM:", e);
-			let attr = e.getAttribute(p[2]); 
-
-			// перебор группы regex
-			let ret = this._regexReplacer(p[3], re_opt, function(rx, str, opt) {
-				if(attr.match(rx)) {
-					attr = attr.replace(rx, str);
-					return true;
-				}
-				return false;
-			});
-
-			if(ret < 0) {
-				if(dbg1st) con.groupEnd();
-				return ret;
+			let attr = e.getAttribute(p[2]);
+			if(!attr) {
+				if(re_opt.debug) con.debug("..! NO ATTR"); // атрибут не найден
 			}
-			e.setAttribute(p[2], attr);
-			if(!ret)
-				break;
+			else {
+				// перебор группы regex
+				let ret = this._regexReplacer(p[3], re_opt, function(rx, str, opt) {
+					if(attr.match(rx)) {
+						attr = attr.replace(rx, str);
+						return true;
+					}
+					return false;
+				});
+
+				if(ret < 0) {
+					if(dbg1st) con.groupEnd();
+					return ret;
+				}
+				e.setAttribute(p[2], attr);
+				if(!ret)
+					break;
+			}
 		}
 	}
 	if(dbg1st) con.groupEnd();
@@ -1586,7 +1606,7 @@ replacer.nodReplacer = function(el, p, re_def)
 	let extended = isArray(p[2]);
 	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
 
-	if(re_opt.debug) con.group("NOD:", p[1]);
+	if(re_opt.debug) con.group("NOD:", p[1], elements.length+" element(s)");
 	for(let e of elements)
 	{
 		let node, dmsg;
@@ -1598,7 +1618,7 @@ replacer.nodReplacer = function(el, p, re_def)
 			dmsg = ': ' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ' :';
 			if(node) {
 				if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && re_opt.prop == RE_TEXT)) {
-					if(re_opt.debug) con.debug(e, dmsg, node, ' --> ', p[2]);
+					if(re_opt.debug) con.debug(e, dmsg, node[re_opt.prop], " --> ", p[2]);
 					node[re_opt.prop] = p[2];
 				} 
 				else
@@ -1621,7 +1641,7 @@ replacer.nodReplacer = function(el, p, re_def)
 				if(!sub || !sub.length) continue;
 
 				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
-				if(opt.debug) con.group("SUB:", sp[0]);
+				if(opt.debug) con.group("SUB:", sp[0], sub.length+" element(s)");
 				for(let se of sub) {
 					if(opt.node < 0)
 						node = se.lastChild;
@@ -1630,7 +1650,7 @@ replacer.nodReplacer = function(el, p, re_def)
 					dmsg = ':' + (opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 					if(node) {
 						if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && opt.prop == RE_TEXT)) {
-							if(opt.debug) con.debug(se, dmsg, node, ' --> ', sp[1]);
+							if(opt.debug) con.debug(se, dmsg, node[re_opt.prop], ' --> ', sp[1]);
 							node[opt.prop] = sp[1];
 						} 
 						else
@@ -1689,7 +1709,7 @@ replacer.regReplacer = function(el, p, re_def)
 	for(let e of elements)
 	{
 		if(re_opt.debug) {
-			if(!dbg1st++) con.group("REG:", p[1]);
+			if(!dbg1st++) con.group("REG:", p[1], elements.length+" element(s)");
 			con.debug("ELM:", e);
 		}
 
@@ -1702,6 +1722,7 @@ replacer.regReplacer = function(el, p, re_def)
 			}
 			return false;
 		});
+
 
 		if(ret < 0) {
 			if(dbg1st) con.groupEnd();
@@ -1742,7 +1763,6 @@ var main = {
 	},
 	url: win.location.pathname.substr(1) + win.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
 	dollStatus: 0, // статус куклы: 0 = отсутствует; -1 = отлкючена; 1 = включена
-	observer: undefined,
 
 
 	// ----------------------------------------------------
@@ -2016,36 +2036,32 @@ var main = {
 
 		time.setTime(time.getTime() + TIME_CORR*3600000 + (isGMT ? TIME_BR*3600000 : 0)); // коррекция часового пояса
 
-		let aDate = {
-			"Y": time.getUTCFullYear(), 				// год (4 цифры)
-			"y": time.getUTCFullYear() % 100, 			// год (2 цифры)
-			"n": ("0"+time.getUTCMonth()).substr(-2),	// месяц (цифрами)
-			"d": ("0"+time.getUTCDate()).substr(-2),	// день
-			"w": main.ru.days[time.getDay()], 		// день недели (строка, сокр.)
-			"h": ("0"+time.getUTCHours()).substr(-2),	// часы
-			"i": ("0"+time.getUTCMinutes()).substr(-2), // минуты
-			"s": ("0"+time.getUTCSeconds()).substr(-2)  // секунды
-		};		
-
 		// формирование строки даты по заданному формату
-		let sDate = "";
+		let s = "";
 		let delim = false;
 		for(let c of DATE_FORMAT) {
 			if(delim) {
 				delim = false;
-				if(c in aDate) {
-					sDate += aDate[c];
-					continue;
+				switch(c) {
+					case 'Y': s += time.getUTCFullYear(); continue; 				// год (4 цифры)
+					case 'y': s += time.getUTCFullYear() % 100; continue; 			// год (2 цифры)
+					case 'n': s += ("0"+time.getUTCMonth()).substr(-2); continue; 	// месяц (цифрами)
+					case 'd': s += ("0"+time.getUTCDate()).substr(-2); continue; 	// день
+					case 'w': s += main.ru.days[time.getUTCDay()]; continue; 		// день недели (строка, сокр.)
+					case 'h': s += ("0"+time.getUTCHours()).substr(-2); continue; 	// часы
+					case 'i': s += ("0"+time.getUTCMinutes()).substr(-2); continue; // минуты
+					case 's': s += ("0"+time.getUTCSeconds()).substr(-2); continue; // секунды	
+
+					default: s += '_';
 				}
-				sDate += '_';
 			}
-			if(c != '_') 
-				sDate += c;
-			else
+			if(c == '_')
 				delim = true;
+			else
+				s += c;
 		}
 
-		return sDate;
+		return s;
 	},
 	
 	// ----------------------------------------------------
