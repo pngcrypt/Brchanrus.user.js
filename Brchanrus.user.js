@@ -15,7 +15,6 @@
 
 /*
 TODO: 
-	- "mod_buttons" - доперевести
 	- шаблон поиска/замены времени в regex: модификатор RE_TIME (указывает наличие шаблона). сам шаблон: (:<time>n d y h i s) - ndyhis - заменяются на (\d+). пробел - на \D+
 	- 'nod': в расширенном regex вместо sub-query
 	- 'css': сделать возможность вложенности других реплейсеров (дерево селекторов, рекурсия)
@@ -778,7 +777,7 @@ replacer.cfg["mod_buttons"] = [
 	// Любая доска / тред под модеркой
 	[/^mod\.php\?\/[^/]+(|\/|\/.+\.html)/, [
 		// кнопки модерирования прикрепленных файлов
-		['att', 'div.thread > div > div.files span.controls > a', 'title', [
+		['att', 'div.files span.controls > a', 'title', [
 			['Apagar arquivo', 'Удалить файл'],
 			['Arquivo spoiler', 'Скрыть превью изображения']
 		]],
@@ -799,18 +798,11 @@ replacer.cfg["mod_buttons"] = [
 			['Make thread cycle', 'Включить циклическую очистку (удаление старых после бамплимита)'],
 			['Make thread not cycle', 'Отключить циклическую очистку']
 		]],
-
-/*			['Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений в посте?'],
-			['Tem certeza que desejar tornar o arquivo spoiler?', 'Вы уверены, что хотите скрыть превью изображеня?'],
-			['Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
-			['Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
-			['Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?'],
-*/		[]
 	], [RE_MULTI]]
 ];
 
 // ==============================================================================================
-// окно алертов
+// сообщения alert()'ов
 // ==============================================================================================
 replacer.cfg["alert"] = [
 	['', [
@@ -825,6 +817,20 @@ replacer.cfg["alert"] = [
 		['str', 'Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'],
 		['str', 'É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'],
 		['str', /(O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!)/, 'Файл уже был загружен в <a href="$2">этом треде!</a>'],
+	]]
+];
+
+// ==============================================================================================
+// сообщения confirm()'ов
+// ==============================================================================================
+replacer.cfg["confirm"] = [
+	['', [
+		['str', /Do you wish to remove the (\S+) formatting rule/, 'Вы хотите удалить правило форматирования для "$1"'],
+		['str', 'Tem certeza que deseja marcar todas imagens como spoiler?', 'Вы уверены, что хотите скрыть превью всех изображений в посте?'],
+		['str', 'Tem certeza que desejar tornar o arquivo spoiler?', 'Вы уверены, что хотите скрыть превью изображеня?'],
+		['str', 'Tem certeza que deseja apagar isto?', 'Вы уверены, что хотите удалить это сообщение?'],
+		['str', 'Tem certeza que deseja apagar todos os posts deste IP?', 'Вы уверены, что хотите удалить все сообщения этого IP?'],
+		['str', 'Tem certeza que deseja apagar este arquivo?', 'Вы уверены, что хотите удалить файл?']
 	]]
 ];
 
@@ -1012,7 +1018,7 @@ var l10n_rus = {
 	"Import": "Импорт",
 	"Paste your storage data": "Вставьте ваши настройки",
 	"Erase": "Удалить",
-	"Are you sure you want to erase your storage? This involves your hidden threads, watched threads, post password and many more.": "Вы уверены, что хотите стереть настройки?",
+	"Are you sure you want to erase your storage? This involves your hidden threads, watched threads, post password and many more.": "Вы уверены, что хотите стереть сохраненные данные? Они содержат: скрываемые треды, отслеживаемые треды, пароль для постов и многое другое.",
 	"User CSS": "User CSS",
 	"Update custom CSS": "Update custom CSS",
 	"Enter here your own CSS rules...": "Введите сюда CSS-код ваших стилей...",
@@ -1797,7 +1803,7 @@ var main = {
 		main.dollGetStatus();
 		dbg('* Doll status:', !main.dollStatus ? "not found" : (main.dollStatus > 0 ? "ON" : "OFF"));
 
-		// перевод всплывающих сообщений
+		// перевод всплывающих сообщений alert
 		main.fn.alert = win.alert;
 		win.alert = function(msg, do_confirm, confirm_ok_action, confirm_cancel_action)
 		{
@@ -1806,6 +1812,15 @@ var main = {
 
 			//dbg(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
 			main.fn.alert(msg.text, do_confirm, confirm_ok_action, confirm_cancel_action);
+		};
+
+		// перевод всплывающих сообщений confirm
+		main.fn.confirm = win.confirm;
+		win.confirm = function(msg)
+		{
+			msg = {text: msg};
+			replacer.process("confirm", msg, false);
+			return main.fn.confirm.call(win, msg.text); // привязка контекста к window - иначе ошибка
 		};
 
 		// очистка поля капчи при обновлении
