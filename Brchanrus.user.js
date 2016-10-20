@@ -1942,7 +1942,10 @@ var main = {
 		main.onNewPosts(doc.body); // вызываем обработчик новых постов для всей страницы (перевод + фиксы)
 		main.fixCatalog();
 
-		document.styleSheets[0].insertRule('p.fileinfo span.unimportant {display: block;}', 0); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
+		let style =  document.styleSheets[0];
+		style.insertRule('div.thread p.fileinfo > span.unimportant{display: block;}', 0); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
+		style.insertRule('div.thread > div.post.op{overflow: auto;}', 0); // На нулевой смещает ответы под оп пост
+		style.insertRule('div.post > span.mentioned > a{font-size: inherit;}', 0); // Размер шрифта ответов на пост
 
 		setTimeout(main.onPageLoaded, 0);
 
@@ -2084,7 +2087,6 @@ var main = {
 			}
 			else {
 				body.style.overflow = 'auto';
-				body.parentNode.style.overflow = 'auto'; // На нулевой смещает ответы под оп пост
 			}
 			body.parentNode.insertBefore(files, body);
 		});
@@ -2140,9 +2142,6 @@ var main = {
 				let dsc = doc.createTextNode('Ответы: ');
 				replies.insertBefore(dsc, replies.firstChild);
 				replies.parentNode.brr_init = true; // p.intro
-			}
-			for(let i of replies.children) {
-				i.style.fontSize = 'inherit';
 			}
 			replies.parentNode.parentNode.appendChild(replies); // div.post
 		});
