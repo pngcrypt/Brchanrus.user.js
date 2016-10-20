@@ -905,7 +905,7 @@ replacer.cfg["new_post"] = [
 	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
 		['reg', 'span.name', 'Anônimo', 'Аноним', [RE_INNER]],
 		//['reg', 'span.name > span', 'You', 'Вы'],
-		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
+		['nod', 'p.fileinfo', '', [RE_FIRST]], // Файл: 
 		['reg', 'div.body > span.toolong', /Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER]],
 		['reg', 'p.intro > a:not([class])', [
 			['Responder', 'Ответить'],
@@ -1944,7 +1944,8 @@ var main = {
 		let style =  document.styleSheets[0];
 		style.insertRule('div.thread p.fileinfo > span.unimportant{display: block;}', 0); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
 		style.insertRule('div.thread > div.post.op{overflow: auto;}', 0); // На нулевой смещает ответы под оп пост
-		style.insertRule('div.post > span.mentioned > a{font-size: inherit;}', 0); // Размер шрифта ответов на пост
+		style.insertRule('div.post > span.mentioned > a, span.postfilename{font-size: inherit;}', 0); // Размер шрифта ответов на пост
+		style.insertRule('div.post > span.mentioned{display: inline-block;}', 0);
 
 		setTimeout(main.onPageLoaded, 0);
 
