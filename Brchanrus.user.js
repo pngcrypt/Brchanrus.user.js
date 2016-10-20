@@ -149,12 +149,12 @@ replacer.cfg["main"] = [
 		['reg', 'div#global.ban > ol > li', [
 			// Общие правила досок
 			[/^Se você quebrar as regras.+/, 'Если вы нарушите правила, мы удалим ваш пост. Делайте это снова и снова, и мы возьмем hominho назад.'],
-			[/^O anonimato prevalecerá sempre/, 'Анонимность превыше всего'],
+			[/^O anonimato prevalecerá sempre/, 'Анонимность превыше всего', [RE_MULTI]],
 			[/^Não criem meta-threads/, 'Не создавайте мета-треды'],
 			[/^Não queremos saber.+/, 'Мы не хотим знать, что происходит на других имиджбордах.'],
 			[/^Não somos mestres.+/, 'Мы не являемся знатоками жаргонных выражений и больше ценим нормальную речь.'],
 			[/^A presença da moderação.+/, 'Наличие модерации является социальной конструкцией.'],
-			[/^Não toleramos spam.+/, 'Мы не терпим спам, флуд, Gore, детскую порнографию, сексуализацию несовершеннолетних и любые другие незаконные темы.'],
+			[/^Não toleramos spam.+/, 'Мы не терпим спам, флуд, расчленёнку, детскую порнографию, сексуализацию несовершеннолетних и любые другие незаконные темы.'],
 			[/^Argumente com sabedoria.+/, 'Спорьте мудро, игнорируя тролей и флэймы.'],
 			[/^Forçadores não terão vez/, 'Силовики не успеют (?)'], // ???
 			[/^Você é responsável por seus atos/, 'Вы несете ответственность за свои действия'],
@@ -166,7 +166,6 @@ replacer.cfg["main"] = [
 			[/^É proibida a criação de boards.+/, 'Не создавайте дубликаты досок с одинаковой тематикой.'],
 			[/^Mantenha e preserve a sua board.+/, 'Поддерживайте работу своих досок. Старые и заброшенные доски будут удалены.'],
 			[/^Não toleramos a criação.+/, 'Мы не потерпим создания досок с оправданием детской порнографии, сексуализации несовершеннолетних и других незаконных тем.'],
-			[/^O anonimato prevalecerá sempre/, 'Анонимность превыше всего'],
 
 			// Правила юзер-досок
 			[/^Não toleramos pornografia infantil.+/, 'Мы не потерпим детской порнографии, сексуализации несовершеннолетних, или любые другие беззакония. Анонимность в этом случае не работает.'],
@@ -193,10 +192,6 @@ replacer.cfg["main"] = [
 			['Verificação', 'Капча'],
 			['Arquivo', 'Файл'],
 			['Nome', 'Имя']
-		]],
-		['css', 'table.post-table > tbody > tr > td', [
-			['div.format-text > a', 'ВСТАВИТЬ'],
-			['div.captcha_html', 'кликните сюда для показа']
 		]],
 		['css', 'div.file-hint', 'кликни / брось файл сюда'],
 		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
@@ -944,6 +939,10 @@ replacer.cfg["page_loaded"] = [
 		['reg', 'div.options_tab > div > fieldset > legend', [
 			['Formatting Options', 'Опции форматирования'],
 			['Image hover', 'Всплывающие изображения']
+		]],
+		['css', 'table.post-table > tbody > tr > td', [
+			['div.format-text > a', 'вставить'],
+			['div.captcha_html', 'кликните сюда для показа']
 		]]
 	]]
 ];
@@ -1068,8 +1067,8 @@ var l10n_rus = {
 	"[play once]": "[один раз]",
 	"[loop]": "[по кругу]",
 	"WebM Settings": "WebM настройки",
-	"Expand videos inline": "Развернуть видео",
-	"Play videos on hover": "Проиграть при наведении",
+	"Expand videos inline": "Разворачивать видео в посте",
+	"Play videos on hover": "Воспроизводить при наведении",
 	"Default volume": "Громкость",
 	"Tree view": "Просмотр дерева",
 	"Animate GIFs": "Анимированная gif-ка",
