@@ -2022,11 +2022,11 @@ var main = {
 
 		main.arrQuerySelectorAll(parent, 'div.post.op', function(op) {
 			let files = op.previousElementSibling; // получаем элемент перед div.post.op - д.б. div.files
-			if(!files || files.nodeName != 'DIV' || files.className != 'files') 
+			if(!files || files.nodeName != 'DIV' || (files.className != 'files' && files.className != 'video-container')) 
 				return;
 			let body = op.getElementsByClassName('body')[0];
 
-			if(files.children.length > 1) {
+			if(files.children.length > 1 && files.className != 'video-container') {
 				files.style.display = 'inline-block';
 			}
 			else {
