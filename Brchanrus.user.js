@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            BRchan Rusifikator
-// @version         3.3.1
+// @version         3.3.2
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -1942,6 +1942,8 @@ var main = {
 		main.onNewPosts(doc.body); // вызываем обработчик новых постов для всей страницы (перевод + фиксы)
 		main.fixCatalog();
 
+		document.styleSheets[0].insertRule('p.fileinfo span.unimportant {display: block;}', 0); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
+
 		setTimeout(main.onPageLoaded, 0);
 
 		dbg('Pre-translation in ', main.timeDiff(main.starttime));
@@ -2073,11 +2075,11 @@ var main = {
 
 		main.arrQuerySelectorAll(parent, 'div.post.op', function(op) {
 			let files = op.previousElementSibling; // получаем элемент перед div.post.op - д.б. div.files
-			if(!files || files.nodeName != 'DIV' || files.className != 'files') 
+			if(!files || files.nodeName != 'DIV' || (files.className != 'files' && files.className != 'video-container')) 
 				return;
 			let body = op.getElementsByClassName('body')[0];
 
-			if(files.children.length > 1) {
+			if(files.children.length > 1 && files.className != 'video-container') {
 				files.style.display = 'inline-block';
 			}
 			else {
