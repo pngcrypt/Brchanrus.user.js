@@ -720,6 +720,10 @@ replacer.cfg["main"] = [
 			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
 			[/^Created a new (.+) ban on (\/[^/]+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
 			[/^Created a new volunteer/, 'Добавлен новый модератор'],
+			[/^User deleted his own post/, 'Пользователь удалил свой пост'],
+			[/^Dismissed a report for post/, 'Отказано в жалобе к посту'],
+			[/^Re-opened reports for post (#\d+) in local/, 'Повторная местная жалоба к посту $1'],
+			[/^Promoted a local report for post/, 'Принята местная жалоба к посту'],
 			[]
 		], [RE_MULTI]]
 	]],
