@@ -1891,6 +1891,8 @@ var main = {
 		main.onNewPosts(doc.body); // вызываем обработчик новых постов для всей страницы (перевод + фиксы)
 		main.fixCatalog();
 
+		document.styleSheets[0].insertRule('p.fileinfo span.unimportant {display: block;}', 0); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
+
 		setTimeout(main.onPageLoaded, 0);
 
 		dbg('Pre-translation in ', main.timeDiff(main.starttime));
