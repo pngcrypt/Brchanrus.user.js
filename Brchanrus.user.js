@@ -32,27 +32,33 @@ const TIME_BR = -3; // часовой пояс Бразилии (НЕ МЕНЯТ
 // формат вывода даты
 const DATE_FORMAT = "_d/_n/_y (_w) _h:_i:_s"; // _d - день; _n - месяц; _y - год (2 цифры); _Y - год (4 цифры); _w - день недели (сокр.); _h - часы; _i - минуты; _s - секунды
 
-
-const RE_DEBUG = true;
+const RE_DEBUG = true; // флаг отладки группы или отдельного реплейсера (а также глобальный запрет отладки - если false)
 
 // типы замены контента
-const RE_TEXT = 'textContent'; // текст внутри элемента [по умолчанию] (все тэги будут удалены)
-const RE_INNER = 'innerHTML'; // html код внутри элемента
-const RE_OUTER = 'outerHTML'; // hmtl код, включая найденный элемент
+const RE_TEXT = 10; // [по умолчанию] текст внутри элемента (все тэги будут удалены)
+const RE_INNER = 11; // html код внутри элемента
+const RE_OUTER = 12; // hmtl код, включая найденный элемент
 
 // режимы поиска строк по regex
-const RE_SINGLE = 10; // [по умолчанию] однократный (после замены regex исключается из дальнейшего поиска)
-const RE_MULTI = 11; // многократый (поиск во всех элементах)
+const RE_SINGLE = 20; // [по умолчанию] однократный (после замены regex исключается из дальнейшего поиска)
+const RE_MULTI = 21; // многократый (поиск во всех элементах)
 
 // режим прерывания поиска по regex
-const RE_NOBREAK = 20; // перебирать все regex независимо от результата (для текущего селектора)
-const RE_BREAK = 21; // [по умолчанию] прерывать перебор на первом найденном regex (для текущего селектора)
+const RE_NOBREAK = 30; // перебирать все regex независимо от результата (для текущего селектора)
+const RE_BREAK = 31; // [по умолчанию] прерывать перебор на первом найденном regex (для текущего селектора)
 
 // выбор дочернего узла (для 'nod')
-const RE_FIRST = 30; // [по умолчанию] первая нода
-const RE_LAST = 31; // последняя
+const RE_FIRST = 40; // [по умолчанию] первая нода
+const RE_LAST = 41; // последняя
 
-const RE_TIME = 40; // флаг наличия в regex шаблона для подстановки времени 
+const RE_TIME = 50; // флаг наличия в regex шаблона для подстановки времени 
+
+const URL_BREAK = 1000; // флаг для прерывания перебора конфига при совпадении url-regex c url страницы
+
+var _RE_PROP = {};
+_RE_PROP[RE_TEXT] = 'textContent';
+_RE_PROP[RE_INNER] = 'innerHTML';
+_RE_PROP[RE_OUTER] = 'outerHTML';
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
@@ -63,10 +69,6 @@ con.debug = con.debug || con.log || function() {};
 con.error = con.error || con.log || function() {};
 con.group = con.group || function() { con.debug.apply(con, ["[+] -->"].concat(Array.from(arguments))); };
 con.groupEnd = con.groupEnd || function() { con.debug('[-] ---'); };
-
-/*Object.defineProperty(window, "win", {writable: false});
-Object.defineProperty(window, "doc", {writable: false});
-Object.defineProperty(window, "con", {writable: false});*/
 
 function dbg() { if(RE_DEBUG) con.debug.apply(con, Array.from(arguments)); } // debug messages
 function isArray(a) { return Array.isArray(a); }
@@ -83,16 +85,22 @@ function isArray(a) { return Array.isArray(a); }
 		[url-regexM, [ [replacerM.1], ..., [replacerM.N] ], re_arrM],
 	];
 
+	для дополнительной проверки указать css-селектор любого элемента, который должен присутствовать на странице для данного url-regex
+		[url-regex1, "selector1", [ [replacer1.1], ..., [replacer1.N] ], re_arr1],
+
 	где:
 		cfg_name - имя создаваемого конфига
 		url-regex - regex для проверки текущего URL страницы (если совпадает, то происходит обработка вложенной группы реплейсеров)
+		selector - css-селектор (по желанию)
 		replacer - массив с параметрами реплейсера (тип, css-селектор и т.п.)
 				подробнее синтаксис каждого типа реплейсера см. в функциях реплейсеров (nodReplacer, cssReplacer, regReplacer и т.п.)
 		re_arr - массив RE_* модификаторов по умолчанию для всех реплейсеров заданной группы url-regex
+			для url-группы можно задавать модификатор URL_BREAK - прерывает дальнейший перебор конфига при совпадении url-regex с текущим url страницы
 
 */
 replacer.cfg["main"] = [
 
+	// любая страница
 	[/^/, [
 		// Панель меню
 		['nod', 'div.boardlist > span', [
@@ -108,13 +116,17 @@ replacer.cfg["main"] = [
 		['reg', 'body > div:nth-child(1) > span:not([class])', [
 			['BRchan em manutenção', 'Техобслуживание BRchan'],
 			['O Bananal está em manutenção e deve voltar em breve', 'Бананал закрыт на техническое обслуживание и вернется в ближайшее время']
-		]],
-
-		[]
+		]]
 	]],
 
+	// главная
+	[/^/, 'body > div.ban.oficial > h2', [
+		['reg', 'body > div.ban.oficial > h2', 'Boards Fixas', 'Постоянные доски']
+	], [URL_BREAK]],
+
 	// Любая доска / тред
-	[/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$/, [
+	// [/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$/, [
+	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$/, [
 		['reg', 'header > div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
 		['reg', 'div.banner', 'Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]],
 		['reg', 'div.banner > a', [
@@ -643,7 +655,7 @@ replacer.cfg["main"] = [
 			[/minutos?/, 'мин'],
 			[/horas?/, 'ч'],
 			[/dias?/, 'дн'],
-			[/semanas?/, 'нед']
+			[/semanas?/, 'нед'],
 			['ago', 'назад']
 		], [RE_INNER, RE_NOBREAK]],
 		['att', 'input[name="delete"]', 'value', 'Удалить'],
@@ -843,7 +855,8 @@ replacer.cfg["confirm"] = [
 // ==============================================================================================
 replacer.cfg["new_post"] = [
 	// любая доска/тред + для некоторых разделов админки (где есть посты)
-	[/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$|^mod\.php\?\/(recent|IP_less)\//, [
+	// [/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$|^mod\.php\?\/(recent|IP_less)\//, [
+	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
 		['reg', 'span.name', 'Anônimo', 'Аноним', [RE_INNER]],
 		//['reg', 'span.name > span', 'You', 'Вы'],
 		['nod', 'p.fileinfo', 'Файл: ', [RE_FIRST]],
@@ -1189,10 +1202,11 @@ replacer.process = function(cfg, element, debug, debug_rep)
 	this.instance[cfg]++; 
 	this.instanceLocal = this.instance[cfg]; // кол-во запусков текущего конфига
 
-	let re_opt = this.reOpt(); // модификаторы по умолчанию
+	let re_opt = this.reOpt(); // модификаторы по умолчанию для всего конфига
 	re_opt.debug = !!debug_rep; // отладка по умолчанию
-	let ucnt = 0;
-	let matches = 0;
+	let ucnt = 0,
+		matches = 0,
+		re_ind, url_err, url_query, recnt, opt;
 
 	for(let u of this.cfg[cfg]) // перебор всех url-групп в заданном конфиге
 	{		
@@ -1200,10 +1214,28 @@ replacer.process = function(cfg, element, debug, debug_rep)
 
 		if(isArray(u) && !u.length) continue; // empty
 
-		// проверка параметров
-		if(!isArray(u) || u.length < 2 || u.length > 3 || !isArray(u[1]) || (u.length == 3 && !isArray(u[2])) ) 
+		url_err = true;
+		url_query = false;
+		re_ind = 2; // индекс RE-модификаторов в массиве 
+		while(true) {
+			// проверка синтаксиса
+			if(!isArray(u) || u.length < re_ind)
+				break;
+			if(typeof(u[1]) == 'string') {
+				 // расширенный синтаксис (с доп. проверкой страницы по селектору)
+				re_ind = 3;
+				url_query = u[1] === "" ? false : u[1]; // пустой селектор пропускаем
+			}
+			else if(!isArray(u[1]))
+				break;
+			if( u.length > re_ind+1 || (u.length == re_ind+1 && !isArray(u[re_ind])) ) 
+				break;
+			url_err = false;
+			break;
+		}
+		if(url_err)
 		{
-			con.error("ERROR: Syntax: URL-group #"+ucnt+" : ", u);
+			con.error("ERROR: Syntax: URL-Group #"+ucnt+" : ", u);
 			if(isArray(u))
 				continue;
 			else
@@ -1211,13 +1243,27 @@ replacer.process = function(cfg, element, debug, debug_rep)
 		}
 
 		if(!main.url.match(u[0])) continue; // проверка url
-		if(debug) con.debug("URL-Match:", u[0]);
+		if(url_query !== false) {
+			// доп. проверка страницы по селектору
+			try {
+				if(!doc.querySelector(url_query))
+					continue;
+			} 
+			catch(e) {
+				con.error("ERROR: Bad URL-selector (Group #"+ucnt+") : ", u);
+				if(isArray(u))
+					continue;
+				else
+					break;
+			}
+		}
+		if(debug) con.debug("URL-Match #"+ucnt+":", u[0], (url_query ? "Query: '"+url_query+"'" : ""));
 		matches++;
 
-		let opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для url-группы
-		let recnt = 0;
+		opt = this.reOpt(u[re_ind], re_opt); // возможное переопределение модификаторов для url-группы
+		recnt = 0;
 
-		for(let r of u[1]) // перебор реплейсеров url-группы
+		for(let r of u[re_ind-1]) // перебор реплейсеров url-группы
 		{
 			recnt++;
 			if(isArray(r) && !r.length) continue; //empty
@@ -1244,8 +1290,12 @@ replacer.process = function(cfg, element, debug, debug_rep)
 			}
 			else if(err)
 				break; // прерывание цикла перебора реплейсеров для текущего url
+		} // for r
+		if(opt.url_break) {
+			if(debug) con.debug("URL-Break #"+ucnt);
+			break;
 		}
-	}
+	} // for u
 	if(debug) {
 		if(matches)
 			con.debug('Relaced in', main.timeDiff(starttime));
@@ -1275,12 +1325,13 @@ replacer.reOpt = function(re_arr, def)
 
 	if(typeof(def) != 'object')
 		def = { // новый объект с параметрами по умолчанию
-			prop: RE_TEXT,
+			prop: _RE_PROP[RE_TEXT], // имя свойства для замены текста в элементе
 			single: true,		// RE_SINGLE
 			break: true,		// RE_BREAK
 			node: 0,			// RE_FIRST
-			time: false,		// RE_TIME
-			debug: this.debug 	// replacer.debug
+			time: false,		// !RE_TIME
+			url_break: false,	// !URL_BREAK
+			debug: this.debug 	// RE_DEBUG
 		}; 
 
 	if(!isArray(re_arr))
@@ -1288,15 +1339,12 @@ replacer.reOpt = function(re_arr, def)
 	else if(!re_arr.RE)
 		re_arr.RE = {}; // добавляем к массиву модификаторов объект для внутренних переменных (для разных нужд)
 	
-	var opt= { // новый объект опций на основе дефолтного
-		prop: def.prop,
-		single: def.single,
-		break: def.break,
-		node: def.node,
-		time: def.time,
-		debug: def.debug
-	}; 
+	// новый объект опций на основе дефолтного
+	var opt= {}; 
+	for(let k of Object.keys(def))
+		opt[k] = def[k];
 
+	// замена заданных модификаторов
 	for(let o of re_arr) {
 		switch(o) {
 			case RE_SINGLE: opt.single = true; break;
@@ -1307,11 +1355,12 @@ replacer.reOpt = function(re_arr, def)
 			case RE_LAST: 	opt.node = -1; break;
 			case RE_TIME: 	opt.time = true; break;
 			case RE_DEBUG: 	opt.debug = RE_DEBUG; break;
+			case URL_BREAK:	opt.url_break = true; break;
 
 			case RE_TEXT:
 			case RE_INNER:
 			case RE_OUTER:
-			 	opt.prop = o;
+			 	opt.prop = _RE_PROP[o]; 
 			 	break;
 		}
 	}
@@ -1627,7 +1676,7 @@ replacer.nodReplacer = function(el, p, re_def)
 				node = e.firstChild;
 			dmsg = ': ' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ' :';
 			if(node) {
-				if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && re_opt.prop == RE_TEXT)) {
+				if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && re_opt.prop == _RE_PROP[RE_TEXT])) {
 					if(re_opt.debug) con.debug(e, dmsg, node[re_opt.prop], " --> ", p[2]);
 					node[re_opt.prop] = p[2];
 				} 
@@ -1659,7 +1708,7 @@ replacer.nodReplacer = function(el, p, re_def)
 						node = se.firstChild;
 					dmsg = ':' + (opt.node < 0 ? 'LAST' : 'FIRST') + ':';
 					if(node) {
-						if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && opt.prop == RE_TEXT)) {
+						if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && opt.prop == _RE_PROP[RE_TEXT])) {
 							if(opt.debug) con.debug(se, dmsg, node[re_opt.prop], ' --> ', sp[1]);
 							node[opt.prop] = sp[1];
 						} 
