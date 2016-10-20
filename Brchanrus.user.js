@@ -1202,6 +1202,7 @@ var l10n_rus = {
 	"Clear List": "Удалить все",
 	"Clear Ghosts": "Очистить",
 	"Reply": "Ответить",
+	"The server took too long to submit your post. Your post was probably still submitted. If it wasn\'t, 8chan might be experiencing issues right now -- please try your post again later. Error information: ": "Сервер долго не подтверждает отправку вашего поста. Вероятнее всего, ваш пост был отправлен. Если нет, значит на сайте временные проблемы, попробуйте позже. Информация об ошибке:",
 
 	// локализация доски "tudo" ("Все") -- /tudo/ukko.js
 	"(esconder threads desta board)": "(скрыть треды этой доски)",
@@ -2113,12 +2114,11 @@ var main = {
 		}
 
 		// кнопка поиска
-		replacer.process("search_cat", doc, false);
 		let el = doc.querySelector('a#catalog_search_button');
 		if(el) {
-			// перевод при клике
-			doc.addEventListener("click", function() {
-				replacer.process("search_cat", doc, false);
+			replacer.process("search_cat", el.parent, false);
+			el.addEventListener("click", function() {
+				replacer.process("search_cat", el.parent, false); // перевод при клике
 			}, false);
 		}
 	},
