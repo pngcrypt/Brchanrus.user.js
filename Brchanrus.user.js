@@ -82,17 +82,6 @@ _RE_PROP[RE_OUTER] = 'outerHTML';
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
-var win = typeof unsafeWindow != 'undefined' ? unsafeWindow : window;
-var con = win.console;
-var doc = win.document;
-con.debug = con.debug || con.log || function() {};
-con.error = con.error || con.log || function() {};
-con.group = con.group || function() { con.debug.apply(con, ["[+] -->"].concat(Array.from(arguments))); };
-con.groupEnd = con.groupEnd || function() { con.debug('[-] ---'); };
-
-function dbg() { if(RE_DEBUG) con.debug.apply(con, Array.from(arguments)); } // debug messages
-function isArray(a) { return Array.isArray(a); }
-
 // ==============================================================================================
 // основной конифг перевода
 // ==============================================================================================
@@ -1574,7 +1563,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 						switch(RE.time.groups[i]) {
 							case 'Y': time.setUTCFullYear(val); break; 
 							case 'y': time.setUTCFullYear("20"+val); break; // 2 цифры года преобразуем в 4 (хз как век определять)
-							case 'n': time.setUTCMonth(val); break;
+							case 'n': time.setUTCMonth(val-1); break; // в js месяцы считаются с 0
 							case 'd': time.setUTCDate(val); break;
 							case 'h': time.setUTCHours(val);  break;
 							case 'i': time.setUTCMinutes(val); break;
@@ -1625,7 +1614,7 @@ replacer.cssReplacer = function(el, p, re_def)
 			[sub-queryN, textN, re_arrN]
 		], re_arr]
 
-		в расширенном синтаксисе sub-query - селекторы, для дочерних элементов от родительского (найденного по query)
+		в расширенном синтаксисе sub-query - селекторы для дочерних элементов от родительского (найденного по query)
 		re_arr - массив RE_* модификаторов [не обязательно]
 	*/
 
@@ -1707,7 +1696,7 @@ replacer.attReplacer = function(el, p, re_def)
 		], re_arr]
 
 		в расширенном синтаксисе значение атрибута проверяется по regex и заменяется при совпадении
-		re_arr - массив RE_* модификаторов (RE_SINGLE/MULTI/BREAK/NOBREAK/DEBUG)
+		re_arr - массив RE_* модификаторов
 	*/
 
 	if(p.length < 4)
@@ -1760,8 +1749,8 @@ replacer.attReplacer = function(el, p, re_def)
 			else {
 				// перебор группы regex
 				let ret = this._regexReplacer(p[3], re_opt, 
-					function(opt) {	return attr; },
-					function(str, opt) { attr = str; }
+					function(opt) {	return attr; },		// get
+					function(str, opt) { attr = str; }	// set
 				);
 
 				if(ret < 0) {
@@ -1922,8 +1911,8 @@ replacer.regReplacer = function(el, p, re_def)
 
 		// перебор regex
 		let ret = this._regexReplacer(p[2], re_opt, 
-			function(opt) {	return e[opt.prop]; },
-			function(str, opt) { e[opt.prop] = str; }
+			function(opt) {	return e[opt.prop]; },		// get
+			function(str, opt) { e[opt.prop] = str; }	// set
 		);
 
 		if(ret < 0) {
@@ -1963,7 +1952,7 @@ var main = {
 	ru: {
 		days: ['Вс','Пн','Вт','Ср','Чт','Пт','Сб','Вс']
 	},
-	url: win.location.pathname.substr(1) + win.location.search, // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
+	url: "",
 	dollStatus: 0, // статус куклы: 0 = отсутствует; -1 = отлкючена; 1 = включена
 
 
@@ -2262,7 +2251,7 @@ var main = {
 				switch(c) {
 					case 'Y': s += time.getUTCFullYear(); continue; 				// год (4 цифры)
 					case 'y': s += time.getUTCFullYear() % 100; continue; 			// год (2 цифры)
-					case 'n': s += ("0"+time.getUTCMonth()).substr(-2); continue; 	// месяц (цифрами)
+					case 'n': s += ("0"+(time.getUTCMonth()+1)).substr(-2); continue; // месяц (цифрами) js считает месяцы с 0
 					case 'd': s += ("0"+time.getUTCDate()).substr(-2); continue; 	// день
 					case 'w': s += main.ru.days[time.getUTCDay()]; continue; 		// день недели (строка, сокр.)
 					case 'h': s += ("0"+time.getUTCHours()).substr(-2); continue; 	// часы
@@ -2315,7 +2304,9 @@ var main = {
 	{
 		// основная инициализация
 
-		let el = document.head.querySelector('title');
+		main.url = win.location.pathname.substr(1) + win.location.search; // текущий URL страницы (без протокола, домена и хэша; начальный слэш удаляется)
+
+		let el = doc.head.querySelector('title');
 		if(el && el.innerText.match('CloudFlare')) { // не запускаемся на странице с клаудфларой
 			dbg('CloudFlare...'); 
 			return;
@@ -2343,6 +2334,18 @@ var main = {
 			main.onDocReady();
 	}
 }; // main
+
+
+var win = typeof unsafeWindow != 'undefined' ? unsafeWindow : window;
+var con = win.console;
+var doc = win.document;
+con.debug = con.debug || con.log || function() {};
+con.error = con.error || con.log || function() {};
+con.group = con.group || function() { con.debug.apply(con, ["[+] -->"].concat(Array.from(arguments))); };
+con.groupEnd = con.groupEnd || function() { con.debug('[-] ---'); };
+
+function dbg() { if(RE_DEBUG) con.debug.apply(con, Array.from(arguments)); } // debug messages
+function isArray(a) { return Array.isArray(a); }
 
 main.init();
 
