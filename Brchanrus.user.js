@@ -15,7 +15,6 @@
 
 /*
 TODO: 
-	- 'nod': в расширенном regex вместо sub-query
 	- 'css': сделать возможность вложенности других реплейсеров (дерево селекторов, рекурсия)
 	- нумерация постов без куклы
 */
@@ -112,14 +111,14 @@ replacer.cfg["main"] = [
 	// любая страница
 	[/^/, [
 		// Панель меню
-		['nod', 'div.boardlist > span', [
-			['a[href="/"]', ' Главная'],
-			['a[href="/boards.html"]', ' Список досок'],
-			['a[href="/random.php"]', ' На случайную доску'],
-			['a[href="/create.php"]', ' Создать доску'],
-			['a[href="/mod.php"]', ' Админка'],
-			['a[href="/bugs.php"]', ' Сообщить об ошибке'],
-		], [RE_LAST]],
+		['nod', 'div.boardlist > span.sub > a', [
+			['home', 'Главная'],
+			['boards', 'Список досок'],
+			['board aleatória', 'На случайную доску'],
+			['criar board', 'Создать доску'],
+			['moderar', 'Админка'],
+			['reportar bug', 'Сообщить об ошибке'],
+		], [RE_LAST, RE_MULTI]],
 
 		// Техобслуживание
 		['reg', 'body > div:nth-child(1) > span:not([class])', [
@@ -182,7 +181,7 @@ replacer.cfg["main"] = [
 		]],
 
 		// Подстановка времени в новостях
-		['reg', 'div#noticias > div > h2 > span' , /at (:<T0>)/, ', $T', [RE_TIME, RE_MULTI]],
+		['reg', 'div#noticias > div > h2 > span' , / at (:<T0>)/, ', $T', [RE_TIME, RE_MULTI]],
 		[]
 	], [URL_BREAK]],
 
@@ -1347,13 +1346,13 @@ replacer.process = function(cfg, element, debug, debug_rep)
 				con.error('ERROR: NO Replacer function for:', r);
 				continue;
 			}
-			let err = this[fn](element, r, opt); // вызов функции реплейсера
-			if(err < 0)
+			let ret = this[fn](element, r, opt); // вызов функции реплейсера
+			if(ret < 0)
 			{
-				con.error("ERROR: Syntax"+err+": Replacer #"+recnt+" : ", r);
+				con.error("ERROR: Syntax"+ret+": Replacer #"+recnt+" : ", r);
 				continue;
 			}
-			else if(err)
+			else if(!ret)
 				break; // прерывание цикла перебора реплейсеров для текущего url
 		} // for r
 		if(opt.url_break) {
@@ -1445,10 +1444,10 @@ replacer.reOpt = function(re_arr, def)
  	params - массив параметров (из конфига) ["type", "css-selector", ....]  // type - тип реплейсера, дальше - параметры
  	re_def - объект RE_* модификаторов по умолчанию для текущего реплейсера
 
-возвращаемые значения:
-	= 0 : нормальное завершение
-	< 0 : ошибка во входных параметрах (в консоль выдаст сообщения со строкой конфига)
-	> 0 : прервать перебор реплейсеров для текущей url-группы
+функция должна вернуть:
+	< 0 : ошибка в синтаксисе (в консоль выдаст сообщения со строкой конфига)
+	true : продолжить перебор реплейсеров url-группы
+	false : прервать перебор реплейсеров url-группы
 */ 
 
 // ----------------------------------------------------
@@ -1460,20 +1459,24 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 	
 	возвращает: 
 		< 0 - в случае ошибки синтаксиса
-		false - если не осталось активных regex
+		false - если не осталось активных regex (все сработали)
 		true - в противном случае
 
 	параметры:
 		rx_arr - массив regex: [ [regx1, text1, re_arr1], ..., [regxN, textN, re_arrN] ]
-		str - строка, в которой будет производиться поиск
 		re_opt - объект RE_* модификаторов по умолчанию
 
-		callback_match - внешняя функция для сравнения и подстановки по regex:
-			function(rx, str, opt) {...}
-				rx - тек. regex;
-				str - строка для подстановки;
-				opt - объект RE_* модификаторов для тек. regex				
-			ф-ция должна вернуть true если regex сработал или false если нет
+		callback_get - внешняя функция для получения исходной строки для сравнения:
+			function(opt) {...}
+				opt - объект RE-модификаторов
+				функция должна вернуть либо строку для сравнения, либо в случае ошибки объект {msg, err}
+					msg - сообщение об ошибке
+					err - код ошибки: < 0 - ошибка синтаксиса; false - прервать перебор; true - продолжить перебор
+
+		callback_set - внешняя функция для замены строки:
+			function(str, opt) {...}
+				str - строка для замены
+				opt - объект RE_* модификаторов
 */
 
 	let re_cnt = 0; // кол-во активных regex
@@ -1504,8 +1507,6 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 			for(let i = 1; i < brackets.length; i++) {
 				// ищем шаблон времени (:<T>...) в группах и меняем его на (\d+\D+...)
 				brackets[i] = brackets[i].replace(/^:<T(\d*)>([^)]*)/, function(s, g1, g2) { 
-					RE.time.rx_group = i; // номер группы шаблона времени в исходном regex
-					let sout = "";
 					let patt = TIME_PATTERN[g1];
 					if(patt) {
 						// если указан номер предустановленного шаблона, используем его
@@ -1517,19 +1518,19 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 						}
 						g2 = patt[0]; 
 					}
+					RE.time.rx_group = i; // номер группы шаблона времени в исходном regex
+					let sout = "";
 					g2.replace(/([Yyndhis ])/g, function(s, g1) { // формируем шаблоны поиска и захвата 
-						if(g1 == " ") {
-							RE.time.rx += "\\D+";
+						if(g1 == " ")
 							sout += "\\D+";
-						}
 						else {
 							RE.time.groups.push(g1); // запоминаем символы формата времени в порядке следования
-							RE.time.format |= ("yYnd".indexOf(g1) >= 0) ? 1 : 0; // определяем наличие символов даты
-							RE.time.format |= ("his".indexOf(g1) >= 0) ? 2 : 0; // определяем наличие символов времени
-							RE.time.rx += "(\\d+)";
+							RE.time.format |= "yYnd".indexOf(g1) >= 0 ? 1 : 2; // определяем формат вывода (наличие даты и времени)
 							sout += "\\d+";
 						}
 					}); // g1.replace
+					RE.time.rx = sout.replace(/(\\d\+)/g, "($1)"); // шаблон захвата цифр
+					dbg(RE.time);
 					if(patt) {
 						// запоминаем параметры в предустановленном шаблоне
 						patt.time = RE.time;
@@ -1538,7 +1539,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 					return sout; // возвращаем измененный шаблон (\d+\D+...)
 				}); // brackets.replace
 
-				if(RE.time.rx_group) { // допустим всего 1 шаблон времени в regex
+				if(RE.time.rx_group) { // возможен всего 1 шаблон времени на regex
 					RE.time.rx = new RegExp(RE.time.rx);
 					break;					
 				}
@@ -1548,8 +1549,16 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 
 		dbgMsg = "";
 
-		str = callback_get(opt);
-		if( (matches=str.match(r[0])) ) {
+		str = callback_get(opt); // запрашиваем значение строки для сравнения
+		if(typeof(str) != "string") {
+			// если вернулась не строка, значит ошибка
+			if(str.msg) dbgMsg += ": "+str.msg;
+			con.error("..?: ", r, ": ERROR"+dbgMsg);
+			if(str.err <= 0)
+				return str.err;
+
+		}
+		else if( (matches=str.match(r[0])) ) {
 			let s_rep = r[1];
 			if(RE.time && RE.time.rx_group) {
 				// подстановка времени/даты
@@ -1584,12 +1593,11 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 				dobreak = true; // прерываем цикл перебора regex
 				dbgMsg += ": BREAK";
 			}
-		}
+		} // if str.match
 		else 
 			dbgMsg += ": NOT FOUND";
 
-		// if(opt.debug) con.debug("..?: ", [r[0], r[1]], dbgMsg);
-		if(opt.debug) con.debug("..?: ", r, dbgMsg);
+		if(opt.debug) con.debug("..?: ", [r[0], r[1]], dbgMsg);
 	} // for r
 
 	if(re_cnt < 1) {
@@ -1627,9 +1635,9 @@ replacer.cssReplacer = function(el, p, re_def)
 		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
-		return;
+		return true;
 	}		
-	if(!elements.length) return;
+	if(!elements.length) return true;
 
 	let extended = isArray(p[2]);
 	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
@@ -1640,7 +1648,7 @@ replacer.cssReplacer = function(el, p, re_def)
 		if(!extended) {
 			e[re_opt.prop] = p[2];
 			if(re_opt.debug) {
-				if(!dbg1st++) con.group("CSS:", p[1], elements.length+" element(s)");
+				if(!dbg1st++) con.group("CSS:", p[1], ":: "+elements.length+" element(s)");
 				con.debug("ELM:", e, ' --> ', p[2]);
 			}
 		} 
@@ -1667,8 +1675,8 @@ replacer.cssReplacer = function(el, p, re_def)
 				for(let se of sub) { // перебор потомков
 					se[opt.prop] = sp[1];
 					if(opt.debug) {
-						if(!dbg1st++) con.group("CSS:", p[1], elements.length+" element(s)");
-						if(!dbg2nd++) con.group("SUB:", sp[0], sub.length+" element(s)");
+						if(!dbg1st++) con.group("CSS:", p[1], ":: "+elements.length+" element(s)");
+						if(!dbg2nd++) con.group("SUB:", sp[0], ":: "+sub.length+" element(s)");
 						con.debug("ELM:", se, ' --> ', sp[1]);
 					}
 				} 
@@ -1677,6 +1685,7 @@ replacer.cssReplacer = function(el, p, re_def)
 		} // else
 	} // for e
 	if(dbg1st) con.groupEnd();
+	return true;
 };
 
 // ----------------------------------------------------
@@ -1724,15 +1733,17 @@ replacer.attReplacer = function(el, p, re_def)
 		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
-		return;
+		return true;
 	}
-	if(!elements.length) return;
+	if(!elements.length) return true;
 
-	let re_opt = this.reOpt(p[4], re_def); // переопределение модификаторов группы
-	let dbg1st = 0;
+	let re_opt = this.reOpt(p[4], re_def), // переопределение модификаторов группы
+		dbg1st = 0,
+		ret;
 
 	for(let e of elements) {
-		if(re_opt.debug && !dbg1st++) con.group("ATT:", p[1], " ..? ", [p[2]], elements.length+" element(s)");
+		ret = true;
+		if(re_opt.debug && !dbg1st++) con.group("ATT:", p[1], " ..? ", [p[2]], ":: "+elements.length+" element(s)");
 
 		if(!extended) {
 			// простой синтаксис
@@ -1748,22 +1759,18 @@ replacer.attReplacer = function(el, p, re_def)
 			}
 			else {
 				// перебор группы regex
-				let ret = this._regexReplacer(p[3], re_opt, 
+				ret = this._regexReplacer(p[3], re_opt, 
 					function(opt) {	return attr; },		// get
 					function(str, opt) { attr = str; }	// set
 				);
-
-				if(ret < 0) {
-					if(dbg1st) con.groupEnd();
-					return ret;
-				}
 				e.setAttribute(p[2], attr);
-				if(!ret)
+				if(ret <= 0)
 					break;
 			}
 		}
 	}
 	if(dbg1st) con.groupEnd();
+	return ret < 0 ? ret : true;
 };
 
 
@@ -1776,9 +1783,9 @@ replacer.nodReplacer = function(el, p, re_def)
 		p=["nod", query, text, re_arr]
 
 		p=["nod", query, [ 
-			[sub-query1, text1, re_arr1],
+			[regex1, text1, re_arr1],
 			...
-			[sub-queryN, textN, re_arrN]
+			[regexN, textN, re_arrN]
 		], re_arr]
 
 		в расширенном синтаксисе: sub-query - селекторы, для дочерних элементов от родительского (найденного по query)
@@ -1795,71 +1802,51 @@ replacer.nodReplacer = function(el, p, re_def)
 		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
-		return;
+		return true;
 	}		
-	if(!elements.length) return;
+	if(!elements.length) return true;
 
-	let extended = isArray(p[2]);
-	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
+	let extended = isArray(p[2]),
+		re_opt = this.reOpt(p[3], re_def), // переопределение модификаторов
+		node, dmsg,
+		ret;
 
-	if(re_opt.debug) con.group("NOD:", p[1], elements.length+" element(s)");
-	for(let e of elements)
-	{
-		let node, dmsg;
+	if(re_opt.debug) con.group("NOD:", p[1], ":: "+elements.length+" element(s)");
+	for(let e of elements) {
+		ret = true;
+		node = re_opt.node < 0 ? e.lastChild : e.firstChild;
+		dmsg = ': ' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ' :';
+		if(!node) {
+			if(re_opt.debug) con.debug(e, dmsg, ': NO NODE');
+			continue;
+		}
+
 		if(!extended) {
-			if(re_opt.node < 0)
-				node = e.lastChild;
-			else
-				node = e.firstChild;
-			dmsg = ': ' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ' :';
-			if(node) {
-				if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && re_opt.prop == _RE_PROP[RE_TEXT])) {
-					if(re_opt.debug) con.debug(e, dmsg, node[re_opt.prop], " --> ", p[2]);
-					node[re_opt.prop] = p[2];
-				} 
-				else
-					if(re_opt.debug) con.debug(e, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
+			// простой синтаксис
+			if(node.nodeType != Node.ELEMENT_NODE && !(node.nodeType == Node.TEXT_NODE && re_opt.prop == _RE_PROP[RE_TEXT])) {
+				if(re_opt.debug) con.debug(e, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
+				continue;
 			}
-			else
-				if(re_opt.debug) con.debug(e, dmsg, ': NO NODE');
+			if(re_opt.debug) con.debug(e, dmsg, node[re_opt.prop], " --> ", p[2]);
+			node[re_opt.prop] = p[2];
 		} 
 		else {
 			// расширенный синтаксис
-			for(let sp of p[2]) {
-				if(!isArray(sp) || sp.length < 2 || sp.length > 3 || (sp.length == 3 && !isArray(sp[2]))) // проверка синтаксиса
-					return -1;
-				let sub;
-				try {
-					sub = e.querySelectorAll(sp[0]);
-				} catch(err) {
-					con.error("ERROR: Sub-Selector:", sp[0], p);
-				}
-				if(!sub || !sub.length) continue;
-
-				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
-				if(opt.debug) con.group("SUB:", sp[0], sub.length+" element(s)");
-				for(let se of sub) {
-					if(opt.node < 0)
-						node = se.lastChild;
-					else
-						node = se.firstChild;
-					dmsg = ':' + (opt.node < 0 ? 'LAST' : 'FIRST') + ':';
-					if(node) {
-						if(node.nodeType == Node.ELEMENT_NODE || (node.nodeType == Node.TEXT_NODE && opt.prop == _RE_PROP[RE_TEXT])) {
-							if(opt.debug) con.debug(se, dmsg, node[re_opt.prop], ' --> ', sp[1]);
-							node[opt.prop] = sp[1];
-						} 
-						else
-							if(re_opt.debug) con.debug(se, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
-					}
-					else
-						if(opt.debug) con.debug(se, dmsg, ': NO NODE');
-				} // for se
-				if(opt.debug) con.groupEnd();
-			} // for sp
+			if(re_opt.debug) con.debug("ELM:", e, dmsg, node);
+			ret = this._regexReplacer(p[2], re_opt, 
+				function(opt) {	// get
+					if(node.nodeType != Node.ELEMENT_NODE && !(node.nodeType == Node.TEXT_NODE && opt.prop == _RE_PROP[RE_TEXT]))
+						return {msg: 'BAD NODE TYPE: #'+node.nodeType, err: false};
+					return node[opt.prop];
+				},
+				function(str, opt) { node[opt.prop] = str; } // set
+			);
+			if(ret <= 0)
+				break;
 		} // else
 	} // for e
 	if(re_opt.debug) con.groupEnd();
+	return ret < 0 ? ret : true;
 };
 
 // ----------------------------------------------------
@@ -1891,38 +1878,35 @@ replacer.regReplacer = function(el, p, re_def)
 	else if(p.length > 4 || !isArray(p[2][0])) // расширенный, проверяем параметры
 		return -1;
 
-	let re_opt = this.reOpt(p[3], re_def); // модификаторы по умолчанию для группы regex
-	let dbg1st = 0;
+	let re_opt = this.reOpt(p[3], re_def), // модификаторы по умолчанию для группы regex
+		dbg1st = 0,
+		elements, ret;
 
-	let elements;
 	try {
 		elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector", p);
-		return;
+		return true;
 	}
 	
 	for(let e of elements)
 	{
+		ret = true;
 		if(re_opt.debug) {
-			if(!dbg1st++) con.group("REG:", p[1], elements.length+" element(s)");
+			if(!dbg1st++) con.group("REG:", p[1], ":: "+elements.length+" element(s)");
 			con.debug("ELM:", e);
 		}
 
 		// перебор regex
-		let ret = this._regexReplacer(p[2], re_opt, 
+		ret = this._regexReplacer(p[2], re_opt, 
 			function(opt) {	return e[opt.prop]; },		// get
 			function(str, opt) { e[opt.prop] = str; }	// set
 		);
-
-		if(ret < 0) {
-			if(dbg1st) con.groupEnd();
-			return ret;
-		}
-		if(!ret)
+		if(ret <= 0)
 			break;
 	} // for e
 	if(dbg1st) con.groupEnd();	
+	return ret < 0 ? ret : true;
 };
 
 // ----------------------------------------------------
@@ -1938,7 +1922,7 @@ replacer.strReplacer = function(el, p, re_def)
 	if(el.text.match(p[1])) {
 		el.text = el.text.replace(p[1], p[2]);
 		//if(re_opt.debug) con.debug("STR:", p, ": FOUND\nSTOP");
-		return 1;
+		return false;
 	}
 	//if(re_opt.debug) con.debug("FND:", p, ": NOT FOUND");
 };
@@ -2253,7 +2237,7 @@ var main = {
 					case 'y': s += time.getUTCFullYear() % 100; continue; 			// год (2 цифры)
 					case 'n': s += ("0"+(time.getUTCMonth()+1)).substr(-2); continue; // месяц (цифрами) js считает месяцы с 0
 					case 'd': s += ("0"+time.getUTCDate()).substr(-2); continue; 	// день
-					case 'w': s += main.ru.days[time.getUTCDay()]; continue; 		// день недели (строка, сокр.)
+					case 'w': s += main.ru.days[time.getUTCDay()]; continue;		// день недели (строка, сокр.)
 					case 'h': s += ("0"+time.getUTCHours()).substr(-2); continue; 	// часы
 					case 'i': s += ("0"+time.getUTCMinutes()).substr(-2); continue; // минуты
 					case 's': s += ("0"+time.getUTCSeconds()).substr(-2); continue; // секунды	
