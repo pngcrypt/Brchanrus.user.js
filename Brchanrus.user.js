@@ -928,7 +928,7 @@ replacer.cfg["new_post"] = [
 			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 			[/(\d+) mensage.s? omitidas?.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
 		]],
-		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^.+\?(.+)/, "$1"]] // удаление редиректов
+		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^[^?]+\?(.+)/, "$1"]] // удаление редиректов
 	], [RE_MULTI]]
 ];
 
