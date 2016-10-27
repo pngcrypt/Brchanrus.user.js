@@ -316,7 +316,7 @@ replacer.cfg["main"] = [
 		['css', 'main > section > h2', 'Статистика'],
 		['reg', 'main > section > p', [
 			[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', [RE_INNER]],
-			[/Última atualização desta página: (:<T0>)/, 'Последнее обновление страницы: $T', [RE_TIME]]
+			[/Última atualização desta página: (:<T0::G>)/, 'Последнее обновление страницы: $T', [RE_TIME]]
 		]],
 
 		// Панель поиска
@@ -1550,7 +1550,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 							case 's': time.setUTCSeconds(val); break;
 						}
 					}
-					s_rep = s_rep.replace('$T', main.timeFormat(time, false, RE.time.out_format)); // в строке замены меняем $T на форматированное время
+					s_rep = s_rep.replace('$T', main.timeFormat(time, RE.time.isGMT, RE.time.out_format)); // в строке замены меняем $T на форматированное время
 				}
 			}
 			callback_set(str.replace(r[0], s_rep), opt); // вызываем внешнюю функцию сохранения измененной строки
@@ -1587,36 +1587,41 @@ replacer._regexTimeInit = function(rx, RE, opt)
 	поиск, замена и инициализация шаблона времени в regex
 		rx - текущий regex; RE - объект внутренних переменных реплейсера; opt - объект RE-модификаторов реплейсера
 
-	шаблон может иметь вид: 
-		(:<T>d n y h i s)
-		(:<T:M>d n y h i s)
-		(:<TN>)
-		(:<TN:M>)
+	общий вид шаблона:
+		(:<TN:M:G>s y m b o l s)
 
 	N - номер предустановленного шаблона. Если задан, то используется шаблон TIME_PATTERN[N]
 	M - принудительный вид выходного формата (индекс в TIME_FORMAT)
 		если не задан, то выходной формат либо вычисляется (в зависимости от наличия даты/времени),
 		либо используется заданный в TIME_PATTERN (при указании номера шаблона (N))
+	G - флаг, что время задано в GMT+0 (если не указан, время считается в часовом поясе сайта)
 
-	если номер шаблона (N) не указан, то после :<T> идет описание формата (порядок следования цифр в исходной дате/времени)
-	спец символы: Y,y,n,N,d,h,i,s (значение аналогично TIME_FORMAT) - они заменяются на \d+ (кроме N - она на \w+)
-	пробел подразумевает \D+
-	при необходимости можно использовать и другие regex-коды, например: (:<T>d\s+n y) -- сложных конструкций лучше избегать
-	скобки внутри шаблона времени недопустимы
+	symbols - набор символов, описывающих формат исходной даты/времени (если номер шаблона (N) не задан)
+		спец символы: Y,y,n,N,d,h,i,s (значение аналогично TIME_FORMAT) - они заменяются на \d+ (кроме N - она на \w+)
+		пробел подразумевает \D+
+		при необходимости можно использовать и другие regex-коды, например: (:<T>d\s+n y) -- сложных конструкций лучше избегать
+		скобки внутри шаблона времени недопустимы
 
-	возможно указывать только время или только дату: (:<T>h i s) или (:<T>d n y) 
-	
+	Значения N,M,G - не обязательны, можно выборчно их пропускать, но двоеточие перед пропущенными параметрами - обязательно
+
+	Примеры:
+		(:<T>n d y h i s) - шаблон времени и даты с указанием формата внутри него
+		(:<T:2>h i s) - шаблон времени с указанием формата, задан принудительно выходной формат 2 (TIME_FORMAT[2])
+		(:<T::G>h-i-s) - шаблон времени, время задано в GMT
+		(:<T0>) - предустановленный шаблон 0
+		(:<T0::G>) - предустановленный шаблон 0, время задано в GMT
+
 	в строке замены дата/время подставляется вместо кода $T
 */
 
 	if(opt.debug) con.debug('Time Init RX:', rx);
 
-	RE.time = {group:0, in_groups: [], catch_rx: "", in_months: 0, out_format: undefined};
+	RE.time = {group:0, in_groups: [], catch_rx: "", in_months: 0, out_format: undefined, isGMT: false};
 	let brackets = (rx.source || rx).split('('); // разбиваем исходный regex на группы по скобкам (для определения номера группы шаблона)
 
 	for(let i = 1; i < brackets.length; i++) {
 		// ищем шаблон времени (:<T>...) в группах, формируем шаблоны поиска и захвата
-		brackets[i] = brackets[i].replace(/^:<T(\d+)?(:\d+)?>([^)]*)/, function(s, g1, g2, g3) { 
+		brackets[i] = brackets[i].replace(/^:<T(\d+)?(:(\d+)?(:G)?)?>([^)]*)/, function(s, g1, _g2, g3, g4, g5) { 
 			// парсинг шаблона
 			RE.time.group = i; // номер группы шаблона времени в исходном regex
 			let patt = TIME_PATTERN[g1];
@@ -1624,8 +1629,8 @@ replacer._regexTimeInit = function(rx, RE, opt)
 				con.error('Time pattern #"+g1+" NOT FOUND');
 				return "TIME-PATTERN-ERROR";
 			}
-			if(g2)
-				RE.time.out_format = +(g2.substr(1)); // принудительно задан выходной формат
+			if(g3) RE.time.out_format = g3; // принудительно задан выходной формат
+			if(g4) RE.time.isGMT = true;
 			if(patt) {
 				// если указан номер предустановленного шаблона, используем его
 				RE.time.out_format = RE.time.out_format === undefined ? patt.out_format : RE.time.out_format;
@@ -1638,11 +1643,11 @@ replacer._regexTimeInit = function(rx, RE, opt)
 					return patt.find_rx;
 				}
 				if(opt.debug) con.debug('Time pattern Init:', patt);
-				g3 = patt.in_format;
+				g5 = patt.in_format;
 			}
 			let skip = false;
 			let format = 0; // автоопределение выходного формата (наличие времени и/или даты)
-			for(let ch of (g3.source || g3)) {
+			for(let ch of (g5.source || g5)) {
 				// парсинг входного формата
 				if(!skip) {
 					switch(ch) {
@@ -2302,7 +2307,7 @@ var main = {
 			if(delim) {
 				delim = false;
 				switch(c) {
-					case 'Y': s += time.getUTCFullYear(); continue; 				// год (4 цифры)
+					case 'Y': s += time.getUTCFullYear(); continue;					// год (4 цифры)
 					case 'y': s += time.getUTCFullYear() % 100; continue; 			// год (2 цифры)
 					case 'n': s += ("0"+(time.getUTCMonth()+1)).substr(-2); continue; // месяц (цифрами) js считает месяцы с 0
 					case 'N': s += main.ru.months[time.getUTCMonth()]; continue;	// месяц (строка, сокр.)
