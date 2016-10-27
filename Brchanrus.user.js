@@ -2054,7 +2054,7 @@ var main = {
 
 		if(main.dollStatus < 1) {
 			// стиль счетчика постов (контент после номера поста)
-			document.styleSheets[0].insertRule('div.thread div.post.reply > p.intro > a.post_no:not([id])::after {\
+			document.styleSheets[0].insertRule('div.thread > div.post.reply > p.intro > a.post_no:not([id])::after {\
 				counter-increment: brr-cnt 1;\
 				content: " #" counter(brr-cnt);\
 				margin: 0 4px 0 2px;\
