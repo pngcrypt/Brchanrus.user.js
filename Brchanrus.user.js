@@ -16,7 +16,6 @@
 /*
 TODO: 
 	- 'css': сделать возможность вложенности других реплейсеров (дерево селекторов, рекурсия)
-	- нумерация постов без куклы
 */
 
 ////////// wrapper /////////
@@ -936,10 +935,12 @@ replacer.cfg["new_post"] = [
 			[/^\[Últimas (\d+) Mensagens\]/, '[Последние $1 сообщений]'],
 			['Ver tudo', 'Показать все']
 		]],
-		['reg', 'div.post > span.omitted', [
-			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
-			[/(\d+) mensage.s? omitidas?.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
-		]]
+
+		// кол-во пропущенных ответов + начальное значение счетчика постов
+		['reg', 'div.post.op > span.omitted', [
+			[/([^>]+)>(\d+) mensage.s? e (\d+) respostas? com imagem omitidas?.*/, '$1 brr-cnt="$2">$2 пропущено, из них $3 с изображениями. Нажмите ответить, чтобы посмотреть.'],
+			[/([^>]+)>(\d+) mensage.s? omitidas?.*/, '$1 brr-cnt="$2">$2 пропущено. Нажмите ответить, чтобы посмотреть.']
+		], [RE_OUTER]]
 	], [RE_MULTI]]
 ];
 
@@ -2051,6 +2052,19 @@ var main = {
 		// доп. перевод
 		replacer.process("page_loaded"); 
 
+		if(main.dollStatus < 1) {
+			// стиль счетчика постов (контент после номера поста)
+			document.styleSheets[0].insertRule('div.thread div.post.reply > p.intro > a.post_no:not([id])::after {\
+				counter-increment: brr-cnt 1;\
+				content: " #" counter(brr-cnt);\
+				margin: 0 4px 0 2px;\
+				vertical-align: 1px;\
+				color: #4f7942;\
+				font: bold 11px tahoma;\
+				cursor: default;\
+			}', 0);
+		}
+
 		// фикс ширины панели избранного
 		let el = doc.querySelector('#watchlist');
 		if(el) el.style.width = 'auto';	
@@ -2132,6 +2146,7 @@ var main = {
 			// тред или форма
 			main.fixOPImages(parent); 
 			main.moveReplies(parent);
+			main.initPostCounter(parent);
 		}
 	},
 
@@ -2205,6 +2220,25 @@ var main = {
 
 		// запуск обработчика
 		if(observer) observer.observe(doc.body, {attributes: false, childList: true, characterData: false, subtree: false}); // слушать добавление только прямых потомков
+	},
+
+	// ----------------------------------------------------
+	initPostCounter: function(parent)
+	// ----------------------------------------------------
+	{
+		// инициализация счетчика постов с учетом пропущенных ответов
+		if(main.dollStatus > 0)
+			return;
+		main.arrQuerySelectorAll(parent, 'div.post.op:not([brr-cnt])', function(op) { // обрабатываем все неинициализированные оп-посты			
+			let el = op.querySelector('span.omitted[brr-cnt]'); // получаем счетчик пропущенных - атрибут brr-cnt создается при обработке ["new_post"]
+			let cnt = 1;
+			if(el) {
+				cnt = +el.getAttribute('brr-cnt') + 1; // +1 == учитываем оп-пост
+				el.removeAttribute('brr-cnt'); 
+			}
+			op.setAttribute('brr-cnt', cnt); // выставляем атрибут в оп-посте
+			op.style.counterReset = "brr-cnt "+cnt; // выставляем в стилях начальное значение счетчика
+		});
 	},
 
 	// ----------------------------------------------------
