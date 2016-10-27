@@ -927,7 +927,8 @@ replacer.cfg["new_post"] = [
 		['reg', 'div.post > span.omitted', [
 			[/(\d+) mensagens e (\d+) respostas? com imagem omitidas?.*/, '$1 пропущено, из них $2 с изображениями. Нажмите ответить, чтобы посмотреть.'],
 			[/(\d+) mensage.s? omitidas?.*/, '$1 пропущено. Нажмите ответить, чтобы посмотреть.']
-		]]
+		]],
+		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^[^?]+\?(.+)/, "$1"]] // удаление редиректов
 	], [RE_MULTI]]
 ];
 
@@ -1321,10 +1322,10 @@ replacer.process = function(cfg, element, debug, debug_rep)
 					break;
 			}
 		}
-		if(debug) con.debug("URL-Match #"+ucnt+":", u[0], (url_query ? "Query: '"+url_query+"'" : ""));
+		opt = this.reOpt(u[re_ind], re_opt); // возможное переопределение модификаторов для url-группы
+		if(opt.debug) con.debug("URL-Match #"+ucnt+":", u[0], (url_query ? "Query: '"+url_query+"'" : ""));
 		matches++;
 
-		opt = this.reOpt(u[re_ind], re_opt); // возможное переопределение модификаторов для url-группы
 		recnt = 0;
 
 		for(let r of u[re_ind-1]) // перебор реплейсеров url-группы
@@ -1530,7 +1531,6 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 						}
 					}); // g1.replace
 					RE.time.rx = sout.replace(/(\\d\+)/g, "($1)"); // шаблон захвата цифр
-					dbg(RE.time);
 					if(patt) {
 						// запоминаем параметры в предустановленном шаблоне
 						patt.time = RE.time;
@@ -2025,8 +2025,6 @@ var main = {
 		// вызывается при добавлении: нового поста в треде; нового треда в /tudo/; новой главной формы (кукла, подгрузка страниц на нулевой) 
 		replacer.process("new_post", parent, false);
 		replacer.process("mod_buttons", parent, false);
-		//main.fixPostDate(parent);
-		main.fixRedirect(parent);
 		if(parent.id && parent.id.match(/^reply_/))
 			main.moveReplies(parent.parentNode); // если это новый пост, обрабатываем весь тред
 		else {
@@ -2106,33 +2104,6 @@ var main = {
 
 		// запуск обработчика
 		if(observer) observer.observe(doc.body, {attributes: false, childList: true, characterData: false, subtree: false}); // слушать добавление только прямых потомков
-	},
-
-/*	// ----------------------------------------------------
-	fixPostDate: function(parent) 
-	// ----------------------------------------------------
-	{
-		// дата и время постов (перевод + коррекция)
-		//if(main.dollStatus > 0) return; // для куклы не нужно
-
-		let t, time = new Date();
-		main.arrQuerySelectorAll(parent, 'p.intro time', function(el) {
-			if(!(t = el.getAttribute("datetime")))
-				return;
-			time.setTime(Date.parse(t));
-			el.innerText = main.timeFormat(time);
-		});
-	},
-*/
-	// ----------------------------------------------------
-	fixRedirect: function(parent)
-	// ----------------------------------------------------
-	{
-		// удаление редиректа для внешних ссылок
-		let url="http://privatelink.de/?";
-		main.arrQuerySelectorAll(parent, 'div.thread a[href^="'+url+'"]', function(el) {
-			el.setAttribute("href", el.getAttribute("href").substr(url.length));
-		});
 	},
 
 	// ----------------------------------------------------
