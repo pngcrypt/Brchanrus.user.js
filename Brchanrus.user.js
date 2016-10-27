@@ -451,7 +451,7 @@ replacer.cfg["main"] = [
 			['Conta de usuário', 'Учетная запись']
 		]],
 		['reg', 'fieldset > ul > li', 'Quadro de noticias', 'Последние объявления', [RE_INNER]],
-		['reg', 'fieldset > ul > li > ul > li > small', /at (:<T0>)/, '$T', [RE_MULTI, RE_TIME]],
+		['reg', 'fieldset > ul > li > ul > li > small', /^— by (.+) at (:<T0>)/, '— $1, $T', [RE_MULTI, RE_TIME]],
 		['reg', 'fieldset > ul > li a', [
 			['Ver todas as noticias do quadro de noticias', 'Просмотр всех объявлений'],
 			[/Caixa de entrada \((\d+) unread\)/, 'Входящие (непрочитанных: $1)'],
@@ -705,13 +705,14 @@ replacer.cfg["main"] = [
 
 	// Админка - PM: просмотр
 	[/^mod\.php\?\/PM\/\d+$/, [
-		['reg', 'head > title, header > h1', /Mensagem privada (.+)/, 'Личное cообщение $1', [RE_MULTI]],
+		['reg', 'head > title, header > h1', /Mensagem privada (.+)/, 'Личное сообщение $1', [RE_MULTI]],
 		['reg', 'table > tbody > tr > th', [
 			['De', 'От'],
 			['Data', 'Дата'],
 			['Mensagem', 'Текст']
 		]],
 		['reg', 'table > tbody > tr:nth-child(2) > td', [
+			[/^(:<T0>)/, '$T', [RE_TIME]], // время сообщения
 			[/segundos?/, 'сек'],
 			[/minutos?/, 'мин'],
 			[/horas?/, 'ч'],
@@ -736,7 +737,7 @@ replacer.cfg["main"] = [
 			['Data', 'Дата'],
 			['Message snippet', 'Первью сообщения']
 		]],
-
+		['reg', 'table.modlog > tbody > tr > td:nth-child(3)', /^(:<T0>)/, '$T', [RE_MULTI, RE_TIME]], // дата сообщения
 		['reg', 'body > p.unimportant', 'No private messages for you.', 'нет новых сообщений', [RE_MULTI]]
 	]],
 
@@ -768,13 +769,14 @@ replacer.cfg["main"] = [
 			['Ação', 'Действие']
 		]],
 		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', 'hidden', 'скрыт', [RE_INNER, RE_MULTI]], // ip
-		['reg', 'table.modlog > tbody > tr > td:nth-child(3)', [ // время
+		['reg', 'table.modlog > tbody > tr > td:nth-child(3) > span', [ // время (интервал)
 			[/segundos?/, 'сек'],
 			[/minutos?/, 'мин'],
 			[/horas?/, 'ч'],
 			[/dias?/, 'дн'],
 			[/semanas?/, 'нед']
-		], [RE_INNER, RE_MULTI]],
+		], [RE_MULTI]],
+		['att', 'table.modlog > tbody > tr > td:nth-child(3) > span', 'title', [/^(:<T0>)/, '$T', [RE_TIME, RE_MULTI]]], // время
 		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия.
 			[/^Edited post/, 'Редактирование поста'],
 			[/^Deleted post/, 'Удаление поста'],
@@ -840,8 +842,15 @@ replacer.cfg["main"] = [
 		[]
 	]],
 
+	// Админка - доска объявлений
 	[/^mod\.php\?\/noticeboard/, [
-		['reg', 'head > title, header > h1', 'Quadro de noticias', 'Доска объявлений', [RE_MULTI]]
+		['reg', 'head > title, header > h1', 'Quadro de noticias', 'Доска объявлений', [RE_MULTI]],
+		['reg', 'div.ban > h2 > small', /^— por (.+) em (:<T0>)/, '— $1, $T', [RE_MULTI, RE_TIME]] // время объявления
+	]],
+
+	// Админка - аппеляции банов
+	[/^mod\.php\?\/ban-appeals/, [
+		['reg', 'head > title, header > h1', 'Apelos a banimento', 'Аппеляции банов', [RE_MULTI]],
 	]],
 
 	[]
