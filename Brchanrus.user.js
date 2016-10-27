@@ -130,7 +130,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// главная
-	[/^/, 'body > div.ban.oficial > h2', [
+	[/^/, 'body > div.tabcontents > div#noticias', [
 		['reg', 'body > div.ban.oficial > h2', 'Boards Fixas', 'Постоянные доски'],
 		['reg', 'body > div.ban.oficial > h2 > a', 'Exibir todas as boards', 'Посмотреть все доски'],
 		['reg', 'body > div.ban.oficial > ul > li:first-child', [
@@ -279,9 +279,7 @@ replacer.cfg["main"] = [
 		['reg', 'body > div > a', [
 			['Fechar janela', 'Закрыть окно'],
 			['Voltar ', 'Назад']
-		]],
-
-		[]
+		]]
 	]],
 
 	// Страница каталога доски
