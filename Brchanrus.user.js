@@ -191,10 +191,12 @@ replacer.cfg["main"] = [
 	// [/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$/, [
 	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$/, [
 		['reg', 'header > div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
-		['reg', 'div.banner', 'Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]],
-		['reg', 'div.banner > a', [
-			['Voltar', 'Назад'],
-			['Ir ao rodapé', 'Вниз страницы']
+		['css', 'div.banner', [
+			['reg', '', 'Modo de postagem: Resposta', 'Форма ответа', [RE_INNER]],
+			['reg', 'a', [
+				['Voltar', 'Назад'],
+				['Ir ao rodapé', 'Вниз страницы']
+			]]
 		]],
 
 		// Форма ответа
@@ -1784,7 +1786,7 @@ replacer.cssReplacer = function(el, p, re_def)
 	let elements;
 	try {
 		if(p[1] === "")
-			elements = el;
+			elements = [el];
 		else
 			elements = el.querySelectorAll(p[1]);
 	} catch(err) {
@@ -1861,7 +1863,7 @@ replacer.attReplacer = function(el, p, re_def)
 	let elements;
 	try {
 		if(p[1] === "")
-			elements = el;
+			elements = [el];
 		else
 			elements = el.querySelectorAll(p[1]);
 	} catch(err) {
@@ -1933,7 +1935,7 @@ replacer.nodReplacer = function(el, p, re_def)
 	let elements;
 	try {
 		if(p[1] === "")
-			elements = el;
+			elements = [el];
 		else
 			elements = el.querySelectorAll(p[1]);
 	} catch(err) {
@@ -2020,7 +2022,7 @@ replacer.regReplacer = function(el, p, re_def)
 
 	try {
 		if(p[1] === "")
-			elements = el;
+			elements = [el];
 		else
 			elements = el.querySelectorAll(p[1]);
 	} catch(err) {
