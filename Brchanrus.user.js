@@ -15,7 +15,6 @@
 
 /*
 TODO: 
-	- 'css': сделать возможность вложенности других реплейсеров (дерево селекторов, рекурсия)
 */
 
 ////////// wrapper /////////
@@ -285,21 +284,24 @@ replacer.cfg["main"] = [
 	[/^[^/]+\/catalog\.html$/, [
 		['reg', 'head > title', 'Catalog', 'Каталог тредов'],
 		['nod', 'header > h1', 'Каталог тредов (', [RE_FIRST]],
-		['reg', 'body > span', 'Ordenar por', 'Сортировка по'],
-		['reg', 'body > span', 'Tamanho da imagem', 'Размер изображений'],
+
+		['reg', 'body > span', [
+			['Ordenar por', 'Сортировка по'],
+			['Tamanho da imagem', 'Размер изображений']
+		]],
 
 		['css', 'select#sort_by', [
-			['option[value="bump:desc"]', 'Активности'],
-			['option[value="time:desc"]', 'Дате создания'],
-			['option[value="reply:desc"]', 'Кол-ву ответов'],
-			['option[value="random:desc"]', 'Случайная']
+			['css', 'option[value="bump:desc"]', 'Активности'],
+			['css', 'option[value="time:desc"]', 'Дате создания'],
+			['css', 'option[value="reply:desc"]', 'Кол-ву ответов'],
+			['css', 'option[value="random:desc"]', 'Случайная']
 		]],
 
 		['css', 'select#image_size', [
-			['option[value="vsmall"]', 'Крошечные'],
-			['option[value="small"]', 'Маленькие'],
-			['option[value="medium"]', 'Средние'],
-			['option[value="large"]', 'Большие']
+			['css', 'option[value="vsmall"]', 'Крошечные'],
+			['css', 'option[value="small"]', 'Маленькие'],
+			['css', 'option[value="medium"]', 'Средние'],
+			['css', 'option[value="large"]', 'Большие']
 		]],
 
 		// время в title над пикчей оп-поста (время обновления в каталоге?)
@@ -967,8 +969,8 @@ replacer.cfg["page_loaded"] = [
 			['Image hover', 'Всплывающие изображения']
 		]],
 		['css', 'table.post-table > tbody > tr > td', [
-			['div.format-text > a', 'вставить'],
-			['div.captcha_html', 'кликните сюда для показа']
+			['css', 'div.format-text > a', 'вставить'],
+			['css', 'div.captcha_html', 'кликните сюда для показа']
 		]]
 	]]
 ];
@@ -1334,40 +1336,17 @@ replacer.process = function(cfg, element, debug, debug_rep)
 					break;
 			}
 		}
-		opt = this.reOpt(u[re_ind], re_opt); // возможное переопределение модификаторов для url-группы
 		if(debug) con.debug("URL-Match #"+ucnt+":", u[0], (url_query ? "Query: '"+url_query+"'" : ""));
 		matches++;
 
-		recnt = 0;
+		opt = this.reOpt(u[re_ind], re_opt); // возможное переопределение модификаторов для url-группы
+		if(!this.RE)
+			this.RE = {};
 
-		for(let r of u[re_ind-1]) // перебор реплейсеров url-группы
-		{
-			recnt++;
-			if(isArray(r) && !r.length) continue; //empty
-			if(!isArray(r) || r.length < 2)
-			{
-				con.error("ERROR: Syntax: Replacer #"+recnt+" : ", r);
-				if(!isArray(r))
-					break;
-				else
-					continue;
-			}
+		this.RE.count = 0;
+		this.RE.instance = 0;
+		this.processReplacers(element, u[re_ind-1], opt);
 
-			let fn=r[0]+"Replacer";
-			if(!this[fn]) // проверка наличия функции реплейсера
-			{
-				con.error('ERROR: NO Replacer function for:', r);
-				continue;
-			}
-			let ret = this[fn](element, r, opt); // вызов функции реплейсера
-			if(ret < 0)
-			{
-				con.error("ERROR: Syntax"+ret+": Replacer #"+recnt+" : ", r);
-				continue;
-			}
-			else if(!ret)
-				break; // прерывание цикла перебора реплейсеров для текущего url
-		} // for r
 		if(opt.url_break) {
 			if(debug) con.debug("URL-Break #"+ucnt);
 			break;
@@ -1380,6 +1359,56 @@ replacer.process = function(cfg, element, debug, debug_rep)
 			con.debug('No matches');
 		con.groupEnd();
 	}	
+};
+
+// ----------------------------------------------------
+replacer.processReplacers = function(element, re_arr, opt)
+// ----------------------------------------------------
+{
+	/* 
+	обработка массива реплейсеров
+		element - родительский элемент
+		re_arr - массив рпелейсеров
+		opt - объект RE-модификаторов
+	*/
+
+	let ret, fn;
+	this.RE.instance++;
+
+	for(let r of re_arr) // перебор реплейсеров 
+	{
+		ret = true;
+		this.RE.count++;
+		if(isArray(r) && !r.length) continue; //empty
+		if(!isArray(r) || r.length < 2)
+		{
+			con.error("ERROR: Syntax: Replacer #"+this.RE.count+" : ", r);
+			if(!isArray(r)) {
+				ret = false;
+				break;
+			}
+			else
+				continue;
+		}
+
+		fn=r[0]+"Replacer";
+		if(!this[fn]) // проверка наличия функции реплейсера
+		{
+			con.error('ERROR: Replacer #'+this.RE.count+' has no function:', r);
+			continue;
+		}
+		ret = this[fn](element, r, opt); // вызов функции реплейсера
+		if(ret < 0)
+		{
+			con.error("ERROR: Syntax"+ret+": Replacer #"+this.RE.count+" : ", r);
+			continue;
+		}
+		else if(!ret)
+			break; // прерывание цикла перебора реплейсеров для текущего url
+	} // for r
+
+	this.RE.instance--;
+	return ret;
 };
 
 // ----------------------------------------------------
@@ -1717,14 +1746,31 @@ replacer.cssReplacer = function(el, p, re_def)
 	реплейсер контента по заданному селектору
 		p=["css", query, text, re_arr]
 		
-		p=["css", query, [ 
-			[sub-query1, text1, re_arr1],
+		p=["css", query, [
+			[replacer1],
 			...
-			[sub-queryN, textN, re_arrN]
+			[replacerN]
 		], re_arr]
 
-		в расширенном синтаксисе sub-query - селекторы для дочерних элементов от родительского (найденного по query)
+		в расширенном синтаксисе третьим параметром передается массив вложенных реплейсеров, которые будут применяться к дочернему элементу, найденному по query
+		возможна рекурсия - т.е. внутри реплейсеров использовать другие css-реплейсеры с расширенным синтаксисом
 		re_arr - массив RE_* модификаторов [не обязательно]
+
+		Пример:
+		['css', 'div', [
+			['css', 'a.link', 'нажми меня'],			// div > a.link  -- обычный css
+			['reg', 'span > label', 'test', 'тест'],	// div > span > label
+			['css', 'table > tr', [						// div > table > tr -- расширенный css, уровень 2
+				['reg', 'th', [							// div > table > tr > th
+					['header1', 'заголовок1'],
+					['header2', 'заголовок2'],
+				]],
+				['reg', 'td', [							// div > table > tr > td
+					['line1', 'строка1'],
+					['line2', 'строка2'],
+				]]
+			]]
+		]]
 	*/
 
 
@@ -1733,60 +1779,39 @@ replacer.cssReplacer = function(el, p, re_def)
 
 	let elements;
 	try {
-		elements = el.querySelectorAll(p[1]);
+		if(p[1] === "")
+			elements = el;
+		else
+			elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
 		return true;
 	}		
 	if(!elements.length) return true;
 
-	let extended = isArray(p[2]);
-	let re_opt = this.reOpt(p[3], re_def); // переопределение модификаторов
-	let dbg1st = 0;
+	let extended = isArray(p[2]),
+		re_opt = this.reOpt(p[3], re_def), // переопределение модификаторов
+		dbg1st = 0,
+		ret;
 
 	for(let e of elements)
 	{
+		ret = true;
+		if(re_opt.debug && !dbg1st++) con.group("CSS:", p[1], ":: "+elements.length+" element(s)");
 		if(!extended) {
+			if(re_opt.debug) con.debug("ELM:", e, ' --> ', p[2]);
 			e[re_opt.prop] = p[2];
-			if(re_opt.debug) {
-				if(!dbg1st++) con.group("CSS:", p[1], ":: "+elements.length+" element(s)");
-				con.debug("ELM:", e, ' --> ', p[2]);
-			}
 		} 
 		else {
 			// расширенный синтаксис
-			for(let sp of p[2]) {
-				// проверка параметров
-				if(!isArray(sp) || sp.length < 2 || sp.length > 3 || (sp.length == 3 && !isArray(sp[2])) ) 
-				{ 
-					if(!dbg1st++) con.groupEnd();
-					return -1;
-				}
-				let sub;
-				try {
-					sub = e.querySelectorAll(sp[0]);
-				} catch(err) {
-					con.error("ERROR: Sub-Selector:", sp[0], p);
-				}
-				if(!sub || !sub.length) continue;
-
-				let dbg2nd = 0;
-				let opt = this.reOpt(sp[2], re_opt); // переопределение модификаторов
-
-				for(let se of sub) { // перебор потомков
-					se[opt.prop] = sp[1];
-					if(opt.debug) {
-						if(!dbg1st++) con.group("CSS:", p[1], ":: "+elements.length+" element(s)");
-						if(!dbg2nd++) con.group("SUB:", sp[0], ":: "+sub.length+" element(s)");
-						con.debug("ELM:", se, ' --> ', sp[1]);
-					}
-				} 
-				if(dbg2nd) con.groupEnd();
-			} // for sp
+			if(re_opt.debug) con.debug("ELM:", e);
+			ret = this.processReplacers(e, p[2], re_opt); // вызов обработки вложенных реплейсеров
+			if(!ret)
+				break;
 		} // else
 	} // for e
 	if(dbg1st) con.groupEnd();
-	return true;
+	return ret;
 };
 
 // ----------------------------------------------------
@@ -1831,7 +1856,10 @@ replacer.attReplacer = function(el, p, re_def)
 	// выбираем элементы
 	let elements;
 	try {
-		elements = el.querySelectorAll(p[1]);
+		if(p[1] === "")
+			elements = el;
+		else
+			elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
 		return true;
@@ -1900,7 +1928,10 @@ replacer.nodReplacer = function(el, p, re_def)
 
 	let elements;
 	try {
-		elements = el.querySelectorAll(p[1]);
+		if(p[1] === "")
+			elements = el;
+		else
+			elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector:", p);
 		return true;
@@ -1984,7 +2015,10 @@ replacer.regReplacer = function(el, p, re_def)
 		elements, ret;
 
 	try {
-		elements = el.querySelectorAll(p[1]);
+		if(p[1] === "")
+			elements = el;
+		else
+			elements = el.querySelectorAll(p[1]);
 	} catch(err) {
 		con.error("ERROR: Selector", p);
 		return true;
@@ -2154,7 +2188,7 @@ var main = {
 	dollGetStatus: function(de_main)
 	// ----------------------------------------------------
 	{
-		// ищет панель куклы на страницы, обновляет статус в main.dollStatus
+		// ищет панель куклы на странице, обновляет статус в main.dollStatus
 		main.dollStatus = 0;
 		if(!de_main) {
 			de_main = doc.querySelector('div#de-main');
