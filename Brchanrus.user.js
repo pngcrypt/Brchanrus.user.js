@@ -282,16 +282,16 @@ replacer.cfg["main"] = [
 		], [RE_INNER, RE_MULTI]],
 
 		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
-		['reg', 'body > div > h2', [
-			['IP detectado como proxy, proxies nao sao permitidos nessa board. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, [что произошла ошибка, свяжитесь с администрацией'],
-			['Senha incorreta', 'Неверный пароль']
-		]],
-
-		['css', 'body > div > p > a', 'Назад'],
-
-		['reg', 'body > div > a', [
-			['Fechar janela', 'Закрыть окно'],
-			['Voltar ', 'Назад']
+		['css', 'body > div', [
+			['reg', 'h2', [
+				['IP detectado como proxy, proxies nao sao permitidos nessa board. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, [что произошла ошибка, свяжитесь с администрацией'],
+				['Senha incorreta', 'Неверный пароль']
+			]],
+			['css', 'p > a', 'Назад'],
+			['reg', 'a', [
+				['Fechar janela', 'Закрыть окно'],
+				['Voltar ', 'Назад']
+			]]
 		]]
 	]],
 
@@ -327,18 +327,22 @@ replacer.cfg["main"] = [
 	// Список досок
 	[/^boards\.html/, [
 		// Статистика
-		['css', 'main > section > h2', 'Статистика'],
-		['reg', 'main > section > p', [
-			[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', [RE_INNER]],
-			[/Última atualização desta página: (:<T0::G>)/, 'Последнее обновление страницы: $T', [RE_TIME]]
+		['css', 'main > section', [
+			['css', 'h2', 'Статистика'],
+			['reg', 'p', [
+				[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', [RE_INNER]],
+				[/Última atualização desta página: (:<T0::G>)/, 'Последнее обновление страницы: $T', [RE_TIME]]
+			]]
 		]],
 
 		// Панель поиска
-		['css', 'aside > form > h2', 'Поиск'],
-		['reg', 'aside > form label.search-item.search-sfw', 'Ocultar', 'Скрыть', [RE_INNER]],
-		['att', 'input#search-title-input', 'placeholder', 'Поиск названия...'],
-		['att', 'input#search-tag-input', 'placeholder', 'Поиск тэгов...'],
-		['css', 'button#search-submit', 'Искать'],
+		['css', 'form#search-form', [
+			['css', 'h2', 'Поиск'],
+			['reg', 'label.search-item.search-sfw', 'Ocultar', 'Скрыть', [RE_INNER]],
+			['att', 'input#search-title-input', 'placeholder', 'Поиск названия...'],
+			['att', 'input#search-tag-input', 'placeholder', 'Поиск тэгов...'],
+			['css', 'button#search-submit', 'Искать']
+		]],
 
 		// Таблица списка досок
 		['css', 'th.board-uri', 'Доска'],
