@@ -200,37 +200,46 @@ replacer.cfg["main"] = [
 		]],
 
 		// Форма ответа
-		['reg', 'table.post-table > tbody > tr > th', [
-			['Opções', 'Опции'],
-			['Assunto', 'Тема/Имя'],
-			['Mensagem', 'Сообщение'],
-			['Verificação', 'Капча'],
-			['Arquivo', 'Файл'],
-			['Nome', 'Имя']
+		['css', 'form[name="post"]', [
+			['css', 'table.post-table', [
+				['reg', 'tbody > tr > th', [
+					['Opções', 'Опции'],
+					['Assunto', 'Тема/Имя'],
+					['Mensagem', 'Сообщение'],
+					['Verificação', 'Капча'],
+					['Arquivo', 'Файл'],
+					['Nome', 'Имя']
+				]],
+				['css', 'div.file-hint', 'кликни / брось файл сюда'],
+				['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
+				['css', 'a.show-post-table-options', '[Показать опции]'],
+				['att', 'tbody > tr > td > input[type="submit"]', 'value', [
+					['Responder', 'Отправить'],
+					['Novo tópico', 'Отправить'] // кукла использует эту кнопку для ответов с нулевой
+				]],
+			]],
+			// опции
+			['css', 'table.post-table-options', [
+				['reg', 'tbody > tr > th', [
+					['Embutir', 'Ссылка на видео'],
+					['Oekaki', 'Рисовать'],
+					['Opções', 'Опции'],
+					['Senha', 'Пароль']
+				]],
+				['reg', 'tr#oekaki > td > a', 'Mostrar oekaki', 'начать'],
+				['reg', 'span.unimportant', [
+					['substitui arquivos', 'заменяет файл', [RE_MULTI, RE_NOBREAK]],
+					['(para remover arquivos e mensagens)', '(для удаления файлов и сообщений)'],
+					['(você também pode escrever sage no e-mail)', '(вы также можете писать sage в поле опций)'],
+					['(isso substitui a miniatura da sua imagem por uma interrogação)', '(это заменяет превью вашего изображения знаком вопроса)']
+				]],
+				['reg', 'tr#options-row > td > div > label', [
+					['Não bumpar', 'Не поднимать тред (сажа)'],
+					['Imagem spoiler', 'Скрыть превью изображения'],
+				], [RE_INNER]],
+				['reg', 'p.unimportant', /Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', [RE_INNER]],
+			]]
 		]],
-		['css', 'div.file-hint', 'кликни / брось файл сюда'],
-		['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
-		['css', 'a.show-post-table-options', '[Показать опции]'],
-		['att', 'table.post-table > tbody > tr > td > input[type="submit"]', 'value', [
-			['Responder', 'Отправить'],
-			['Novo tópico', 'Отправить'] // кукла использует эту кнопку для ответов с нулевой
-		]],
-		['css', 'tr#oekaki > th', 'Рисовать'],
-		['css', 'tr#upload_embed > th', 'Ссылка на YouTube'],
-		['css', 'tr#options-row > th', 'Опции'],
-		['reg', 'form > table.post-table-options > tbody > tr > th', 'Senha', 'Пароль'],
-
-		['reg', 'tr#oekaki > td > a', 'Mostrar oekaki', 'начать'],
-		['reg', 'table.post-table-options span.unimportant', [
-			['substitui arquivos', 'заменяет файл', [RE_MULTI, RE_NOBREAK]],
-			['(para remover arquivos e mensagens)', '(для удаления файлов и сообщений)'],
-			['(você também pode escrever sage no e-mail)', '(вы также можете писать sage в поле опций)'],
-			['(isso substitui a miniatura da sua imagem por uma interrogação)', '(это заменяет превью вашего изображения знаком вопроса)']
-		]],
-		['reg', 'tr#options-row > td > div.no-bump-option > label', 'Não bumpar', 'Не поднимать тред (сажа)', [RE_INNER]],
-		['reg', 'tr#options-row > td > div.spoiler-images-option > label', 'Imagem spoiler', 'Скрыть превью изображения', [RE_INNER]],
-
-		['reg', 'table.post-table-options  p.unimportant', /Formatos permitidos:(.+)Tamanho máximo: (.+)Dimensões máximas (.+)Você pode enviar (.+) por mensagem/, 'Разрешенные форматы: $1Максимальный размер файлов: $2Максимальное разрешение: $3Вы можете отправить $4 файла в сообщении', [RE_INNER]],
 
 		// Навигация по страницам
 		['reg', 'body > div.pages', [
@@ -239,12 +248,12 @@ replacer.cfg["main"] = [
 			['Catálogo', 'Каталог тредов']
 		], [RE_INNER, RE_NOBREAK]],
 
-		['css',	'a#thread-return',	'[Назад]'],
-		['css',	'a#thread-top',		'[Вверх]'],
-		['css',	'a#thread-catalog',	'[Каталог тредов]'],
-		['css',	'a#link-quick-reply',	'[Ответить]'],
-
-		[]
+		['css',	'div#thread-interactions', [
+			['css',	'a#thread-return',	'[Назад]'],
+			['css',	'a#thread-top',		'[Вверх]'],
+			['css',	'a#thread-catalog',	'[Каталог тредов]'],
+			['css',	'a#link-quick-reply',	'[Ответить]']
+		]]
 	]],
 
 	// Любой тред без модерки
@@ -1810,8 +1819,9 @@ replacer.cssReplacer = function(el, p, re_def)
 		} 
 		else {
 			// расширенный синтаксис
-			if(re_opt.debug) con.debug("ELM:", e);
+			if(re_opt.debug) con.group("ELM:", e);
 			ret = this.processReplacers(e, p[2], re_opt); // вызов обработки вложенных реплейсеров
+			if(re_opt.debug) con.groupEnd();
 			if(!ret)
 				break;
 		} // else
