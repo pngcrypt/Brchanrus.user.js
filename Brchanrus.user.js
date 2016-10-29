@@ -360,20 +360,22 @@ replacer.cfg["main"] = [
 		['css', 'head > title, header > h1', 'Создание доски'],
 		['css', 'header > div.subtitle', 'создание пользовательской доски'], // ??? antes que alguém a crie
 
-		['reg', 'table.modlog > tbody > tr > th', [
-			['URI', 'URL'],
-			['Título', 'Название'],
-			['Subtítulo', 'Описание'],
-			['Usuário', 'Логин'],
-			['Senha', 'Пароль']
-		]],
+		['css', 'table.modlog > tbody > tr', [
+			['reg', 'th', [
+				['URI', 'URL'],
+				['Título', 'Название'],
+				['Subtítulo', 'Описание'],
+				['Usuário', 'Логин'],
+				['Senha', 'Пароль']
+			]],
 
-		['reg', 'table.modlog > tbody > tr > td > span', [
-			[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов'],
-			[/até (\d+) caracteres/, 'до $1 символов', [RE_MULTI]],
-			['letras, numeros, pontos e sublinhados', 'буквы, цифры, точки и подчеркивание'],
-			['senha para moderar a board, copie-a', 'пароль для модерирования, сохраните его'],
-			['opcional,serve para recuperar sua board', 'по желанию, служит для восстановления доски']
+			['reg', 'td > span', [
+				[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов'],
+				[/até (\d+) caracteres/, 'до $1 символов', [RE_MULTI]],
+				['letras, numeros, pontos e sublinhados', 'буквы, цифры, точки и подчеркивание'],
+				['senha para moderar a board, copie-a', 'пароль для модерирования, сохраните его'],
+				['opcional,serve para recuperar sua board', 'по желанию, служит для восстановления доски']
+			]]
 		]],
 
 		['att', 'input[type="submit"]', 'value', 'Создать доску'],
@@ -392,33 +394,35 @@ replacer.cfg["main"] = [
 			['Sua board foi criada e está disponível em', 'Ваша доска была создана и доступна по адресу'],
 			['Certifique-se de não esquecer a senha de sua board', 'Убедитесь в том, чтобы не забыть пароль к доске'],
 			['Você pode gerenciar sua board nessa página', 'Вы можете управлять вашей доской на этой странице']
-		], [RE_INNER]],
-
-		[]
+		], [RE_INNER]]
 	]],
 
 	// багрепорты
 	[/^bugs\.php/, [
 		['reg', 'head > title', 'BRCHAN :: SUIDB', 'Багрепорт'],
-		['reg', 'div.ban.oficial > h2', [
-			[/^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах'],
-			[/(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']
-		]],
-		['reg', 'div.ban.oficial > p', /^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>', [RE_INNER]],
-		['reg', 'div.ban.oficial > form > table > tbody > tr > td', [
-			['Você errou o codigo de verificação', 'Неверный код подтверждения'],
-			[/Descreva em pelo menos (\d+) palavras o bug/, 'В описании должно быть не меньше $1 слов(а)'],
-			['Digite o código de verificação anti-robôs', 'Введите код анти-спама'],
-			['Detalhes', 'Подробности'],
-			['Anti-robô', 'Анти-Спам']
-		], [RE_INNER]],
-		['att', 'div.ban.oficial > form input[type="submit"]', 'value', 'Отправить'],
-		['reg', 'div.ban.oficial > h2', /(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2'],
+		['css', 'div.ban.oficial', [
+			['reg', 'h2', [
+				[/^SUIDB.+/, 'Единая Интегрированная Система Сообщений о Багах'],
+				[/(\d+) bugs reportados, (\d+) corrigidos/, 'сообщений о багах: $1, исправлено: $2']
+			]],
+			['reg', 'p', /^O BRchan migrou.+/, 'BRchan перешел на новый движок имиджборд - <b>Infinity</b>. И хоть он и более интерактивный, Infinity имеет огромное количество багов, которые мы готовы исправлять. Если вы нашли один из них, не стесняйтесь сообщить об этом.<br><br><small><i>* Не забывайте, что это бразильская борда и админ вряд ли знает русский язык :)</i></small>', [RE_INNER]],
+			['reg', 'form > table > tbody > tr > td', [
+				['Descreva o bug encontrado', 'Опишите найденный баг'],
+				['Você errou o codigo de verificação', 'Неверный код анти-спама'],
+				[/Descreva em pelo menos (\d+) palavras o bug/, 'В описании должно быть не меньше $1 слов(а)'],
+				['Digite o código de verificação anti-robôs', 'Введите код анти-спама'],
+				['Detalhes', 'Подробности'],
+				['Anti-robô', 'Анти-Спам']
+			], [RE_INNER]],
+			['att', 'form input[type="submit"]', 'value', 'Отправить'],
 
-		// сообщения об отправке
-		['reg', 'div.ban.oficial > div > h3', 'Seu formulário foi enviado!', 'Ваша форма отправлена!'],
-		['reg', 'div.ban.oficial > div', 'Obrigado por nos ajudar a melhorar o', 'Благодарим вас за помощь в улучшении', [RE_INNER]],
-		['reg', 'div.ban.oficial > div > a', 'Reportar mais bugs', 'Сообщить о других багах'],
+			// сообщения об отправке
+			['css', 'div', [
+				['reg', '', 'Obrigado por nos ajudar a melhorar o', 'Благодарим вас за помощь в улучшении', [RE_INNER]],
+				['reg', 'h3', 'Seu formulário foi enviado!', 'Ваша форма отправлена!'],
+				['reg', 'a', 'Reportar mais bugs', 'Сообщить о других багах']
+			]]
+		]]
 	]],
 
 	// Жалоба
