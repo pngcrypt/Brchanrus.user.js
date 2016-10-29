@@ -1544,10 +1544,9 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 				opt - объект RE_* модификаторов
 */
 
-	let re_cnt = 0; // кол-во активных regex
-	let dobreak=false;
-	let dbgMsg, str, matches;
-	var time;
+	let re_cnt = 0, // кол-во активных regex
+		dobreak=false,
+		dbgMsg, str, matches, time;
 
 	 // перебор regex
 	for(let r of rx_arr) {
@@ -1583,7 +1582,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 			let s_rep = r[1];
 			if(RE.time && RE.time.group) {
 				// подстановка времени/даты
-				if(!time) time = new Date();
+				if(time === undefined) time = new Date();
 				let m = matches[RE.time.group].match(RE.time.catch_rx); // захватываем цифры из найденного совпадения
 				if(m) {
 					time.setTime(Date.now()); // по умолчанию текущее
@@ -1680,7 +1679,7 @@ replacer._regexTimeInit = function(rx, RE, opt)
 				con.error('Time pattern #"+g1+" NOT FOUND');
 				return "TIME-PATTERN-ERROR";
 			}
-			if(g3) RE.time.out_format = g3; // принудительно задан выходной формат
+			if(g3) RE.time.out_format = +g3; // принудительно задан выходной формат
 			if(g4) RE.time.isGMT = true;
 			if(patt) {
 				// если указан номер предустановленного шаблона, используем его
@@ -1700,43 +1699,46 @@ replacer._regexTimeInit = function(rx, RE, opt)
 			let format = 0; // автоопределение выходного формата (наличие времени и/или даты)
 			for(let ch of (g5.source || g5)) {
 				// парсинг входного формата
-				if(!skip) {
-					switch(ch) {
-						case ' ':
-							RE.time.catch_rx += "\\D+";
-							continue;
-
-						case '\\':
-							// пропускаем regex коды
-							RE.time.catch_rx += ch;
-							skip = true;
-							continue;
-
-						case 'Y':
-						case 'y':
-						case 'N':
-						case 'n':
-						case 'd':
-							if(ch == 'N')
-								RE.time.catch_rx += "(\\w+)"; // месяц буквами
-							else
-								RE.time.catch_rx += "(\\d+)"; // число
-							format |= 1;
-							break;
-
-						case 'h':
-						case 'i':
-						case 's':
-							RE.time.catch_rx += "(\\d+)";
-							format |= 2;
-							break;
-					}
-					RE.time.in_groups.push(ch); // запоминаем символы формата времени в порядке следования	
+				if(skip) {
+					skip = false;
+					RE.time.catch_rx += ch;
 					continue;
 				}
-				else
-					skip = false;
-				RE.time.catch_rx += ch;
+				switch(ch) {
+					case ' ':
+						RE.time.catch_rx += "\\D+";
+						continue;
+
+					case '\\':
+						// пропускаем regex коды
+						RE.time.catch_rx += ch;
+						skip = true;
+						continue;
+
+					case 'Y':
+					case 'y':
+					case 'N':
+					case 'n':
+					case 'd':
+						if(ch == 'N')
+							RE.time.catch_rx += "(\\w+)"; // месяц буквами
+						else
+							RE.time.catch_rx += "(\\d+)"; // число
+						format |= 1;
+						break;
+
+					case 'h':
+					case 'i':
+					case 's':
+						RE.time.catch_rx += "(\\d+)";
+						format |= 2;
+						break;
+
+					default:
+						RE.time.catch_rx += ch; // остальные символы запоминаем без изменений
+						continue;
+				}
+				RE.time.in_groups.push(ch); // запоминаем символы формата времени в порядке следования	
 			}
 			let find_rx = RE.time.catch_rx.replace(/[()]/g, ''); // формируем строку поиска из шаблона захвата
 			RE.time.catch_rx = new RegExp(RE.time.catch_rx);
