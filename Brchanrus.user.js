@@ -968,16 +968,18 @@ replacer.cfg["new_post"] = [
 	// [/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$|^mod\.php\?\/(recent|IP_less)\//, [
 	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
 		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^[^?]+\?(.+)/, "$1"]], // удаление редиректов
-		['reg', 'p.intro > label > span.name', 'Anônimo', 'Аноним'],
+		['css', 'p.intro', [
+			['reg', '> label > span.name', 'Anônimo', 'Аноним'],
+			['reg', '> label > time', /(:<T0>)/, '$T', [RE_TIME]], // время поста
+			['reg', '> a:not([class])', [
+				['Responder', 'Ответить'],
+				[/^\[Últimas (\d+) Mensagens\]/, '[Последние $1 сообщений]'],
+				['Ver tudo', 'Показать все']
+			]]
+		]],
 		//['reg', 'span.name > span', 'You', 'Вы'],
-		['reg', 'p.intro > label > time', /(:<T0>)/, '$T', [RE_TIME]], // время поста
 		['nod', 'p.fileinfo', '', [RE_FIRST]], // Файл: 
 		['reg', 'div.body > span.toolong', /Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER]],
-		['reg', 'p.intro > a:not([class])', [
-			['Responder', 'Ответить'],
-			[/^\[Últimas (\d+) Mensagens\]/, '[Последние $1 сообщений]'],
-			['Ver tudo', 'Показать все']
-		]],
 
 		// кол-во пропущенных ответов + начальное значение счетчика постов
 		['reg', 'div.post.op > span.omitted', [
@@ -2106,10 +2108,11 @@ replacer.strReplacer = function(el, p, re_def)
 
 	if(el.text.match(p[1])) {
 		el.text = el.text.replace(p[1], p[2]);
-		//if(re_opt.debug) con.debug("STR:", p, ": FOUND\nSTOP");
+		if(re_def.debug) con.debug("STR:", p, ": FOUND\nSTOP");
 		return false;
 	}
-	//if(re_opt.debug) con.debug("FND:", p, ": NOT FOUND");
+	if(re_def.debug) con.debug("STR:", p, ": NOT FOUND");
+	return true;
 };
 
 // ==============================================================================================
@@ -2222,8 +2225,6 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// вызывается при добавлении: нового поста в треде; нового треда в /tudo/; новой главной формы (кукла, подгрузка страниц на нулевой) 
-		replacer.process("new_post", parent, false);
-		replacer.process("mod_buttons", parent, false);
 		if(parent.id && parent.id.match(/^reply_/))
 			main.moveReplies(parent.parentNode); // если это новый пост, обрабатываем весь тред
 		else {
@@ -2232,6 +2233,8 @@ var main = {
 			main.moveReplies(parent);
 			main.initPostCounter(parent);
 		}
+		replacer.process("new_post", parent, false);
+		replacer.process("mod_buttons", parent, false);
 	},
 
 	// ----------------------------------------------------
