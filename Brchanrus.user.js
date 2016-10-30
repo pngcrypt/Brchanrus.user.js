@@ -2225,6 +2225,9 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// вызывается при добавлении: нового поста в треде; нового треда в /tudo/; новой главной формы (кукла, подгрузка страниц на нулевой) 
+		replacer.process("new_post", parent, false); // должно выполняться до initPostCounter
+		replacer.process("mod_buttons", parent, false);
+
 		if(parent.id && parent.id.match(/^reply_/))
 			main.moveReplies(parent.parentNode); // если это новый пост, обрабатываем весь тред
 		else {
@@ -2233,8 +2236,6 @@ var main = {
 			main.moveReplies(parent);
 			main.initPostCounter(parent);
 		}
-		replacer.process("new_post", parent, false);
-		replacer.process("mod_buttons", parent, false);
 	},
 
 	// ----------------------------------------------------
