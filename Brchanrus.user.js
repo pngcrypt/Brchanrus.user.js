@@ -130,9 +130,11 @@ replacer.cfg["main"] = [
 	// главная
 	[/^/, 'body > div.tabcontents > div#noticias', [
 		['css', 'body > div.ban.oficial', [
-			['reg', 'h2', 'Boards Fixas', 'Постоянные доски'],
-			['reg', 'h2 > a', 'Exibir todas as boards', 'Посмотреть все доски'],
-			['reg', 'ul > li:first-child', [
+			['reg', '> h2', [
+				['Boards Fixas', 'Постоянные доски'],
+				['Exibir todas as boards', 'Посмотреть все доски', [RE_INNER]]
+			]],
+			['reg', '> ul > li:first-child', [
 				['Entretenimento.', 'Развлечения'],
 				['Discussão', 'Обсуждение'],
 				['Produtividade', 'Производство'],
@@ -150,12 +152,12 @@ replacer.cfg["main"] = [
 			[/^Depois de anos de glória.+/, 'После нескольких лет славы и множества бананов, в 2013 г. R. решил закрыть чан по личным причинам. На Рождество 2015 года, чан вернулся с новым администратором Kalinka и новой командой с целью быть более либеральным чаном, в отличие от конкурентов. Здесь мы снова делаем историю.']
 		]],
 		['css', 'div#global.ban', [
-			['reg', 'h2', [
+			['reg', '> h2', [
 				['REGRAS PARA USO DAS BOARDS OFICIAIS', 'ОФИЦИАЛЬНЫЕ ПРАВИЛА ИСПОЛЬЗОВАНИЯ ДОСОК'],
 				['REGRAS PARA CRIAÇÕES DE BOARDS', 'ПРАВИЛА СОЗДАНИЯ ДОСОК'],
 				['REGRAS PARA O USO DAS BOARDS SECUNDÁRIAS', 'ПРАВИЛА ИСПОЛЬЗОВАНИЯ ЮЗЕР-ДОСОК']
 			]],
-			['reg', 'ol > li', [
+			['reg', '> ol > li', [
 				// Общие правила досок
 				[/^Se você quebrar as regras.+/, 'Если вы нарушите правила, мы удалим ваш пост. Делайте это снова и снова, и мы возьмем hominho назад.'],
 				[/^O anonimato prevalecerá sempre/, 'Анонимность превыше всего', [RE_MULTI]],
@@ -201,8 +203,8 @@ replacer.cfg["main"] = [
 
 		// Форма ответа
 		['css', 'form[name="post"]', [
-			['css', 'table.post-table', [
-				['reg', 'tbody > tr > th', [
+			['css', 'table.post-table > tbody', [
+				['reg', '> tr > th', [
 					['Opções', 'Опции'],
 					['Assunto', 'Тема/Имя'],
 					['Mensagem', 'Сообщение'],
@@ -213,14 +215,14 @@ replacer.cfg["main"] = [
 				['css', 'div.file-hint', 'кликни / брось файл сюда'],
 				['css', 'span.required-wrap > span.unimportant', '= обязательные поля'],
 				['css', 'a.show-post-table-options', '[Показать опции]'],
-				['att', 'tbody > tr > td > input[type="submit"]', 'value', [
+				['att', '> tr > td > input[type="submit"]', 'value', [
 					['Responder', 'Отправить'],
 					['Novo tópico', 'Отправить'] // кукла использует эту кнопку для ответов с нулевой
 				]],
 			]],
 			// опции
-			['css', 'table.post-table-options', [
-				['reg', 'tbody > tr > th', [
+			['css', 'table.post-table-options > tbody', [
+				['reg', '> tr > th', [
 					['Embutir', 'Ссылка на видео'],
 					['Oekaki', 'Рисовать'],
 					['Opções', 'Опции'],
@@ -361,7 +363,7 @@ replacer.cfg["main"] = [
 		['css', 'header > div.subtitle', 'создание пользовательской доски'], // ??? antes que alguém a crie
 
 		['css', 'table.modlog > tbody > tr', [
-			['reg', 'th', [
+			['reg', '> th', [
 				['URI', 'URL'],
 				['Título', 'Название'],
 				['Subtítulo', 'Описание'],
@@ -369,7 +371,7 @@ replacer.cfg["main"] = [
 				['Senha', 'Пароль']
 			]],
 
-			['reg', 'td > span', [
+			['reg', '> td > span', [
 				[/letras, números e no máximo (\d+) caracteres/, 'буквы, цифры и не более $1 символов'],
 				[/até (\d+) caracteres/, 'до $1 символов', [RE_MULTI]],
 				['letras, numeros, pontos e sublinhados', 'буквы, цифры, точки и подчеркивание'],
@@ -466,32 +468,35 @@ replacer.cfg["main"] = [
 	// Админка - Главная
 	[/^mod\.php\?\/$/, [
 		['reg', 'head > title, header > h1', 'Dashboard', 'Панель администрирования', [RE_MULTI]],
-		['reg', 'fieldset > legend', [
-			['Mensagens', 'Сообщения'],
-			['Administração', 'Администрирование'],
-			['Boards', 'Доски'],
-			['Conta de usuário', 'Учетная запись']
-		]],
-		['reg', 'fieldset > ul > li', 'Quadro de noticias', 'Последние объявления', [RE_INNER]],
-		['reg', 'fieldset > ul > li > ul > li > small', /^— by (.+) at (:<T0>)/, '— $1, $T', [RE_MULTI, RE_TIME]],
-		['reg', 'fieldset > ul > li a', [
-			['Ver todas as noticias do quadro de noticias', 'Просмотр всех объявлений'],
-			[/Caixa de entrada \((\d+) unread\)/, 'Входящие (непрочитанных: $1)'],
+		['css', 'fieldset', [
+			['reg', 'legend', [
+				['Mensagens', 'Сообщения'],
+				['Administração', 'Администрирование'],
+				['Boards', 'Доски'],
+				['Conta de usuário', 'Учетная запись']
+			]],
+			['css', 'ul > li', [
+				['reg', '', 'Quadro de noticias', 'Последние объявления', [RE_INNER]],
+				['reg', 'ul > li > small', /^— by (.+) at (:<T0>)/, '— $1, $T', [RE_MULTI, RE_TIME]],
+				['reg', 'a', [
+					['Ver todas as noticias do quadro de noticias', 'Просмотр всех объявлений'],
+					[/Caixa de entrada \((\d+) unread\)/, 'Входящие (непрочитанных: $1)'],
 
-			[/Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)'],
-			['Lista de bans', 'Список банов'],
-			['Apelos a banimento', 'Аппеляции банов'],
-			['Editar conta', 'Изменить учетную запись'],
-		
-			['Histórico da board', 'История событий доски'],
-			['Mensagens recentes', 'Последние сообщения в тредах'],
+					[/Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)'],
+					['Lista de bans', 'Список банов'],
+					['Apelos a banimento', 'Аппеляции банов'],
+					['Editar conta', 'Изменить учетную запись'],
+				
+					['Histórico da board', 'История событий доски'],
+					['Mensagens recentes', 'Последние сообщения в тредах'],
 
-			['configurações', 'настройки'],
+					['configurações', 'настройки'],
 
-			['Logout', 'Выход']
-		]],
-		['reg', 'fieldset > ul > li > span', 'nome de usuário, email, senha', 'имя пользователя, адрес электронной почты, пароль'],
-		[]
+					['Logout', 'Выход']
+				]],
+				['reg', 'span', 'nome de usuário, email, senha', 'имя пользователя, адрес электронной почты, пароль']
+			]]
+		]]
 	]],
 
 	// Админка - Жалобы
@@ -499,13 +504,16 @@ replacer.cfg["main"] = [
 		['reg', 'head > title, header > h1', /Fila de denuncias\s+\((\d+)\)/, 'Поступившие жалобы ($1)'],
 		['reg', 'body > p.unimportant', 'Não há denúncias no momento', 'На данный момент никаких жалоб нет', [RE_SINGLE]],
 
-		['att', 'h2.report-header > a', 'title', 'Перейти в тред'],
-		['reg', 'h2.report-header', [
-			[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1'],
-			[/thread repotado (\d+) vez\(es\)/, 'жалоб на тред: $1']
-		], [RE_INNER]],
+		['css', 'h2.report-header', [
+			['att', 'a', 'title', 'Перейти в тред'],
+			['reg', '', [
+				[/responder repotado (\d+) vez\(es\)/, 'жалоб на пост: $1'],
+				[/thread repotado (\d+) vez\(es\)/, 'жалоб на тред: $1']
+			], [RE_INNER]]
+		]],
 
-		['reg', 'div.report span.detail-name', 'Data da denúncia', 'Дата поступления:'],
+		['reg', 'div.report span.detail-name', 'Data da denúncia', 'Дата поступления'],
+		['reg', 'div.report span.detail-value', '(:<T0>)', '$T', [RE_TIME]],
 		['reg', 'ul.report-actions > li.report-action > a', [
 			['Dismiss', 'Отклонить'],
 			['Promote', 'Принять']
@@ -539,137 +547,140 @@ replacer.cfg["main"] = [
 		['reg', 'head > title, header > h1', 'Configuração da board', 'Настройки доски', [RE_MULTI]],
 		['css', 'body > p', 'Внимание: Некоторые изменения не вступят в силу до тех пор, пока не будет написан новый пост на доске.'],
 
-		['reg', 'form > table:nth-child(2) th', [
-			['URI', 'URL'],
-			['Título', 'Название'],
-			['Subtítulo', 'Описание']
-		]],
-		['reg', 'form > table tr:nth-child(1) > td', 'não pode ser alterado', 'нельзя изменить'],
+		['css', 'form', [
+			['reg', 'table:nth-child(2) th', [
+				['URI', 'URL'],
+				['Título', 'Название'],
+				['Subtítulo', 'Описание']
+			]],
+			['reg', 'table tr:nth-child(1) > td', 'não pode ser alterado', 'нельзя изменить'],
 
-		['reg', 'form > table:nth-child(5) th', [
-			['Tipo de board', 'Тип доски'],
-			[/^Imagens personalizadas(.+)Marcando essa.+/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', [RE_INNER]],
-			['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
-			['Exigir que o OP poste uma imagem', 'При создании нового треда изображение обязательно'],
-			['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательна'],
-			['Mostrar IDs dos usuários', 'Показать ID пользователей'],
-			['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
-			[/^Desabilitar caracteres compostos.+/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
-			[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', [RE_INNER]],
-			[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', [RE_INNER]],
-			['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', [RE_INNER]],
-			['Formatação matemática entre', 'Форматировать математику между'],
-			[/Permitir upload de (.+)/, 'Разрешить загружать $1', [RE_MULTI]],
-			[/^Permitir rolar dados\(roll\)/, 'Разрешить бросить кости (roll)'],
-			['Proibir usuários de repostar imagens repetidas', 'Запретить отправлять повторяющиеся изображения', [RE_MULTI, RE_NOBREAK]],
-			['(em toda a board)', '(по всей доске)'],
-			['(no mesmo thread)', '(в том же треде)'],
-			['Permitir usuário deletar seu própro post', 'Разрешить пользователю удалить свой пост'],
-			['Permitir aos usuários ver se a thread está com o bump bloqueado', 'Разрешить просмотр треда после бамплимита'],
-			[/^Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
-			['Habilitar CAPTCHA apenas para criação de threads', 'Включить CAPTCHA, только для создания тредов'],
-			[/^Bans públicos(.+)Mostrar.+/, 'Публичные баны$1Показывать пользователей которых забанили другие пользователи', [RE_INNER]],
-			[/^Histórico de ações público(.+)Mostrar todas as ações ao público/, 'История общественных действий$1Показать все действия общественности', [RE_INNER]], // ???
-			['Número máximo de linhas por post', 'Максимальное количество строк на пост'],
-			[/^Contador de páginas(.+)Número.+/, 'Счетчик страниц$1Максимальное количество страниц<br>Переходя за этот предел старые треды будут удалены', [RE_INNER]],
-			['Limite de bumps', 'Бамплимит'],
-			[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', [RE_INNER]],
-			['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
-			[/^Permitir que o OP poste arquivos(.+)Não se aplica a imagens/, 'Разрешить прикреплять файлы к ОП-посту$1Не относится к изображениям', [RE_INNER]],
-			['Manter o nome original do arquivo', 'Показывать оригинальные имена файлов'],
-			['Limite de imagens por post', 'Максимальное количество прикреплённых файлов к посту']
-		]],
+			['reg', 'table:nth-child(5) th', [
+				['Tipo de board', 'Тип доски'],
+				[/^Imagens personalizadas(.+)Marcando essa.+/, 'Пользовательские изображения$1Включив эту опцию вы можете использовать кастомные изображения спойлера / нет файла / удалено.<br>Убедитесь в том, что пользовательские изображения загружены, иначе будете получать ошибку 404', [RE_INNER]],
+				['Embutir YouTube/Vocaroo', 'Разрешить YouTube/Vocaroo'],
+				['Exigir que o OP poste uma imagem', 'При создании нового треда изображение обязательно'],
+				['Exigir que o OP crie um assunto', 'При создании нового треда поле "Тема" обязательна'],
+				['Mostrar IDs dos usuários', 'Показать ID пользователей'],
+				['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
+				[/^Desabilitar caracteres compostos.+/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
+				[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', [RE_INNER]],
+				[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', [RE_INNER]],
+				['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', [RE_INNER]],
+				['Formatação matemática entre', 'Форматировать математику между'],
+				[/Permitir upload de (.+)/, 'Разрешить загружать $1', [RE_MULTI]],
+				[/^Permitir rolar dados\(roll\)/, 'Разрешить бросить кости (roll)'],
+				['Proibir usuários de repostar imagens repetidas', 'Запретить отправлять повторяющиеся изображения', [RE_MULTI, RE_NOBREAK]],
+				['(em toda a board)', '(по всей доске)'],
+				['(no mesmo thread)', '(в том же треде)'],
+				['Permitir usuário deletar seu própro post', 'Разрешить пользователю удалить свой пост'],
+				['Permitir aos usuários ver se a thread está com o bump bloqueado', 'Разрешить просмотр треда после бамплимита'],
+				[/^Habilitar CAPTCHA$/, 'Включить CAPTCHA'],
+				['Habilitar CAPTCHA apenas para criação de threads', 'Включить CAPTCHA, только для создания тредов'],
+				[/^Bans públicos(.+)Mostrar.+/, 'Публичные баны$1Показывать пользователей которых забанили другие пользователи', [RE_INNER]],
+				[/^Histórico de ações público(.+)Mostrar todas as ações ao público/, 'История общественных действий$1Показать все действия общественности', [RE_INNER]], // ???
+				['Número máximo de linhas por post', 'Максимальное количество строк на пост'],
+				[/^Contador de páginas(.+)Número.+/, 'Счетчик страниц$1Максимальное количество страниц<br>Переходя за этот предел старые треды будут удалены', [RE_INNER]],
+				['Limite de bumps', 'Бамплимит'],
+				[/^Tamanho mínimo do texto do OP(.+)\(número entre 0 e (\d+), 0 para desativar\)/, 'Минимальный размер текста сообщения$1( от 0 до $2, 0 для отключения )', [RE_INNER]],
+				['Extensões de arquivos permitidas', 'Разрешить загружать файлы'],
+				[/^Permitir que o OP poste arquivos(.+)Não se aplica a imagens/, 'Разрешить прикреплять файлы к ОП-посту$1Не относится к изображениям', [RE_INNER]],
+				['Manter o nome original do arquivo', 'Показывать оригинальные имена файлов'],
+				['Limite de imagens por post', 'Максимальное количество прикреплённых файлов к посту']
+			]],
 
-		['reg', 'form > table:nth-child(8) th', [
-			['Configurações de spam', 'Настройки антиспама', [RE_INNER]],
-			[/^Deletar threads sem movimento antecipadamente(.+)Com isso ativo\D+(\d+)\D+(\d+)\D+(\d+).+/, 'Фиксированный список тредов$1При включении этой опции треды, в которых меньше $2 постов при достижении $3 страницы<br>будут перемещены на $4 страницу', [RE_INNER]],
-			[/^Limitar números de threads por hora(.+)Serão permitidos.+/, 'Лимит тредов в час$1Количество создаваемых тредов в час, не влияет на количество постов', [RE_INNER]]
-		]],
-		['reg', 'form > table:nth-child(13) th', [
-			['Nome padrão nas postagens', 'Имя по умолчанию'],
-			['Anúncio da board', 'Объявления для пользователей'],
-			[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', [RE_INNER]]
-		]],
-		['reg', 'form > table:nth-child(13) + p', /A criação ou edição do seu tema.+/, 'После создания и редактирования вашей темы может потребоваться несколько часов, чтобы изменения вступили в силу (из-за cloudflare)'],
+			['reg', 'table:nth-child(8) th', [
+				['Configurações de spam', 'Настройки антиспама', [RE_INNER]],
+				[/^Deletar threads sem movimento antecipadamente(.+)Com isso ativo\D+(\d+)\D+(\d+)\D+(\d+).+/, 'Фиксированный список тредов$1При включении этой опции треды, в которых меньше $2 постов при достижении $3 страницы<br>будут перемещены на $4 страницу', [RE_INNER]],
+				[/^Limitar números de threads por hora(.+)Serão permitidos.+/, 'Лимит тредов в час$1Количество создаваемых тредов в час, не влияет на количество постов', [RE_INNER]]
+			]],
+			['reg', 'table:nth-child(13) th', [
+				['Nome padrão nas postagens', 'Имя по умолчанию'],
+				['Anúncio da board', 'Объявления для пользователей'],
+				[/^Tema customizado(.+)Permite que.+URLs abaixo(.+)/, 'Настройка темы$1Здесь вы можете задать CSS стили для вашей доски<br>Для внешних изображений можно использовать только на эти домены:$2', [RE_INNER]]
+			]],
+			['reg', 'form > table:nth-child(13) + p', /A criação ou edição do seu tema.+/, 'После создания и редактирования вашей темы может потребоваться несколько часов, чтобы изменения вступили в силу (из-за cloudflare)'],
 
-		['reg', 'form > table#wf th', [
-			['Filtros', 'Фильтры'],
-			['Substituir', 'Замещать:'],
-			['Por', 'На:'],
-		]],
-		['reg', 'form > table#tags th', [
-			['Tags', 'Тэги'],
-			['Descrição', 'Описание']
-		]],
+			['reg', 'table#wf th', [
+				['Filtros', 'Фильтры'],
+				['Substituir', 'Замещать:'],
+				['Por', 'На:'],
+			]],
+			['reg', 'table#tags th', [
+				['Tags', 'Тэги'],
+				['Descrição', 'Описание']
+			]],
 
-		// Тип доски
-		['reg', 'select#board_type > option', [
-			['Board de imagens', 'Имиджборд'],
-			['Board de textos', 'Текстовая'],
-			['Board de arquivos', 'Файловая']
-		]],
+			// Тип доски
+			['reg', 'select#board_type > option', [
+				['Board de imagens', 'Имиджборд'],
+				['Board de textos', 'Текстовая'],
+				['Board de arquivos', 'Файловая']
+			]],
 
-		// Регистрация событий
-		['reg', 'select[name="public_logs"] > option', [
-			['Desativar', 'Отключено'],
-			['Registro completo mas sem o usuário', 'Полная запись, без пользователя'],
-			['Registro completo', 'Полная запись']
-		]],
+			// Регистрация событий
+			['reg', 'select[name="public_logs"] > option', [
+				['Desativar', 'Отключено'],
+				['Registro completo mas sem o usuário', 'Полная запись, без пользователя'],
+				['Registro completo', 'Полная запись']
+			]],
 
-		['css', 'select[name="max_newlines"] > option[value="0"], select[name="hour_max_threads"] > option[value="none"]', 'Неограничено'], // Строк на пост, Кол-во тредов в час
+			['css', 'select[name="max_newlines"] > option[value="0"], select[name="hour_max_threads"] > option[value="none"]', 'Неограничено'], // Строк на пост, Кол-во тредов в час
 
-		['att', 'input#wf_add', 'value', 'Добавить еще фильтр'],
-		['att', 'input#tag_add', 'value', 'Добавить еще тэг'],
-		['att', 'input[value="Salvar alterações"]', 'value', 'Сохранить изменения'],		
+			['att', 'input#wf_add', 'value', 'Добавить еще фильтр'],
+			['att', 'input#tag_add', 'value', 'Добавить еще тэг'],
+			['att', 'input[value="Salvar alterações"]', 'value', 'Сохранить изменения'],		
 
-		['reg', 'body > form > p > a', [
-			['Editar banners da board', 'Редактировать баннер доски'],
-			['Editar imagens customizadas da board', 'Редактировать изображения'],
-			['Editar voluntários', 'Редактировать модераторов'],
-			['Editar tags', 'Редактировать тэги']
-		]],
-		
-		[]
+			['reg', 'p > a', [
+				['Editar banners da board', 'Редактировать баннер доски'],
+				['Editar imagens customizadas da board', 'Редактировать изображения'],
+				['Editar voluntários', 'Редактировать модераторов'],
+				['Editar tags', 'Редактировать тэги']
+			]]
+		]]
 	]],
 
 	// Админка - Настройки доски - Пользовательские изображения
 	[/^mod\.php\?\/assets\//, [
 		['reg', 'head > title, header > h1', 'Edit board assets', 'Редактирование изображений', [RE_MULTI]],
 
-		['reg', 'form > p > small', [
-			[/^Todas as imagens padrões.+/, 'Все изображения должны быть в формате PNG или GIF и иметь размер файла не более 500 Кб'],
-			[/A imagem deve conter a resolução/, 'Изображение должно иметь разрешение', [RE_MULTI]]
-		]],
+		['css', 'form', [
+			['reg', 'p > small', [
+				[/^Todas as imagens padrões.+/, 'Все изображения должны быть в формате PNG или GIF и иметь размер файла не более 500 Кб'],
+				[/A imagem deve conter a resolução/, 'Изображение должно иметь разрешение', [RE_MULTI]]
+			]],
 
-		['reg', 'form > h2', [
-			['Enviar nova imagem de', 'Выбрать изображение для', [RE_MULTI, RE_NOBREAK]],
-			['spoiler', 'спойлер'],
-			['arquivo deletado', 'файл удален'],
-			['sem arquivo', 'нет файла']
-		]],
-		['reg', 'body > div > form > p', /Imagem de .+ atual/, 'Текущее изображение', [RE_INNER, RE_MULTI]],
-		['att', 'input[type="submit"]', 'value', 'Сохранить изображения'],
-
-		[]
+			['reg', 'h2', [
+				['Enviar nova imagem de', 'Выбрать изображение для', [RE_MULTI, RE_NOBREAK]],
+				['spoiler', 'спойлер'],
+				['arquivo deletado', 'файл удален'],
+				['sem arquivo', 'нет файла']
+			]],
+			['reg', 'p', /Imagem de .+ atual/, 'Текущее изображение', [RE_INNER, RE_MULTI]],
+			['att', 'input[type="submit"]', 'value', 'Сохранить изображения']
+		]]
 	]],
 
 	// Админка - Настройки доски - Модераторы
 	[/^mod\.php\?\/volunteers\//, [
 		['reg', 'head > title, header > h1', 'Editar voluntários', 'Редактирование модераторов', [RE_MULTI]],
-		['reg', 'form > h2', 'Novo usuário', 'Новый модератор'],
-		['reg', 'body > div > h2', 'Voluntários atuais', 'Текущие модераторы'],
-		['reg', 'form > p > span.unimportant', /Limite de (\d+) voluntários.+/, 'Лимит пользователей: $1.<br>Убедитесь, что используете надежные пароли.<br>Модератор может делать то же, что и админ, за исключением просмотра этой страницы, страницы банеров и страницы настройки доски.', [RE_INNER]],
-		
-		['reg', 'tbody > tr > th', [
-			['Usuário', 'Пользователь'],
-			['Senha', 'Пароль']
-		]],
-
-		['att', 'body > div > form > p > input[type="submit"]', 'value', [
-			['Criar usuário', 'Добавить'],
-			['Deletar selecionados', 'Удалить выделенных']
+		['css', 'body > div', [
+			['reg', '> h2', 'Voluntários atuais', 'Текущие модераторы'],
+			['css', 'form', [
+				['reg', 'h2', 'Novo usuário', 'Новый модератор'],
+				['reg', 'p > span.unimportant', /Limite de (\d+) voluntários.+/, 'Лимит пользователей: $1.<br>Убедитесь, что используете надежные пароли.<br>Модератор может делать то же, что и админ, за исключением просмотра этой страницы, страницы банеров и страницы настройки доски.', [RE_INNER]],
+				
+				['reg', 'tbody > tr > th', [
+					['Usuário', 'Пользователь'],
+					['Senha', 'Пароль']
+				]],
+				['att', 'p > input[type="submit"]', 'value', [
+					['Criar usuário', 'Добавить'],
+					['Deletar selecionados', 'Удалить выделенных']
+				]]
+			]]
 		]]
-	]],
+	],[RE_DEBUG]],
 
 	// Админка - Редактирование учетной записи
 	[/^mod\.php\?\/users\//, [
@@ -686,24 +697,26 @@ replacer.cfg["main"] = [
 	// Админка - Бан
 	[/^mod\.php\?\/[^/]+\/ban(&delete)?\//, [
 		['reg', 'head > title, header > h1', 'Novo ban', 'Новый бан', [RE_MULTI]],
-		['reg', 'table > tbody > tr > th > label', [
-			[/(IP.+)\(ou subnet\)/, '$1(или подсеть)', [RE_INNER]],
-			['Motivo', 'Причина'],
-			['Mensagem', 'Сообщение'],
-			['Tamanho', 'Длительность']			
-		]],
-		['reg', 'table > tbody > tr:nth-child(5) > th', 'Board', 'Доска'],
-		['reg', 'table > tbody > tr > td .unimportant', [
-			[/^Be careful.+/, 'Будьте осторожны с диапазоном адресов. Чем больше диапазон, тем больше пользователей он затронет'],
-			['público; anexado à mensagem', 'публичное; добавляется к посту'],
-			[/^\(eg.(.+) or (.+)/, '(например: $1 или $2']
-		]],
-		['reg', 'select[name="range"] > option', [
-			['no range ban', 'без диапазона'],
-			[/covers (\d+) addresses/, 'охватывает $1 адресов', [RE_MULTI]]
-		]],
-		['att', 'input#message', 'value', 'Автор этого поста был ЗАБАНЕН'],
-		['att', 'input[name="new_ban"]', 'value', 'Забанить']
+		['css', 'table > tbody > tr', [
+			['reg', '> th', [
+				[/(IP.+)\(ou subnet\)/, '$1(или подсеть)'],
+				['Motivo', 'Причина'],
+				['Mensagem', 'Сообщение'],
+				['Tamanho', 'Длительность'],
+				['Board', 'Доска']
+			], [RE_INNER]],
+			['reg', '> td .unimportant', [
+				[/^Be careful.+/, 'Будьте осторожны с диапазоном адресов. Чем больше диапазон, тем больше пользователей он затронет'],
+				['público; anexado à mensagem', 'публичное; добавляется к посту'],
+				[/^\(eg.(.+) or (.+)/, '(например: $1 или $2']
+			]],
+			['reg', 'select[name="range"] > option', [
+				['no range ban', 'без диапазона'],
+				[/covers (\d+) addresses/, 'охватывает $1 адресов', [RE_MULTI]]
+			]],
+			['att', 'input#message', 'value', 'Автор этого поста был ЗАБАНЕН'],
+			['att', 'input[name="new_ban"]', 'value', 'Забанить']
+		]]
 	]],
 
 	// Админка - Список банов
@@ -711,8 +724,7 @@ replacer.cfg["main"] = [
 		['reg', 'head > title, header > h1', 'Lista de bans', 'Список банов', [RE_MULTI]],
 		['nod', 'div.banlist-opts > div.checkboxes > label', 'Показать только активные баны', [RE_LAST]], // txt, т.к. на input висит обработчик
 		['att', 'input#search', 'placeholder', 'Искать...'],
-		['att', 'input#unban', 'value', 'Разбанить выделенных'],
-		[]
+		['att', 'input#unban', 'value', 'Разбанить выделенных']
 	]],
 
 	// Админка - PM: создание/ответ
@@ -783,46 +795,48 @@ replacer.cfg["main"] = [
 	// Админка - История событий
 	[/^mod\.php\?\/log[:]/, [
 		['reg', 'head > title, header > h1', 'Histórico da board', 'История событий доски', [RE_MULTI]],
-		['reg', 'table.modlog > tbody > tr > th', [
-			['Usuário', 'Имя'],
-			['Endereço de IP', 'IP-адрес'],
-			['Tempo', 'Время'],
-			['Board', 'Доска'],
-			['Ação', 'Действие']
-		]],
-		['reg', 'table.modlog > tbody > tr > td:nth-child(2)', 'hidden', 'скрыт', [RE_INNER, RE_MULTI]], // ip
-		['reg', 'table.modlog > tbody > tr > td:nth-child(3) > span', [ // время (интервал)
-			[/segundos?/, 'сек'],
-			[/minutos?/, 'мин'],
-			[/horas?/, 'ч'],
-			[/dias?/, 'дн'],
-			[/semanas?/, 'нед']
-		], [RE_MULTI]],
-		['att', 'table.modlog > tbody > tr > td:nth-child(3) > span', 'title', [/^(:<T0>)/, '$T', [RE_TIME, RE_MULTI]]], // время
-		['reg', 'table.modlog > tbody > tr > td:nth-child(5)', [ // действия.
-			[/^Edited post/, 'Редактирование поста'],
-			[/^Deleted post/, 'Удаление поста'],
-			[/^Stickied thread/, 'Тред закреплен'],
-			[/^Unstickied thread/, 'Тред откреплен'],
-			[/^Locked thread/, 'Тред закрыт'],
-			[/^Unlocked thread/, 'Тред открыт'],
-			[/^Bumplocked thread/, 'Запретить поднимать тред'],
-			[/^Unbumplocked thread/, 'Разрешить поднимать тред'],
-			[/^Made cyclical thread/, 'Циклическая очистка треда включена'],
-			[/^Made not cyclical thread/, 'Циклическая очистка треда отключена'],
-			[/^Edited board settings/, 'Редактирование настроек доски'],
-			[/^Spoilered file from post/, 'Скрыть превью изображения в посте'],
-			[/^Deleted file from post/, 'Удаление файла в посте'],
-			[/^Removed ban (#\d+) for/, 'Бан снят $1 для'],
-			[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
-			[/^Created a new (.+) ban on (\/[^/]+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
-			[/^Created a new volunteer/, 'Добавлен новый модератор'],
-			[/^User deleted his own post/, 'Пользователь удалил свой пост'],
-			[/^Dismissed a report for post/, 'Отказано в жалобе к посту'],
-			[/^Re-opened reports for post (#\d+) in local/, 'Повторная местная жалоба к посту $1'],
-			[/^Promoted a local report for post/, 'Принята местная жалоба к посту'],
-			[]
-		], [RE_MULTI]]
+		['css', 'table.modlog > tbody > tr', [
+			['reg', '> th', [
+				['Usuário', 'Имя'],
+				['Endereço de IP', 'IP-адрес'],
+				['Tempo', 'Время'],
+				['Board', 'Доска'],
+				['Ação', 'Действие']
+			]],
+			['reg', '> td:nth-child(2)', 'hidden', 'скрыт', [RE_INNER, RE_MULTI]], // ip
+			['reg', '> td:nth-child(3) > span', [ // время (интервал)
+				[/segundos?/, 'сек'],
+				[/minutos?/, 'мин'],
+				[/horas?/, 'ч'],
+				[/dias?/, 'дн'],
+				[/semanas?/, 'нед']
+			], [RE_MULTI]],
+			['att', '> td:nth-child(3) > span', 'title', [/^(:<T0>)/, '$T', [RE_TIME, RE_MULTI]]], // время
+			['reg', '> td:nth-child(5)', [ // действия.
+				[/^Edited post/, 'Редактирование поста'],
+				[/^Deleted post/, 'Удаление поста'],
+				[/^Stickied thread/, 'Тред закреплен'],
+				[/^Unstickied thread/, 'Тред откреплен'],
+				[/^Locked thread/, 'Тред закрыт'],
+				[/^Unlocked thread/, 'Тред открыт'],
+				[/^Bumplocked thread/, 'Запретить поднимать тред'],
+				[/^Unbumplocked thread/, 'Разрешить поднимать тред'],
+				[/^Made cyclical thread/, 'Циклическая очистка треда включена'],
+				[/^Made not cyclical thread/, 'Циклическая очистка треда отключена'],
+				[/^Edited board settings/, 'Редактирование настроек доски'],
+				[/^Spoilered file from post/, 'Скрыть превью изображения в посте'],
+				[/^Deleted file from post/, 'Удаление файла в посте'],
+				[/^Removed ban (#\d+) for/, 'Бан снят $1 для'],
+				[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
+				[/^Created a new (.+) ban on (\/[^/]+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
+				[/^Created a new volunteer/, 'Добавлен новый модератор'],
+				[/^User deleted his own post/, 'Пользователь удалил свой пост'],
+				[/^Dismissed a report for post/, 'Отказано в жалобе к посту'],
+				[/^Re-opened reports for post (#\d+) in local/, 'Повторная местная жалоба к посту $1'],
+				[/^Promoted a local report for post/, 'Принята местная жалоба к посту'],
+				[]
+			], [RE_MULTI]]
+		]]
 	]],
 
 	// Админка - Последние сообщения
@@ -838,30 +852,34 @@ replacer.cfg["main"] = [
 
 	// Админка - Информация о юзере по IP (посты, баны)
 	[/^mod\.php\?\/IP_less/, [
-		['css', 'fieldset#bans > legend', 'Баны'],
-		['reg', 'fieldset#bans table > tbody > tr > th', [
-			['Situação', 'Статус'],
-			['Motivo', 'Причина'],
-			['Board', 'Доска'],
-			['Aplicado', 'Добавлен'],
-			['Expira em', 'Истекает'],
-			['Visto', 'Виза'], // ???
-			['Equipe', 'Выдал'] // ???
-		], [RE_MULTI]],
+		['css', 'fieldset#bans', [
+			['css', '> legend', 'Баны'],
+			['css', 'table > tbody', [
+				['reg', '> tr > th', [
+					['Situação', 'Статус'],
+					['Motivo', 'Причина'],
+					['Board', 'Доска'],
+					['Aplicado', 'Добавлен'],
+					['Expira em', 'Истекает'],
+					['Visto', 'Виза'], // ???
+					['Equipe', 'Выдал']
+				]],
 
-		// статус
-		['reg', 'fieldset#bans table tr:nth-child(1) > td', [
-			['Ativo', 'Активный'],
-			['Expirado', 'Истек']
-		], [RE_MULTI]],
+				// статус
+				['reg', '> tr:nth-child(1) > td', [
+					['Ativo', 'Активный'],
+					['Expirado', 'Истек']
+				]],
 
-		['reg', 'fieldset#bans table tr:nth-child(3) > td', /^sem razão especificada/, '-- не указано --'], // причина
-		['reg', 'fieldset#bans table tr:nth-child(6) > td', 'nunca', 'никогда'], // Истекает
-		['reg', 'fieldset#bans table tr:nth-child(7) > td', 'Não', 'Нет'], // виза (Equipe)
-
-		['att', 'input[name="unban"]', 'value', 'Разбанить'],
-
-		[]
+				['reg', '> tr:nth-child(3) > td', /^sem razão especificada/, '-- не указано --'], // причина
+				['reg', '> tr:nth-child(5) > td, > tr:nth-child(6) > td', [
+					['nunca', 'никогда'], // Истекает
+					['(:<T0>)', '$T', [RE_TIME]], // Время
+				]],
+				['reg', '> tr:nth-child(7) > td', 'Não', 'Нет'], // виза (Equipe)
+			], [RE_MULTI]],
+			['att', 'input[name="unban"]', 'value', 'Разбанить']
+		]]
 	]],
 
 	// Админка - доска объявлений
@@ -995,6 +1013,10 @@ replacer.cfg["page_loaded"] = [
 			['css', 'div.format-text > a', 'вставить'],
 			['css', 'div.captcha_html', 'кликните сюда для показа']
 		]]
+	]],
+
+	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
+		['att', 'div.thread > div.post > p.intro > a.post-btn', 'title', 'Опции']
 	]]
 ];
 
@@ -1783,19 +1805,21 @@ replacer.cssReplacer = function(el, p, re_def)
 
 		Пример:
 		['css', 'div', [
-			['css', 'a.link', 'нажми меня'],			// div > a.link  -- обычный css
-			['reg', 'span > label', 'test', 'тест'],	// div > span > label
-			['css', 'table > tr', [						// div > table > tr -- расширенный css, уровень 2
-				['reg', 'th', [							// div > table > tr > th
+			['css', 'a.link', 'нажми меня'],			// div a.link  -- обычный css
+			['reg', '> span > label', 'test', 'тест'],	// div > span > label
+			['css', '> table > tr', [					// div > table > tr -- расширенный css, уровень 2
+				['reg', 'th', [							// div > table > tr th
 					['header1', 'заголовок1'],
 					['header2', 'заголовок2'],
 				]],
-				['reg', 'td', [							// div > table > tr > td
+				['reg', 'td', [							// div > table > tr td
 					['line1', 'строка1'],
 					['line2', 'строка2'],
 				]]
 			]]
 		]]
+
+		если селектор начинается со знака '>', то выбираются прямые потомки родителя, если нет - то все
 	*/
 
 
@@ -2474,6 +2498,30 @@ var main = {
 			}
 		});
 
+		// код для селектора '> ' - выбирает только прямых потомков родителя: element.querySelectorAll('> a')
+		['querySelector', 'querySelectorAll'].forEach(function(method) {
+			var nativ = Element.prototype[method]; // запоминаем стоковую функцию
+			Element.prototype[method] = function(selectors) {
+				if(/(^|,)\s*>/.test(selectors)) {
+					var id = this.id; // запоминаем реальный id родителя
+					var result = null;
+					this.id = '_' + Date.now(); // генерируем случайный
+					selectors = selectors.replace(/((^|,)\s*)>/g, '$1#' + this.id+' >'); // меняем селектор '> el' на '#id > el'
+					try {
+						result = nativ.call((this.parentElement || doc), selectors); // ищем элементы у родителя родителя с новым селектором
+					} catch(e) {
+						// ошибка в селекторе
+						this.id = id; // восстанавливаем id 
+						throw(e); // пробрасываем ошибку
+					}
+					this.id = id; // восстанавливаем id
+					return result;
+				} else {
+					return nativ.call(this, selectors); // вызов стоковой функции
+				}
+			};
+		});		
+
 		if(doc.readyState === 'loading') {
 			if(doc.addEventListener) {
 				doc.addEventListener("DOMContentLoaded", main.onDocReady, false);
@@ -2485,7 +2533,6 @@ var main = {
 			main.onDocReady();
 	}
 }; // main
-
 
 var win = typeof unsafeWindow != 'undefined' ? unsafeWindow : window;
 var con = win.console;
@@ -2499,7 +2546,6 @@ function dbg() { if(RE_DEBUG) con.debug.apply(con, Array.from(arguments)); } // 
 function isArray(a) { return Array.isArray(a); }
 
 main.init();
-
 
 //////// wrapper end ////////
 })();
