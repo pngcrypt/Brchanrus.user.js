@@ -1006,7 +1006,7 @@ replacer.cfg["search_cat"] = [
 // ==============================================================================================
 replacer.cfg["page_loaded"] = [
 	['', [
-		['nod', 'div.boardlist > span > a[href="/tudo"]', 'Все', [RE_LAST]],
+		['nod', 'div.boardlist > span.favorite-boards > a[href="/tudo"]', 'Все', [RE_LAST]],
 		['reg', 'div.options_tab > div > fieldset > legend', [
 			['Formatting Options', 'Опции форматирования'],
 			['Image hover', 'Всплывающие изображения']
@@ -2135,6 +2135,7 @@ var main = {
 	{
 		// сюда помещать код, который должен выполняться после скриптов борды (полной загрузки страницы)
 		main.dollGetStatus();
+		dbg('* Doll status:', !main.dollStatus ? "not found" : (main.dollStatus > 0 ? "ON" : "OFF"));
 
 		// доп. перевод
 		replacer.process("page_loaded"); 
@@ -2172,7 +2173,6 @@ var main = {
 		// выполняется после готовности документа (без загрузки ресурсов и запуска скриптов борды)
 
 		main.dollGetStatus();
-		dbg('* Doll status:', !main.dollStatus ? "not found" : (main.dollStatus > 0 ? "ON" : "OFF"));
 
 		// перевод всплывающих сообщений alert
 		main.fn.alert = win.alert;
@@ -2271,8 +2271,11 @@ var main = {
 			for(let m of mutations) {
 				for(let ch of m.addedNodes) { 
 					// перебор добавленных элементов
-					if( ch.nodeName == 'DIV' && ch.id && ( (!tudo && ch.id.match(/^reply_/)) || (tudo && ch.id.match(/^thread_/)) ) ) 
+					if( ch.nodeName == 'DIV' && ch.id && ( (!tudo && ch.id.match(/^reply_/)) || (tudo && ch.id.match(/^thread_/)) ) ) {
+						if(main.dollStatus > 0 && (ch.className.indexOf('de-pview') >= 0)) // пропускаем превью постов для куклы
+							continue;
 						setTimeout(main.onNewPosts, 0, ch); // вызов события для новых постов в треде или треда в tudo
+					}
 				}
 			}
 		});
