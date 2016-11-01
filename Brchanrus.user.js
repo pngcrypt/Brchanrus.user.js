@@ -969,8 +969,9 @@ replacer.cfg["new_post"] = [
 	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
 		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^[^?]+\?(.+)/, "$1"]], // удаление редиректов
 		['css', 'p.intro', [
-			['reg', '> label > span.name', 'Anônimo', 'Аноним'],
-			['reg', '> label > time', /(:<T0>)/, '$T', [RE_TIME]], // время поста
+			['att', '', 'brr-init', '1'], // флаг перевода поста (в p.intro)
+			['reg', 'span.name', 'Anônimo', 'Аноним'],
+			['reg', '> label > time', /(:<T0>)/, '$T', [RE_TIME]], // время поста ('> label' обязательно, иначе в превью будет двойная коррекция времени)
 			['reg', '> a:not([class])', [
 				['Responder', 'Ответить'],
 				[/^\[Últimas (\d+) Mensagens\]/, '[Последние $1 сообщений]'],
@@ -2264,15 +2265,15 @@ var main = {
 			if(!parent) return;
 		}
 
-		let tudo = !!(main.url.match(/^tudo\//));
+		// let tudo = !!(main.url.match(/^tudo\//));
 		//dbg('* Listening posts... /tudo/ is ', tudo);
 		let observer = new MutationObserver( function(mutations) {
 			// вызываетя при добавлении любых элементов в форму треда
 			for(let m of mutations) {
 				for(let ch of m.addedNodes) { 
 					// перебор добавленных элементов
-					if( ch.nodeName == 'DIV' && ch.id && ( (!tudo && ch.id.match(/^reply_/)) || (tudo && ch.id.match(/^thread_/)) ) ) {
-						if(main.dollStatus > 0 && (ch.className.indexOf('de-pview') >= 0)) // пропускаем превью постов для куклы
+					if( ch.nodeName == 'DIV' && ch.id && ch.id.match(/^(reply_|post-hover-|thread_)/) ) { // отсев постов, превью и тредов
+						if(ch.firstElementChild && ch.firstElementChild.getAttribute('brr-init')) // пропуск поста, если он уже переведен
 							continue;
 						setTimeout(main.onNewPosts, 0, ch); // вызов события для новых постов в треде или треда в tudo
 					}
