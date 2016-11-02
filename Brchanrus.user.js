@@ -965,28 +965,30 @@ replacer.cfg["confirm"] = [
 // ==============================================================================================
 replacer.cfg["new_post"] = [
 	// любая доска/тред + для некоторых разделов админки (где есть посты)
-	// [/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$|^mod\.php\?\/(recent|IP_less)\//, [
 	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
 		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^[^?]+\?(.+)/, "$1"]], // удаление редиректов
 		['css', 'p.intro', [
 			['att', '', 'brr-init', '1'], // флаг перевода поста (в p.intro)
 			['reg', 'span.name', 'Anônimo', 'Аноним'],
 			['reg', '> label > time', /(:<T0>)/, '$T', [RE_TIME]], // время поста ('> label' обязательно, иначе в превью будет двойная коррекция времени)
-			['reg', '> a:not([class])', [
-				['Responder', 'Ответить'],
-				[/^\[Últimas (\d+) Mensagens\]/, '[Последние $1 сообщений]'],
-				['Ver tudo', 'Показать все']
-			]]
 		]],
 		//['reg', 'span.name > span', 'You', 'Вы'],
 		['nod', 'p.fileinfo', '', [RE_FIRST]], // Файл: 
 		['reg', 'div.body > span.toolong', /Mensagem muito longa\. Clique <a href="(.*)">aqui<\/a> para ver o texto completo\./, '<a href="$1">Показать текст полностью</a>', [RE_INNER]],
 
-		// кол-во пропущенных ответов + начальное значение счетчика постов
-		['reg', 'div.post.op > span.omitted', [
-			[/([^>]+)>(\d+) mensage.s? e (\d+) respostas? com imagem omitidas?.*/, '$1 brr-cnt="$2">$2 пропущено, из них $3 с изображениями. Нажмите ответить, чтобы посмотреть.'],
-			[/([^>]+)>(\d+) mensage.s? omitidas?.*/, '$1 brr-cnt="$2">$2 пропущено. Нажмите ответить, чтобы посмотреть.']
-		], [RE_OUTER]]
+		// оп-пост
+		['css', 'div.post.op', [
+			['reg', 'p.intro > a:not([class])', [
+				['Responder', 'Ответить'],
+				[/^\[Últimas (\d+) Mensagens\]/, '[Последние $1 сообщений]'],
+				['Ver tudo', 'Показать все']
+			]],
+			// кол-во пропущенных ответов + начальное значение счетчика постов
+			['reg', '> span.omitted', [
+				[/([^>]+)>(\d+) mensage.s? e (\d+) respostas? com imagem omitidas?.*/, '$1 brr-cnt="$2">$2 пропущено, из них $3 с изображениями. Нажмите ответить, чтобы посмотреть.'],
+				[/([^>]+)>(\d+) mensage.s? omitidas?.*/, '$1 brr-cnt="$2">$2 пропущено. Нажмите ответить, чтобы посмотреть.']
+			], [RE_OUTER]]
+		]]
 	], [RE_MULTI]]
 ];
 
@@ -1098,7 +1100,7 @@ var l10n_rus = {
 	"Comment": "Комментарий",
 	"Quick Reply": "Быстрый ответ",
 	"Stop watching this thread": "Не следить за тредом",
-	"Watch Thread": "Следить за тредом",
+	"Watch Thread": "В избранное",
 	"Watch this thread": "В избранное",
 	"Unpin this board": "Открепить доску",
 	"Pin this board": "Прикрепить доску",
@@ -1275,7 +1277,7 @@ var l10n_rus = {
 	"Hide post and all replies" : "Скрыть пост и все ответы на него",
 	"Post +": "Пост и все ответы на него",
 	"Clear List": "Удалить все",
-	"Clear Ghosts": "Очистить",
+	"Clear Ghosts": "Удалить мертвые",
 	"Reply": "Ответить",
 	"The server took too long to submit your post. Your post was probably still submitted. If it wasn\'t, 8chan might be experiencing issues right now -- please try your post again later. Error information: ": "Сервер долго не подтверждает отправку вашего поста. Вероятнее всего, ваш пост был отправлен. Если нет, значит на сайте временные проблемы, попробуйте позже. Информация об ошибке:",
 
