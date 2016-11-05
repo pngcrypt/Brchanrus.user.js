@@ -42,6 +42,7 @@ const TIME_PATTERN = {
 	0: {in_format: "d n y h i s", out_format: 0},
 	1: {in_format: "d n y", out_format: 1}, 
 	2: {in_format: "h i s", out_format: 2},
+	3: {in_format: "Y-n-dTh:i:s", out_format: 0} // ISO format
 };
 
 // списки названий месяцев для перевода месяца в число (TIME_PATTERN, 'N' в in_format)
@@ -987,10 +988,13 @@ replacer.cfg["new_post"] = [
 	// любая доска/тред + для некоторых разделов админки (где есть посты)
 	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
 		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^[^?]+\?(.+)/, "$1"]], // удаление редиректов
-		['css', 'p.intro', [
+		['css', 'p.intro:not([brr-init])', [
 			['att', '', 'brr-init', '1'], // флаг перевода поста (в p.intro)
 			['reg', 'span.name', 'Anônimo', 'Аноним'],
-			['reg', '> label > time', /(:<T0>)/, '$T', [RE_TIME]], // время поста ('> label' обязательно, иначе в превью будет двойная коррекция времени)
+			['reg', 'time', [
+				[/(datetime="(:<T3>)Z">)[^<]+/, '$1$T'], // время поста в часовом поясе сайта
+				[/(datetime="(:<T3::G>)\.\d+Z">)[^<]+/, '$1$T'], // время поста в GMT (в превьюшках). криворукие бразильцы....
+			], [RE_TIME, RE_OUTER]],
 		]],
 		//['reg', 'span.name > span', 'You', 'Вы'],
 		['nod', 'p.fileinfo', '', [RE_FIRST]], // Файл: 
@@ -2294,9 +2298,10 @@ var main = {
 			for(let m of mutations) {
 				for(let ch of m.addedNodes) { 
 					// перебор добавленных элементов
-					if( ch.nodeName == 'DIV' && ch.id && ch.id.match(/^(reply_|post-hover-|thread_)/) ) { // отсев постов, превью и тредов
-						if(ch.firstElementChild && ch.firstElementChild.getAttribute('brr-init')) // пропуск поста, если он уже переведен
+					if( ch.nodeName == 'DIV' && ch.className && ch.className.match(/\b(post|thread)\b/) ) { // отсев постов, превью и тредов
+						if(ch.firstElementChild && ch.firstElementChild.getAttribute('brr-init')) { // пропуск поста, если он уже переведен 
 							continue;
+						}
 						setTimeout(main.onNewPosts, 0, ch); // вызов события для новых постов в треде или треда в tudo
 					}
 				}
