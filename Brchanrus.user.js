@@ -42,7 +42,7 @@ const TIME_PATTERN = {
 	0: {in_format: "d n y h i s", out_format: 0},
 	1: {in_format: "d n y", out_format: 1}, 
 	2: {in_format: "h i s", out_format: 2},
-	3: {in_format: "Y-n-dTh:i:s", out_format: 0} // ISO format
+	3: {in_format: "Y-n-d h:i:s", out_format: 0} // ISO format
 };
 
 // списки названий месяцев для перевода месяца в число (TIME_PATTERN, 'N' в in_format)
@@ -333,7 +333,7 @@ replacer.cfg["main"] = [
 		['css', 'main > section', [
 			['css', 'h2', 'Статистика'],
 			['reg', 'p', [
-				[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Высего было написано $4 постов начиная с', [RE_INNER]],
+				[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Всего было написано $4 постов начиная с', [RE_INNER]],
 				[/Última atualização desta página: (:<T0::G>)/, 'Последнее обновление страницы: $T', [RE_TIME]]
 			]]
 		]],
@@ -343,17 +343,20 @@ replacer.cfg["main"] = [
 			['css', 'h2', 'Поиск'],
 			['reg', 'label.search-item.search-sfw', 'Ocultar', 'Скрыть', [RE_INNER]],
 			['att', 'input#search-title-input', 'placeholder', 'Поиск названия...'],
-			['att', 'input#search-tag-input', 'placeholder', 'Поиск тэгов...'],
+			['att', 'input#search-tag-input', 'placeholder', 'Поиск тегов...'],
 			['css', 'button#search-submit', 'Искать']
 		]],
 
 		// Таблица списка досок
-		['css', 'th.board-uri', 'Доска'],
-		['css', 'th.board-title', 'Название'],
-		['css', 'th.board-pph', 'п/ч'],
-		['css', 'th.board-unique', 'IP за 72ч'],
-		['css', 'th.board-tags', 'Тэги'],
-		['css', 'th.board-max', 'Постов'],
+		['css', 'table.board-list-table', [
+			['css', 'th.board-uri', 'Доска'],
+			['css', 'th.board-title', 'Название'],
+			['css', 'th.board-pph', 'п/ч'],
+			['css', 'th.board-unique', 'IP за 72ч'],
+			['css', 'th.board-tags', 'Теги'],
+			['css', 'th.board-max', 'Постов'],
+			['att', 'td.board-pph > p', 'title', [/(\d+) made in the last hour, ([\d,]+)? on average/, 'постов за последний час: $1; в среднем: $2', [RE_MULTI]]]
+		]],
 
 		['reg', 'td#board-list-more.board-list-hasmore', /^Exibindo resultados de(.+>\d+<.+) a (.+>\d+<.+)no total de(.+>\d+<.+)Click to load more/, 'Показано с $1 по $2 из $3Нажмите чтобы загрузить еще', [RE_INNER]]
 	]],
@@ -567,7 +570,7 @@ replacer.cfg["main"] = [
 				['Mostrar SAGE! em mensagens com sage', 'Показать SAGE! у постов с сажей'],
 				[/^Desabilitar caracteres compostos.+/, 'Запретить составные символы ("Zalgo", вьетнамский текст)'],
 				[/^Ocultar board(.+)Marcando.+/, 'Скрыть доску$1Если эта опция включена, доска не отображается в списке', [RE_INNER]],
-				[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Тэги', [RE_INNER]],
+				[/^Habilitar Markup(.+)Códigos como/, 'Разрешить форматирование$1Теги', [RE_INNER]],
 				['Oekaki é um painel javascript que permite o usuário desenhar na hora do post', 'Разрешить пользователю рисовать при создании поста', [RE_INNER]],
 				['Formatação matemática entre', 'Форматировать математику между'],
 				[/Permitir upload de (.+)/, 'Разрешить загружать $1', [RE_MULTI]],
@@ -609,7 +612,7 @@ replacer.cfg["main"] = [
 				['Por', 'На:'],
 			]],
 			['reg', 'table#tags th', [
-				['Tags', 'Тэги'],
+				['Tags', 'Теги'],
 				['Descrição', 'Описание']
 			]],
 
@@ -630,14 +633,14 @@ replacer.cfg["main"] = [
 			['css', 'select[name="max_newlines"] > option[value="0"], select[name="hour_max_threads"] > option[value="none"]', 'Неограничено'], // Строк на пост, Кол-во тредов в час
 
 			['att', 'input#wf_add', 'value', 'Добавить еще фильтр'],
-			['att', 'input#tag_add', 'value', 'Добавить еще тэг'],
+			['att', 'input#tag_add', 'value', 'Добавить еще тег'],
 			['att', 'input[value="Salvar alterações"]', 'value', 'Сохранить изменения'],		
 
 			['reg', 'p > a', [
 				['Editar banners da board', 'Редактировать баннер доски'],
 				['Editar imagens customizadas da board', 'Редактировать изображения'],
 				['Editar voluntários', 'Редактировать модераторов'],
-				['Editar tags', 'Редактировать тэги']
+				['Editar tags', 'Редактировать теги']
 			]]
 		]]
 	]],
