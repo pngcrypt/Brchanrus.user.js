@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            BRchan Rusifikator
-// @version         3.3.3
+// @version         3.3.4
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -2225,7 +2225,7 @@ var main = {
 
 		if(main.dollStatus < 1) {
 			// стиль счетчика постов (контент после номера поста)
-			document.styleSheets[0].insertRule('div.thread > div.post.reply > p.intro > a.post_no:not([id])::after {\
+			doc.styleSheets[0].insertRule('div.thread > div.post.reply > p.intro > a.post_no:not([id])::after {\
 				counter-increment: brr-cnt 1;\
 				content: " #" counter(brr-cnt);\
 				margin: 0 4px 0 2px;\
@@ -2293,7 +2293,7 @@ var main = {
 		main.fixCatalog();
 		main.fixBanPage();
 
-		let style =  document.styleSheets[0];
+		let style =  doc.styleSheets[0];
 		style.insertRule('div.thread p.fileinfo > span.unimportant{display: block;}', 0); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
 		style.insertRule('div.thread > div.post.op{overflow: auto;}', 0); // На нулевой смещает ответы под оп пост
 		style.insertRule('div.post > span.mentioned > a, span.postfilename{font-size: inherit;}', 0); // Размер шрифта ответов на пост
@@ -2448,7 +2448,7 @@ var main = {
 			return;
 
 		replacer.process("ban_page"); // перевод страницы
-		win.countdown = document.getElementById("countdown"); // обновление эл-та счетчика (после перевода он затирается)
+		win.countdown = doc.getElementById("countdown"); // обновление эл-та счетчика (после перевода он затирается)
 
 		// замена ф-ции обновления таймера (для перевода)
 		main.fn.until = win.until;
