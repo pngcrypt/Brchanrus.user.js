@@ -31,7 +31,8 @@ const TIME_FORMAT = {
 	0: "_d/_n/_y(_w)_h:_i:_s", // дата + время
 	1: "_d/_n/_y", // только дата
 	2: "_h:_i:_s", // только время
-	3: "_N _d _h:_i" // имя месяца, день, часы, минуты
+	3: "_N _d _h:_i", // имя месяца, день, часы, минуты
+	4: "_d _N (_w) _Y" // д.н., день, имя месяца, год
 };
 
 // шаблоны для замены даты в regex, для (:<TN>) - где N - номер паттерна
@@ -42,12 +43,14 @@ const TIME_PATTERN = {
 	0: {in_format: "d n y h i s", out_format: 0},
 	1: {in_format: "d n y", out_format: 1}, 
 	2: {in_format: "h i s", out_format: 2},
-	3: {in_format: "Y-n-d h:i:s", out_format: 0} // ISO format
+	3: {in_format: "Y-n-d h:i:s", out_format: 0}, // ISO format
+	4: {in_format: /\w+ d\sN Y/, out_format: 4, in_months: 1}, // д.н., день, месяц, год (баны)
 };
 
-// списки названий месяцев для перевода месяца в число (TIME_PATTERN, 'N' в in_format)
+// списки названий месяцев для перевода месяца в число (TIME_PATTERN, 'N' в in_format), ! в нижнем регистре, символы юникода недопустимы !
 const TIME_MONTHS = {
-	0: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"] // по умолчанию (возможно, Mai - неправильно, хз)
+	0: ["jan", "Fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"], // по умолчанию (возможно, Mai - неправильно, хз)
+	1: ["janeiro", "fevereiro", "mar", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
 };
 
 const RE_DEBUG = true; // флаг отладки группы или отдельного реплейсера (а также глобальный запрет отладки - если false)
@@ -288,12 +291,26 @@ replacer.cfg["main"] = [
 		['css', 'body > div', [
 			['reg', 'h2', [
 				['IP detectado como proxy, proxies nao sao permitidos nessa board. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, [что произошла ошибка, свяжитесь с администрацией'],
-				['Senha incorreta', 'Неверный пароль']
+				['Senha incorreta', 'Неверный пароль'],
+
+				// сообщения alert (при отключенном javascript)
+				['Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'],
+				['Você errou o codigo de verificação', 'Неверно введен код капчи', [RE_INNER]],
+				['O corpo do texto é pequeno demais ou inexistente.', 'Введите сообщение'],
+				['Você errou o codigo de verificação', 'Введите сообщение'],
+				['Flood detectado; Sua mensagem foi descartada', 'Ошибка постинга: Вы постите слишком быстро'],
+				['Seu browser enviou uma referência HTTP inválida ou inexistente', 'Ваш браузер послал неверный referer или он отсутствует в заголовке HTTP'],
+				['IP Blocked - Please check', 'IP Заблокирован - проверьте на:'],
+				['Extensão de arquivo desconhecida', 'Неизвестный тип файла'],
+				['Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'],
+				['É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'],
+				[/(O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!)/, 'Файл уже был загружен в <a href="$2">этом треде!</a>'],
+				['O tópico especificado não existe', 'Данный тред не существует']
 			]],
-			['css', 'p > a', 'Назад'],
+			//['css', 'p > a', 'Назад'],
 			['reg', 'a', [
 				['Fechar janela', 'Закрыть окно'],
-				['Voltar ', 'Назад']
+				['Voltar', 'Назад']
 			]]
 		]]
 	]],
@@ -1053,6 +1070,41 @@ replacer.cfg["page_loaded"] = [
 ];
 
 // ==============================================================================================
+// Страница с сообщением о бане
+// ==============================================================================================
+replacer.cfg["ban_page"] = [
+	['', [
+		['reg', 'head > title, header > h1', [
+			['Banido', 'Бан'],
+		], [RE_MULTI]],
+		['css', 'body > div.ban', [
+			['reg', '> h2', 'Você está banido', 'Вы забанены'],
+			['reg', '> p', [
+				[/Você foi banido de (.+) pelo seguinte motivo/, 'Вы забанены на доске $1 по причине'],
+				[/Você foi banido de (.+) por um motivo não especificado./, 'Вы забанены на доске $1 (без указания причины)'],
+				[/Sua expulsão foi feita (<strong>)(:<T4>)(<\/strong>) e /, 'Бан был выдан $1$T$3 и ', [RE_TIME, RE_NOBREAK]],
+				[/expira daqui a (.+), que será (<strong>)(:<T4>)(<\/strong>)<script>.+/, 'окончится через $1, $2$T$4', [RE_TIME]],
+				['Seu endereço de IP é', 'Ваш IP адрес:'],
+				['Você foi banido pela seguinte mensagem no', 'Вы были забанены из-за следующего сообщения в']
+			], [RE_INNER]],
+			['reg', 'span#expires', 'e já expirou. Recarregue a página para continuar.', 'срок его действия истек. Пожалуйста, перезагрузите страницу, чтобы продолжить.']
+		]],
+	]],
+];
+
+// функция оставшегося времени бана
+replacer.cfg["ban_until"] = [
+	['', [
+		['str', /seconds?/, 'сек'],
+		['str', /minutes?/, 'мин'],
+		['str', /hours?/, 'ч'],
+		['str', /days?/, 'дн'],
+		['str', /weeks?/, 'нед'],
+		['str', /years?/, 'г']
+	]]
+];
+
+// ==============================================================================================
 // переменные локализации (для скриптов: настройки, быстрый ответ, и т.п.) 
 // ==============================================================================================
 var l10n_rus = {
@@ -1202,8 +1254,8 @@ var l10n_rus = {
 	"Color IDs": "Color IDs",
 	"Update": "Обновить",
 	"IP address": "IP адрес",
-	"Seen": "Seen",
-	"Message for which user was banned is included": "Включая сообщение для забаненого пользователя",
+	"Seen": "Просмотрено",
+	"Message for which user was banned is included": "Включая сообщение забаненого пользователя",
 	"Message:": "Сообщение:",
 	"Board": "Доска",
 	"all": "все",
@@ -1647,7 +1699,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 							case 'Y': time.setUTCFullYear(val); break; 
 							case 'y': time.setUTCFullYear("20"+val); break; // 2 цифры года преобразуем в 4 (хз как век определять)
 							case 'n': time.setUTCMonth(val-1); break; // в js месяцы считаются с 0
-							case 'N': time.setUTCMonth(TIME_MONTHS[RE.time.in_months].indexOf(val)); break; // преобразуем название месяца в цифру
+							case 'N': time.setUTCMonth(TIME_MONTHS[RE.time.in_months].indexOf(val.toLowerCase())); break; // преобразуем название месяца в цифру
 							case 'd': time.setUTCDate(val); break;
 							case 'h': time.setUTCHours(val);  break;
 							case 'i': time.setUTCMinutes(val); break;
@@ -1804,6 +1856,7 @@ replacer._regexTimeInit = function(rx, RE, opt)
 				patt.find_rx = find_rx;
 				patt.catch_rx = RE.time.catch_rx;
 				patt.in_groups = RE.time.in_groups;
+				RE.time.in_months = patt.in_months;
 				if(opt.debug) con.debug('Time pattern:', patt);
 			}
 			if(opt.debug) con.debug('Time Out:', RE.time);
@@ -2238,6 +2291,7 @@ var main = {
 		replacer.clear("main");
 		main.onNewPosts(doc.body); // вызываем обработчик новых постов для всей страницы (перевод + фиксы)
 		main.fixCatalog();
+		main.fixBanPage();
 
 		let style =  document.styleSheets[0];
 		style.insertRule('div.thread p.fileinfo > span.unimportant{display: block;}', 0); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
@@ -2383,6 +2437,31 @@ var main = {
 			}
 			body.parentNode.insertBefore(files, body);
 		});
+	},
+
+	// ----------------------------------------------------
+	fixBanPage: function()
+	// ----------------------------------------------------
+	{
+		// перевод страницы бана
+		if(!main.url.match(/^post\.php/) || !doc.querySelector('body > div.ban'))
+			return;
+
+		replacer.process("ban_page"); // перевод страницы
+		win.countdown = document.getElementById("countdown"); // обновление эл-та счетчика (после перевода он затирается)
+
+		// замена ф-ции обновления таймера (для перевода)
+		main.fn.until = win.until;
+		win.until = function(end) {
+			let str = {text: main.fn.until(end)}; // оригинальная функция возвращает строку с кол-вом времени до завершения бана
+			if(str.text === "")
+				replacer.process("ban_page"); // если пустая строка, бан окончен, повторный перевод страницы (сообщение о разбане)
+			else
+				replacer.process("ban_until", str, false); // перевод интервала времени
+			return str.text;
+		};
+		win.updateExpiresTime();
+
 	},
 
 	// ----------------------------------------------------
