@@ -49,7 +49,7 @@ const TIME_PATTERN = {
 
 // списки названий месяцев для перевода месяца в число (TIME_PATTERN, 'N' в in_format), ! в нижнем регистре, символы юникода недопустимы !
 const TIME_MONTHS = {
-	0: ["jan", "Fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"], // по умолчанию (возможно, Mai - неправильно, хз)
+	0: ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"], // по умолчанию (возможно, Mai - неправильно, хз)
 	1: ["janeiro", "fevereiro", "mar", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
 };
 
