@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            BRchan Rusifikator
-// @version         3.3.4
+// @version         3.4.0
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -141,7 +141,7 @@ replacer.cfg["main"] = [
 			['reg', '> ul > li:first-child', [
 				['Entretenimento.', 'Развлечения'],
 				['Discussão', 'Обсуждение'],
-				['Produtividade', 'Производство'],
+				['Produtividade', 'Творчество'],
 				['Misc', 'Разное'],
 				['Libidinagem', 'Разврат']
 			]]
@@ -1015,6 +1015,7 @@ replacer.cfg["new_post"] = [
 				[/(datetime="(:<T3>)Z">)[^<]+/, '$1$T'], // время поста в часовом поясе сайта
 				[/(datetime="(:<T3::G>)\.\d+Z">)[^<]+/, '$1$T'], // время поста в GMT (в превьюшках). криворукие бразильцы....
 			], [RE_TIME, RE_OUTER]],
+			['att', 'a.post-btn', 'title', 'Опции']
 		]],
 		//['reg', 'span.name > span', 'You', 'Вы'],
 		['nod', 'p.fileinfo', '', [RE_FIRST]], // Файл: 
@@ -1065,7 +1066,7 @@ replacer.cfg["page_loaded"] = [
 	]],
 
 	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
-		['att', 'div.thread > div.post > p.intro > a.post-btn', 'title', 'Опции']
+		['att', 'div.thread div.post > p.intro > a.post-btn', 'title', 'Опции']
 	]]
 ];
 
@@ -2217,24 +2218,21 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// сюда помещать код, который должен выполняться после скриптов борды (полной загрузки страницы)
-		main.dollGetStatus();
 		dbg('* Doll status:', !main.dollStatus ? "not found" : (main.dollStatus > 0 ? "ON" : "OFF"));
 
-		// доп. перевод
-		replacer.process("page_loaded"); 
+		if(main.dollStatus < 1) { // куклы нет или отключена
+			// добавляем стиль счетчика постов (контент после номера поста)
+			doc.styleSheets[0].insertRule('div.thread > div.post.reply > p.intro > a.post_no:not([id])::after {counter-increment: brr-cnt 1; content: " #" counter(brr-cnt); margin: 0 4px 0 2px; vertical-align: 1px; color: #4f7942; font: bold 11px tahoma; cursor: default;}', 0);
 
-		if(main.dollStatus < 1) {
-			// стиль счетчика постов (контент после номера поста)
-			doc.styleSheets[0].insertRule('div.thread > div.post.reply > p.intro > a.post_no:not([id])::after {\
-				counter-increment: brr-cnt 1;\
-				content: " #" counter(brr-cnt);\
-				margin: 0 4px 0 2px;\
-				vertical-align: 1px;\
-				color: #4f7942;\
-				font: bold 11px tahoma;\
-				cursor: default;\
-			}', 0);
+			if(main.dollObserver) main.dollObserver.disconnect();
 		}
+		else if(main.dollStatus == 1) { // кукла включена
+			main.dollPostMenu(doc, 'div.thread div.post.op'); // меню для оп-постов
+			doc.styleSheets[doc.styleSheets.length-1].insertRule('.post-btn {display: inline-block !important;}', 0); // показать меню постов
+		}
+
+		// доп. перевод
+		replacer.process("page_loaded");
 
 		// фикс ширины панели избранного
 		let el = doc.querySelector('#watchlist');
@@ -2255,7 +2253,7 @@ var main = {
 	{
 		// выполняется после готовности документа (без загрузки ресурсов и запуска скриптов борды)
 
-		main.dollGetStatus();
+		//main.dollGetStatus();
 
 		// перевод всплывающих сообщений alert
 		main.fn.alert = win.alert;
@@ -2309,32 +2307,26 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// вызывается при добавлении: нового поста в треде; нового треда в /tudo/; новой главной формы (кукла, подгрузка страниц на нулевой) 
-		replacer.process("new_post", parent, false); // должно выполняться до initPostCounter
-		replacer.process("mod_buttons", parent, false);
 
-		if(parent.id && parent.id.match(/^reply_/))
-			main.moveReplies(parent.parentNode); // если это новый пост, обрабатываем весь тред
+		let isPost = parent.classList.contains('reply');
+
+		if(isPost) {
+			// новый пост
+			main.moveReplies(parent.parentNode); // обрабатываем весь тред
+			main.dollPostMenu(parent);
+		}
 		else {
 			// тред или форма
 			main.fixOPImages(parent); 
 			main.moveReplies(parent);
+			main.dollPostMenu(parent, 'div.post');
+		}
+
+		replacer.process("new_post", parent, false); // должно выполняться до initPostCounter
+		replacer.process("mod_buttons", parent, false);
+
+		if(!isPost)
 			main.initPostCounter(parent);
-		}
-	},
-
-	// ----------------------------------------------------
-	dollGetStatus: function(de_main)
-	// ----------------------------------------------------
-	{
-		// ищет панель куклы на странице, обновляет статус в main.dollStatus
-		main.dollStatus = 0;
-		if(!de_main) {
-			de_main = doc.querySelector('div#de-main');
-			if(!de_main) return;
-		}
-
-		let el = de_main.querySelector('span#de-panel-buttons');
-		main.dollStatus = (el && el.children.length > 1) ? 1 : -1; // проверяем статус по кол-ву кнопок
 	},
 
 	// ----------------------------------------------------
@@ -2348,15 +2340,17 @@ var main = {
 			if(!parent) return;
 		}
 
-		// let tudo = !!(main.url.match(/^tudo\//));
-		//dbg('* Listening posts... /tudo/ is ', tudo);
 		let observer = new MutationObserver( function(mutations) {
 			// вызываетя при добавлении любых элементов в форму треда
 			for(let m of mutations) {
 				for(let ch of m.addedNodes) { 
 					// перебор добавленных элементов
-					if( ch.nodeName == 'DIV' && ch.className && ch.className.match(/\b(post|thread)\b/) ) { // отсев постов, превью и тредов
-						if(ch.firstElementChild && ch.firstElementChild.getAttribute('brr-init')) { // пропуск поста, если он уже переведен 
+					if( ch.nodeName == 'DIV' && (ch.classList.contains('post') || ch.classList.contains('thread')) ) { // отсев постов, превью и тредов
+						if(ch.classList.contains('de-pview')) {
+							for(let el of ch.querySelectorAll('a.post-btn, input.delete')) // удаляем меню постов в превьюшках
+								el.remove();
+						}
+						if(ch.querySelector('p.intro[brr-init]')) { // пропуск поста, если он уже переведен 
 							continue;
 						}
 						setTimeout(main.onNewPosts, 0, ch); // вызов события для новых постов в треде или треда в tudo
@@ -2379,14 +2373,22 @@ var main = {
 		if(!main.url.match(/^(mod\.php\?\/)?(?!tudo)[^/]+\/?(|[^/]+\.html)$/)) // любая страница доски, кроме /tudo/
 			return;
 
-		// dbg('* Listening forms...');
 		let observer = new MutationObserver(function(mutations){
 			// вызываетя при добавлении любых элементов в body (прямых потомков)
 			for(let m of mutations) {
 				for(let ch of m.addedNodes) { 
-					//dbg(ch);
 					// перебор добавленных элементов, поиск формы
 					if(ch.nodeName && ch.nodeName == 'FORM' && ch.getAttribute('name') == 'postcontrols') {
+						if(win.jQuery) {
+							// клонирование события click для меню постов
+							let ev = win.$._data(doc.querySelector('form[name=postcontrols]'), 'events'); // получаем события первой формы (недокументированная фича)
+							if(ev && ev.click) for(let e of ev.click) {
+								if(e.selector == '.post-btn' && e.handler) { // ищем нужный обработчик
+									win.$(ch).on('click', '.post-btn', e.handler); // клонируем на новую форму
+									break;
+								}
+							}
+						}
 						main.listenNewPosts(ch); // вешаем на форму обработчик добавления постов
 						setTimeout(main.onNewPosts, 0, ch); // вызов события для новой формы
 					}
@@ -2396,6 +2398,52 @@ var main = {
 
 		// запуск обработчика
 		if(observer) observer.observe(doc.body, {attributes: false, childList: true, characterData: false, subtree: false}); // слушать добавление только прямых потомков
+	},
+
+	// ----------------------------------------------------
+	listenDoll: function()
+	// ----------------------------------------------------
+	{
+		// определение статуса куклы, фикс отображения меню постов
+		main.dollObserver = new MutationObserver(function(mutations) {
+			for(let m of mutations) {
+				if(m.attributeName == 'de-form') {
+					main.dollStatus = 1;
+				}
+				else if(m.attributeName == 'id') {
+					if(!main.dollStatus && m.target.nodeName == 'STYLE' && m.target.id == 'de-css') {
+						// кукла есть, но выключена
+						main.dollStatus = -1;
+						main.dollObserver.disconnect();
+						return;
+					}
+					if(m.target.nodeName == 'DIV' && m.oldValue && m.target.classList.contains('thread')) {
+						// перехват удаления id треда куклой (для показа меню постов)
+						m.target.id = m.oldValue;
+						for(let el of m.target.querySelectorAll('div[de-oppost]')) { // переносим id треда в обертку оп-поста
+							el.id = el.parentElement.id.replace('thread_', '');
+						}
+					}
+				}
+			}
+		});
+		if(main.dollObserver) main.dollObserver.observe(doc, {attributes: true, childList: false, characterData: false, subtree: true, attributeOldValue: true, attributeFilter:['de-form', 'id']});
+	},
+
+	// ----------------------------------------------------
+	dollPostMenu: function(parent, selector)
+	// ----------------------------------------------------
+	{
+		// вызов события "new_post" для новых постов (инициализация меню постов)
+		if(main.dollStatus != 1 || !parent || !win.jQuery)
+			return;
+
+		if(selector)
+			parent.querySelectorAll(selector).forEach(function(el) {
+				win.$(doc).trigger("new_post", el);
+			});
+		else if(!parent.classList.contains('de-pview'))
+			win.$(doc).trigger("new_post", parent);
 	},
 
 	// ----------------------------------------------------
@@ -2637,7 +2685,9 @@ var main = {
 					return nativ.call(this, selectors); // вызов стоковой функции
 				}
 			};
-		});		
+		});
+
+		main.listenDoll();
 
 		if(doc.readyState === 'loading') {
 			if(doc.addEventListener) {
