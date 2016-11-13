@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            BRchan Rusifikator
-// @version         3.4.0
+// @version         3.4.1
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -12,10 +12,6 @@
 // @include         http://www.brchan.org/*
 // @nocompat        Chrome
 // ==/UserScript==
-
-/*
-TODO: 
-*/
 
 ////////// wrapper /////////
 (function() {
@@ -494,6 +490,7 @@ replacer.cfg["main"] = [
 			['reg', 'legend', [
 				['Mensagens', 'Сообщения'],
 				['Administração', 'Администрирование'],
+				['Procurar', 'Поиск'],
 				['Boards', 'Доски'],
 				['Conta de usuário', 'Учетная запись']
 			]],
@@ -512,7 +509,7 @@ replacer.cfg["main"] = [
 					['Histórico da board', 'История событий доски'],
 					['Mensagens recentes', 'Последние сообщения в тредах'],
 
-					['configurações', 'настройки'],
+					['configurações', 'настройки', [RE_INNER, RE_MULTI]],
 
 					['Logout', 'Выход']
 				]],
@@ -833,7 +830,7 @@ replacer.cfg["main"] = [
 
 
 	// Админка - История событий
-	[/^mod\.php\?\/log[:]/, [
+	[/^mod\.php\?\/log\b/, [
 		['reg', 'head > title, header > h1', 'Histórico da board', 'История событий доски', [RE_MULTI]],
 		['css', 'table.modlog > tbody > tr', [
 			['reg', '> th', [
@@ -851,10 +848,11 @@ replacer.cfg["main"] = [
 				[/dias?/, 'дн'],
 				[/semanas?/, 'нед']
 			], [RE_MULTI]],
-			['att', '> td:nth-child(3) > span', 'title', [/^(:<T0>)/, '$T', [RE_TIME, RE_MULTI]]], // время
-			['reg', '> td:nth-child(5)', [ // действия.
+			['att', '> td:nth-child(3) > span', 'title', [/^(:<T0>)/, '$T', [RE_TIME, RE_MULTI]]] // время
+			/*['reg', '> td:nth-child(5)', [ // действия.
 				[/^Edited post/, 'Редактирование поста'],
 				[/^Deleted post/, 'Удаление поста'],
+				[/^Deleted all posts by IP address/, 'Удаление всех постов по IP'],
 				[/^Stickied thread/, 'Тред закреплен'],
 				[/^Unstickied thread/, 'Тред откреплен'],
 				[/^Locked thread/, 'Тред закрыт'],
@@ -868,14 +866,17 @@ replacer.cfg["main"] = [
 				[/^Deleted file from post/, 'Удаление файла в посте'],
 				[/^Removed ban (#\d+) for/, 'Бан снят $1 для'],
 				[/^Attached a public ban message to post #(\d+)/, 'Cообщение бана к посту #$1'],
-				[/^Created a new (.+) ban on (\/[^/]+\/) for (.+\(#\d+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
+				[/^Created a new (.+) ban on all boards for ([^)]+\)) with (no )?reason:?/, "Бан '$1' на всех досках для $2. Причина: $3"],
+				[/^Created a new (.+) ban on (\/[^/]+\/) for ([^)]+\)) with (no )?reason:?/, "Бан '$1' на доске $2 для $3. Причина: $4"],
+				[/^Created a new permanent ban on all boards for ([^)]+\)) with (no )?reason:?/, "Перманентный бан на всех досках для $1. Причина: $2"],
 				[/^Created a new volunteer/, 'Добавлен новый модератор'],
 				[/^User deleted his own post/, 'Пользователь удалил свой пост'],
 				[/^Dismissed a report for post/, 'Отказано в жалобе к посту'],
+				[/^Dismissed (\d+) local report\(s\) for post/, 'Отказано в $1 лок. жалоб. к посту'],
 				[/^Re-opened reports for post (#\d+) in local/, 'Повторная местная жалоба к посту $1'],
 				[/^Promoted a local report for post/, 'Принята местная жалоба к посту'],
 				[]
-			], [RE_MULTI]]
+			], [RE_MULTI, RE_INNER]] */
 		]]
 	]],
 
@@ -891,7 +892,7 @@ replacer.cfg["main"] = [
 	]],
 
 	// Админка - Информация о юзере по IP (посты, баны)
-	[/^mod\.php\?\/IP_less/, [
+	[/^mod\.php\?\/IP(_less)?/, [
 		['css', 'fieldset#bans', [
 			['css', '> legend', 'Баны'],
 			['css', 'table > tbody', [
@@ -916,7 +917,10 @@ replacer.cfg["main"] = [
 					['nunca', 'никогда'], // Истекает
 					['(:<T0>)', '$T', [RE_TIME]], // Время
 				]],
-				['reg', '> tr:nth-child(7) > td', 'Não', 'Нет'], // виза (Equipe)
+				['reg', '> tr:nth-child(7) > td', [ // виза
+					['Não', 'Нет'],
+					['Sim', 'Да']
+				]]
 			], [RE_MULTI]],
 			['att', 'input[name="unban"]', 'value', 'Разбанить']
 		]]
@@ -1006,8 +1010,7 @@ replacer.cfg["confirm"] = [
 // ==============================================================================================
 replacer.cfg["new_post"] = [
 	// любая доска/тред + для некоторых разделов админки (где есть посты)
-	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP_less)\//, [
-		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^[^?]+\?(.+)/, "$1"]], // удаление редиректов
+	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$|^mod\.php\?\/(recent|IP|IP_less)\//, [
 		['css', 'p.intro:not([brr-init])', [
 			['att', '', 'brr-init', '1'], // флаг перевода поста (в p.intro)
 			['reg', 'span.name', 'Anônimo', 'Аноним'],
@@ -1498,8 +1501,8 @@ replacer.processReplacers = function(element, re_arr, opt)
 	/* 
 	обработка массива реплейсеров
 		element - родительский элемент
-		re_arr - массив рпелейсеров
-		opt - объект RE-модификаторов
+		re_arr - массив реплейсеров
+		opt - объект RE-модификаторов по умолчанию
 	*/
 
 	let ret, fn;
@@ -1657,6 +1660,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 
 	 // перебор regex
 	for(let r of rx_arr) {
+		// TODO: убрать r.length < 2 :: если один параметр, то s_rep == null
 		if(!isArray(r) || (r.length && r.length < 2 || r.length > 3) ) { // проверка параметров
 			return -3;
 		}
@@ -1710,6 +1714,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 					s_rep = s_rep.replace('$T', main.timeFormat(time, RE.time.isGMT, RE.time.out_format)); // в строке замены меняем $T на форматированное время
 				}
 			}
+			// TODO: если s_rep == null, скипаем
 			callback_set(str.replace(r[0], s_rep), opt); // вызываем внешнюю функцию сохранения измененной строки
 			dbgMsg += ": FOUND";
 			if(opt.single) {
@@ -1796,7 +1801,7 @@ replacer._regexTimeInit = function(rx, RE, opt)
 					RE.time.catch_rx = patt.catch_rx;
 					RE.time.in_groups = patt.in_groups;
 					RE.time.in_months = patt.in_months;
-					if(opt.debug) con.debug('Time pattern:', patt, '; Time Out:', RE.time);
+					if(opt.debug) con.debug('Time pattern:', patt, ';\nTime RE:', RE.time);
 					return patt.find_rx;
 				}
 				if(opt.debug) con.debug('Time pattern Init:', patt);
@@ -1857,7 +1862,7 @@ replacer._regexTimeInit = function(rx, RE, opt)
 				patt.find_rx = find_rx;
 				patt.catch_rx = RE.time.catch_rx;
 				patt.in_groups = RE.time.in_groups;
-				RE.time.in_months = patt.in_months;
+				RE.time.in_months = patt.in_months; // копируем in_months из шаблона
 				if(opt.debug) con.debug('Time pattern:', patt);
 			}
 			if(opt.debug) con.debug('Time Out:', RE.time);
@@ -2053,7 +2058,6 @@ replacer.nodReplacer = function(el, p, re_def)
 			[regexN, textN, re_arrN]
 		], re_arr]
 
-		в расширенном синтаксисе: sub-query - селекторы, для дочерних элементов от родительского (найденного по query)
 		re_arr - массив RE_* модификаторов [не обязательно]:
 			RE_FIRST - первая нода [по умолчанию]
 			RE_LAST - последняя нода
@@ -2222,13 +2226,13 @@ var main = {
 
 		if(main.dollStatus < 1) { // куклы нет или отключена
 			// добавляем стиль счетчика постов (контент после номера поста)
-			doc.styleSheets[0].insertRule('div.thread > div.post.reply > p.intro > a.post_no:not([id])::after {counter-increment: brr-cnt 1; content: " #" counter(brr-cnt); margin: 0 4px 0 2px; vertical-align: 1px; color: #4f7942; font: bold 11px tahoma; cursor: default;}', 0);
+			main.addStyle('div.thread > div.post.reply > p.intro > a.post_no:not([id])::after', 'counter-increment: brr-cnt 1; content: " #" counter(brr-cnt); margin: 0 4px 0 2px; vertical-align: 1px; color: #4f7942; font: bold 11px tahoma;');
 
 			if(main.dollObserver) main.dollObserver.disconnect();
 		}
 		else if(main.dollStatus == 1) { // кукла включена
 			main.dollPostMenu(doc, 'div.thread div.post.op'); // меню для оп-постов
-			doc.styleSheets[doc.styleSheets.length-1].insertRule('.post-btn {display: inline-block !important;}', 0); // показать меню постов
+			main.addStyle('p.intro > a.post-btn', 'display: inline-block !important;'); // показать меню постов
 		}
 
 		// доп. перевод
@@ -2252,8 +2256,6 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// выполняется после готовности документа (без загрузки ресурсов и запуска скриптов борды)
-
-		//main.dollGetStatus();
 
 		// перевод всплывающих сообщений alert
 		main.fn.alert = win.alert;
@@ -2290,12 +2292,6 @@ var main = {
 		main.onNewPosts(doc.body); // вызываем обработчик новых постов для всей страницы (перевод + фиксы)
 		main.fixCatalog();
 		main.fixBanPage();
-
-		let style =  doc.styleSheets[0];
-		style.insertRule('div.thread p.fileinfo > span.unimportant{display: block;}', 0); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
-		style.insertRule('div.thread > div.post.op{overflow: auto;}', 0); // На нулевой смещает ответы под оп пост
-		style.insertRule('div.post > span.mentioned > a, span.postfilename{font-size: inherit;}', 0); // Размер шрифта ответов на пост
-		style.insertRule('div.post > span.mentioned{display: inline-block;}', 0);
 
 		setTimeout(main.onPageLoaded, 0);
 
@@ -2345,7 +2341,7 @@ var main = {
 			for(let m of mutations) {
 				for(let ch of m.addedNodes) { 
 					// перебор добавленных элементов
-					if( ch.nodeName == 'DIV' && (ch.classList.contains('post') || ch.classList.contains('thread')) ) { // отсев постов, превью и тредов
+					if( ch.nodeName == 'DIV' && (ch.classList.contains('post') || ch.classList.contains('thread')) && !ch.classList.contains('de-win')) { // отсев постов, превью и тредов
 						if(ch.classList.contains('de-pview')) {
 							for(let el of ch.querySelectorAll('a.post-btn, input.delete')) // удаляем меню постов в превьюшках
 								el.remove();
@@ -2431,11 +2427,29 @@ var main = {
 	},
 
 	// ----------------------------------------------------
+	removeRedirects: function()
+	// ----------------------------------------------------
+	{
+		// удаление редиректов у внешних ссылок
+		let match;
+		let observer = new MutationObserver( function(mutations) {
+			for(let m of mutations) {
+				for(let ch of m.addedNodes) { 
+					if( ch.nodeName == 'A' && ch.href && (match = ch.href.match(/^http:\/\/privatelink\.de\/\?(.+)/)) ) {
+						ch.href=match[1];
+					}
+				}
+			}
+		});
+		if(observer) observer.observe(doc, {attributes: false, childList: true, characterData: false, subtree: true}); // слушать добавление всех элементов
+	},
+
+	// ----------------------------------------------------
 	dollPostMenu: function(parent, selector)
 	// ----------------------------------------------------
 	{
 		// вызов события "new_post" для новых постов (инициализация меню постов)
-		if(main.dollStatus != 1 || !parent || !win.jQuery)
+		if(main.dollStatus < 1 || !parent || !win.jQuery)
 			return;
 
 		if(selector)
@@ -2548,18 +2562,29 @@ var main = {
 	{
 		// Переместить ответы вниз поста
 
-		main.arrQuerySelectorAll(parent, 'div.post > p.intro > span.mentioned', function(replies) {
-
-			if(!replies.children || !replies.children.length)
-				return;
-
-			if(!replies.parentNode.brr_init) {
-				// первая обработка поста
-				let dsc = doc.createTextNode('Ответы: ');
-				replies.insertBefore(dsc, replies.firstChild);
-				replies.parentNode.brr_init = true; // p.intro
+		if(main.dollStatus == 1) {
+			// отключение переноса, если кукла активна
+			main.moveReplies = function(){};
+			return;
+		}
+		main.arrQuerySelectorAll(parent, 'div.post > p.intro > span.mentioned > a:first-child', function(replies) { 
+			// ищем все неперенесенные (или новые) ответы			
+			replies = replies.parentElement; // span.mentioned
+			let post = replies.parentElement.parentElement, // div.post
+				rep = post.querySelector('> span.mentioned'); // контейнер ответов для переноса (внизу)
+			if(!rep) {
+				// создаем контейнер переноса
+				rep = replies.cloneNode(); // клонируем оригинальный (оригинальный оставляем: в него добавляются новые ответы)
+				rep.innerText = 'Ответы: ';
+				post.appendChild(rep);
 			}
-			replies.parentNode.parentNode.appendChild(replies); // div.post
+			while(replies.firstElementChild) {
+				// переносми все линки ответов из оригинального в новый
+				if(rep.firstElementChild)
+					rep.appendChild(doc.createTextNode(', '));
+				rep.appendChild(replies.firstElementChild);
+			}
+			replies.innerText = ""; // очищаем оригинальный контейнер
 		});
  	},
 
@@ -2572,7 +2597,7 @@ var main = {
 			isGMT:
 				false - время задано в бразильском часовом поясе (по умолчанию)
 				true - в GMT+0;
-			format - тип формата строки времени (1..3) - см. TIME_FORMAT
+			format - тип формата строки времени (индекс в TIME_FORMAT)
 		*/
 
 		time.setTime(time.getTime() + TIME_CORR*3600000 + (isGMT ? TIME_BR*3600000 : 0)); // коррекция часового пояса
@@ -2639,6 +2664,28 @@ var main = {
 	},
 
 	// ----------------------------------------------------
+	addStyle: function(selector, rules, index)
+	// ----------------------------------------------------
+	{
+		// добавить новые стили
+		// selector - css-селектор; rules - стили без фигурных скобок; index - индекс группы в массиве (по умолчанию 0)		
+		if(!main.style) {
+			main.style = document.createElement("style");
+			main.style.appendChild(document.createTextNode("")); // webkit
+			doc.head.appendChild(main.style);
+			main.style = main.style.sheet;
+			main._insertRule = "insertRule" in main.style ? 1 : ("addRule" in main.style ? 2 : 0);
+		}
+		if(index === undefined) index = 0;
+		switch(main._insertRule) {
+			case 1: main.style.insertRule(selector + "{" + rules + "}", index); break;
+			case 2: main.style.addRule(selector, rules, index); break;
+			default:
+				con.error('Style add ERROR: no function');
+		}
+	},
+
+	// ----------------------------------------------------
 	init: function()
 	// ----------------------------------------------------
 	{
@@ -2687,6 +2734,15 @@ var main = {
 			};
 		});
 
+		// новые стили
+		main.addStyle('div.thread p.fileinfo > span.unimportant', 'display: block;'); // Инфо о файле/файлах сдвинуть под сам файл как на том форуме
+		main.addStyle('div.thread > div.post.op', 'overflow: auto;'); // На нулевой смещает ответы под оп пост
+		main.addStyle('div.post > span.mentioned > a, span.postfilename', 'font-size: inherit;'); // Размер шрифта ответов на пост
+		main.addStyle('div.post > p.intro > span.mentioned', 'display: none;'); // скрыть оригинальные ответы
+		main.addStyle('div.post > span.mentioned', 'display: inline-block; font-style: italic;'); // ответы внизу поста
+		main.addStyle('div.post > span.mentioned > a, div.post > span.mentioned > a:visited', 'text-decoration: none;'); // ответы внизу поста
+
+		main.removeRedirects();
 		main.listenDoll();
 
 		if(doc.readyState === 'loading') {
