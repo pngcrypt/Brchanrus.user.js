@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            BRchan Rusifikator
-// @version         3.4.1
+// @version         3.4.2
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -2281,6 +2281,7 @@ var main = {
 		main.fn.actually_load_captcha = win.actually_load_captcha;
 		win.actually_load_captcha = function(provider, extra)
 		{
+			provider = provider.replace(/^https?:\/\/[^/]+/, ''); // фикс адреса: запрос с домена страницы
 			main.fn.actually_load_captcha(provider, extra);
 			for(let el of doc.querySelectorAll('form input[name="captcha_text"]'))
 				el.value = "";
@@ -2323,6 +2324,84 @@ var main = {
 
 		if(!isPost)
 			main.initPostCounter(parent);
+	},
+
+	// ----------------------------------------------------
+	addFormatButtons: function(panel)
+	// ----------------------------------------------------
+	{
+		// добавляет кнопки форматирования текста
+		if(!panel) return;
+
+		if(!win._formatBtn)	{ // первый запуск, инициализация
+			// стили кнопок
+			main.addStyle('.brr-spoiler', 'background: gray; color: white;');
+			main.addStyle('.brr-italics', 'font-style: italic;');
+			main.addStyle('.brr-bold', 'font-weight: bold;');
+			main.addStyle('.brr-underline', 'text-decoration: underline;');
+			// main.addStyle('.brr-code', ''); // reserved
+			main.addStyle('.brr-strike', 'text-decoration: line-through;');
+			main.addStyle('.brr-heading', 'font-weight: bold; font-size: 15px');
+			main.addStyle('.brr-user', 'font-size: 11px; border-style: ridge; border-radius: 4px;'); // кнопка пользовательских правил
+			main.addStyle('.brr-btn', '\
+				display: inline-block;\
+				width: 22px;\
+				height: 22px;\
+				padding: 0;\
+				margin: 0 2px 1px 0 !important;\
+				cursor: pointer;\
+			    font: 14px arial;\
+			    vertical-align: bottom;\
+			'); 
+
+			if(win.formatText && win.formatText.rules) {
+				win.formatText.rules.quote = { // добавить правило цитирования 
+					text: 'Цитата',
+					key: '',
+					multiline: false,
+					exclusiveline: true,
+					prefix: '> ',
+					suffix: ''
+				};
+			}
+
+			// функция обработки нажатия кнопки
+			win._formatBtn = function(e, idx) {
+				if(!e || !e.parentElement) return;
+				let s = e.parentElement.querySelector('select'),
+					a = e.parentElement.querySelector('a'),
+					ta = e.parentElement.parentElement.querySelector('textarea#body');
+				if(!s || !a || !ta) return;
+
+				s.selectedIndex = idx;
+				a.click();
+				ta.focus();
+				};
+		}
+
+		if(main.dollStatus == 1) {
+			// отключить кнопки форматирования куклы
+			let el = doc.querySelector('form #de-txt-panel');
+			if(el) el.style.display = 'none';
+		}
+
+		// добавление кнопок в панель
+		for(let o of panel.querySelectorAll('option')) {
+			let inp = doc.createElement('input');
+			let style = 'user';
+			if(o.value in win.formatText.rules) {
+				// стоковое правило 
+				inp.value = o.value == 'quote' ? '>' : o.value[0].toUpperCase();
+				style = o.value;
+			}
+			else
+				inp.value = o.innerText.replace(/.*\(CTRL\s+\+\s+([^(]+)\).*/, '$1'); // пользовательское правило
+			inp.className = 'brr-btn brr-'+style;
+			inp.title = o.innerText.replace(/\(CTRL[^(]+\)/, '');
+			inp.type = 'button';
+			inp.setAttribute('onclick', '_formatBtn(this, '+o.index+');');
+			panel.appendChild(inp);
+		}
 	},
 
 	// ----------------------------------------------------
@@ -2427,16 +2506,21 @@ var main = {
 	},
 
 	// ----------------------------------------------------
-	removeRedirects: function()
+	listenElements: function()
 	// ----------------------------------------------------
 	{
-		// удаление редиректов у внешних ссылок
+		// вызывается при добавлении элементов в документ
 		let match;
 		let observer = new MutationObserver( function(mutations) {
 			for(let m of mutations) {
 				for(let ch of m.addedNodes) { 
 					if( ch.nodeName == 'A' && ch.href && (match = ch.href.match(/^http:\/\/privatelink\.de\/\?(.+)/)) ) {
+						// удаление редиректов у внешних ссылок
 						ch.href=match[1];
+					}
+					else if(ch.nodeName == 'DIV' && ch.className == 'format-text') {
+						// панель форматирования
+						main.addFormatButtons(ch);
 					}
 				}
 			}
@@ -2741,8 +2825,15 @@ var main = {
 		main.addStyle('div.post > p.intro > span.mentioned', 'display: none;'); // скрыть оригинальные ответы
 		main.addStyle('div.post > span.mentioned', 'display: inline-block; font-style: italic;'); // ответы внизу поста
 		main.addStyle('div.post > span.mentioned > a, div.post > span.mentioned > a:visited', 'text-decoration: none;'); // ответы внизу поста
+		main.addStyle('div.format-text > a, div.format-text > select', 'display: none !important;'); // скрыть кнопки форматирования
+		
+		// фикс заголовков в правилах форматирования
+		main.addStyle('span.format_option:nth-child(2)', 'margin-left:25px !important;');
+		main.addStyle('span.format_option:nth-child(4)', 'margin-left:15px !important;');
+		main.addStyle('span.format_option:nth-child(5)', 'margin-left:35px !important;');
+		main.addStyle('span.format_option:nth-child(6)', 'margin-left:30px !important;');
 
-		main.removeRedirects();
+		main.listenElements(); // удаление редиректов; добавление панели форматирования
 		main.listenDoll();
 
 		if(doc.readyState === 'loading') {
