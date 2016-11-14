@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            BRchan Rusifikator
-// @version         3.4.2
+// @version         3.4.3
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -1037,7 +1037,12 @@ replacer.cfg["new_post"] = [
 				[/([^>]+)>(\d+) mensage.s? omitidas?.*/, '$1 brr-cnt="$2">$2 пропущено. Нажмите ответить, чтобы посмотреть.']
 			], [RE_OUTER]]
 		]]
-	], [RE_MULTI]]
+	], [RE_MULTI]],
+
+	// удаление редиректов у внешних ссылок
+	[/^/, [
+		['att', 'a[href^="http://privatelink.de/?"]', 'href', [/^[^?]+\?(.+)/, '$1', [RE_MULTI]]]
+	]],
 ];
 
 // ==============================================================================================
@@ -2293,9 +2298,9 @@ var main = {
 		main.onNewPosts(doc.body); // вызываем обработчик новых постов для всей страницы (перевод + фиксы)
 		main.fixCatalog();
 		main.fixBanPage();
+		main.listenFormatText(); // панель форматирования текста
 
 		setTimeout(main.onPageLoaded, 0);
-
 		dbg('Pre-translation in ', main.timeDiff(main.starttime));
 	},
 
@@ -2334,15 +2339,17 @@ var main = {
 		if(!panel) return;
 
 		if(!win._formatBtn)	{ // первый запуск, инициализация
-			// стили кнопок
+			// стили кнопок 
 			main.addStyle('.brr-spoiler', 'background: gray; color: white;');
 			main.addStyle('.brr-italics', 'font-style: italic;');
 			main.addStyle('.brr-bold', 'font-weight: bold;');
 			main.addStyle('.brr-underline', 'text-decoration: underline;');
-			// main.addStyle('.brr-code', ''); // reserved
+			// main.addStyle('.brr-code', '');
 			main.addStyle('.brr-strike', 'text-decoration: line-through;');
 			main.addStyle('.brr-heading', 'font-weight: bold; font-size: 15px');
 			main.addStyle('.brr-user', 'font-size: 11px; border-style: ridge; border-radius: 4px;'); // кнопка пользовательских правил
+
+			// стиль кнопки по умолчанию
 			main.addStyle('.brr-btn', '\
 				display: inline-block;\
 				width: 22px;\
@@ -2355,12 +2362,12 @@ var main = {
 			'); 
 
 			if(win.formatText && win.formatText.rules) {
-				win.formatText.rules.quote = { // добавить правило цитирования 
+				win.formatText.rules.quote = { // добавить правило для цитирования 
 					text: 'Цитата',
 					key: '',
 					multiline: false,
 					exclusiveline: true,
-					prefix: '> ',
+					prefix: '>',
 					suffix: ''
 				};
 			}
@@ -2373,9 +2380,9 @@ var main = {
 					ta = e.parentElement.parentElement.querySelector('textarea#body');
 				if(!s || !a || !ta) return;
 
-				s.selectedIndex = idx;
-				a.click();
-				ta.focus();
+				s.selectedIndex = idx; // выбор пункта в select, соотв. кнопке
+				a.click(); // имитация нажатия 'wrap'
+				ta.focus(); // фокус на textarea
 				};
 		}
 
@@ -2391,11 +2398,11 @@ var main = {
 			let style = 'user';
 			if(o.value in win.formatText.rules) {
 				// стоковое правило 
-				inp.value = o.value == 'quote' ? '>' : o.value[0].toUpperCase();
+				inp.value = o.value == 'quote' ? '>' : o.value[0].toUpperCase(); // имя кнопки по первой букве правила
 				style = o.value;
 			}
 			else
-				inp.value = o.innerText.replace(/.*\(CTRL\s+\+\s+([^(]+)\).*/, '$1'); // пользовательское правило
+				inp.value = o.innerText.replace(/.*\(CTRL\s+\+\s+([^(]+)\).*/, '$1'); // пользовательское правило (имя берется из поля KEY)
 			inp.className = 'brr-btn brr-'+style;
 			inp.title = o.innerText.replace(/\(CTRL[^(]+\)/, '');
 			inp.type = 'button';
@@ -2506,26 +2513,19 @@ var main = {
 	},
 
 	// ----------------------------------------------------
-	listenElements: function()
+	listenFormatText: function()
 	// ----------------------------------------------------
 	{
-		// вызывается при добавлении элементов в документ
-		let match;
-		let observer = new MutationObserver( function(mutations) {
+		// перехват создания панели форматирования текста
+		var observer = new MutationObserver( function(mutations) {
 			for(let m of mutations) {
-				for(let ch of m.addedNodes) { 
-					if( ch.nodeName == 'A' && ch.href && (match = ch.href.match(/^http:\/\/privatelink\.de\/\?(.+)/)) ) {
-						// удаление редиректов у внешних ссылок
-						ch.href=match[1];
-					}
-					else if(ch.nodeName == 'DIV' && ch.className == 'format-text') {
-						// панель форматирования
-						main.addFormatButtons(ch);
-					}
-				}
+				for(let ch of m.addedNodes) {
+					if(ch.nodeName == 'DIV' && ch.className == 'format-text')
+						main.addFormatButtons(ch); 
+				} 
 			}
 		});
-		if(observer) observer.observe(doc, {attributes: false, childList: true, characterData: false, subtree: true}); // слушать добавление всех элементов
+		if(observer) observer.observe(doc.body, {attributes: false, childList: true, characterData: false, subtree: true}); // слушать добавление всех элементов
 	},
 
 	// ----------------------------------------------------
@@ -2833,7 +2833,6 @@ var main = {
 		main.addStyle('span.format_option:nth-child(5)', 'margin-left:35px !important;');
 		main.addStyle('span.format_option:nth-child(6)', 'margin-left:30px !important;');
 
-		main.listenElements(); // удаление редиректов; добавление панели форматирования
 		main.listenDoll();
 
 		if(doc.readyState === 'loading') {
