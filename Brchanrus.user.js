@@ -2221,7 +2221,6 @@ var main = {
 	url: "",
 	dollStatus: 0, // статус куклы: 0 = отсутствует; -1 = отлкючена; 1 = включена
 
-
 	// ----------------------------------------------------
 	onPageLoaded: function()
 	// ----------------------------------------------------
@@ -2252,6 +2251,7 @@ var main = {
 
 		// обработчик добавления главной формы (для куклы: подгрузка страниц на нулевой)
 		main.listenNewForms();
+		main.fixCaptcha();
 
 		dbg('Page loaded in ', main.timeDiff(main.starttime));
 	},
@@ -2338,7 +2338,7 @@ var main = {
 		// добавляет кнопки форматирования текста
 		if(!panel) return;
 
-		if(!win._formatBtn)	{ // первый запуск, инициализация
+		if(!win._brr_formatBtn)	{ // первый запуск, инициализация
 			// стили кнопок 
 			main.addStyle('.brr-spoiler', 'background: gray; color: white;');
 			main.addStyle('.brr-italics', 'font-style: italic;');
@@ -2373,7 +2373,7 @@ var main = {
 			}
 
 			// функция обработки нажатия кнопки
-			win._formatBtn = function(e, idx) {
+			win._brr_formatBtn = function(e, idx) {
 				if(!e || !e.parentElement) return;
 				let s = e.parentElement.querySelector('select'),
 					a = e.parentElement.querySelector('a'),
@@ -2406,7 +2406,7 @@ var main = {
 			inp.className = 'brr-btn brr-'+style;
 			inp.title = o.innerText.replace(/\(CTRL[^(]+\)/, '');
 			inp.type = 'button';
-			inp.setAttribute('onclick', '_formatBtn(this, '+o.index+');');
+			inp.setAttribute('onclick', '_brr_formatBtn(this, '+o.index+');');
 			panel.appendChild(inp);
 		}
 	},
@@ -2521,7 +2521,7 @@ var main = {
 			for(let m of mutations) {
 				for(let ch of m.addedNodes) {
 					if(ch.nodeName == 'DIV' && ch.className == 'format-text')
-						main.addFormatButtons(ch); 
+						main.addFormatButtons(ch);
 				} 
 			}
 		});
@@ -2767,6 +2767,58 @@ var main = {
 			default:
 				con.error('Style add ERROR: no function');
 		}
+	},
+
+	// ----------------------------------------------------
+	fixCaptcha: function()
+	// ----------------------------------------------------
+	{
+		// ввод капчи независимо от раскладки
+		for(let c of doc.querySelectorAll('input[name="captcha_text"]')) {
+			c.setAttribute('onkeydown', 'return _brr_capthaKeydown(this, event);'); // через атрибут, т.к. форма клонируется
+		}
+
+		if(!win._brr_capthaKeydown) win._brr_capthaKeydown = function(el, event) {
+			var keys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+			let ev = event || win.event;		
+			if(ev.altKey || ev.ctrlKey) // скипаем, если нажато вместе с ctrl/alt
+				return;
+			if(keys.indexOf(String.fromCharCode(ev.keyCode)) < 0) // проверка скан-кода
+				return;
+			if(keys.indexOf(ev.key.toUpperCase()) >= 0) // тест на английскую раскладку (скан-код должен совпадать с кодом символа)
+				return;
+
+			let val = el.value,
+				ps = val.length,
+				pe = ps;
+
+			// получаем выделенный фрагмент (положение курсора)
+			if("selectionStart" in el) { // норм. браузеры			
+				ps = el.selectionStart;
+				pe = el.selectionEnd;
+			}
+			else if(doc.selection) { // ослы
+				let r = doc.selection.createRange();
+				if(r) {	 
+					ps = el.createTextRange();
+					pe = ps.duplicate();
+					pe.moveToBookmark(r.getBookmark());
+					ps.setEndPoint('EndToStart', pe); 
+					ps = ps.text.length;
+					pe = ps + pe.text.length;
+				}
+			}
+
+			// добавляем символ в поле ввода с учетом выделения
+			val = val.substr(0, ps) + (String.fromCharCode(ev.keyCode)).toLowerCase() + val.substr(pe);
+			if(el.maxLength > 0 && val.length > el.maxLength) // проверка превышения длины
+				return false;
+			el.value = val;
+			ps++;
+			el.setSelectionRange(ps,ps); // обновляем положение курсора
+
+			return false;
+		};
 	},
 
 	// ----------------------------------------------------
