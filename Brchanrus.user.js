@@ -2336,10 +2336,10 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// добавляет кнопки форматирования текста
-		if(!panel) return;
+		if(!panel || !win.formatText || !win.formatText.rules) return;
 
 		if(!win._brr_formatBtn)	{ // первый запуск, инициализация
-			// стили кнопок 
+			// стили стоковых кнопок 
 			main.addStyle('.brr-spoiler', 'background: gray; color: white;');
 			main.addStyle('.brr-italics', 'font-style: italic;');
 			main.addStyle('.brr-bold', 'font-weight: bold;');
@@ -2347,30 +2347,22 @@ var main = {
 			// main.addStyle('.brr-code', '');
 			main.addStyle('.brr-strike', 'text-decoration: line-through;');
 			main.addStyle('.brr-heading', 'font-weight: bold; font-size: 15px');
-			main.addStyle('.brr-user', 'font-size: 11px; border-style: ridge; border-radius: 4px;'); // кнопка пользовательских правил
+
+			// стиль кнопки пользовательских правил
+			main.addStyle('.brr-user', 'font-size: 11px; border-style: ridge; border-radius: 4px;'); 
 
 			// стиль кнопки по умолчанию
-			main.addStyle('.brr-btn', '\
-				display: inline-block;\
-				width: 22px;\
-				height: 22px;\
-				padding: 0;\
-				margin: 0 2px 1px 0 !important;\
-				cursor: pointer;\
-			    font: 14px arial;\
-			    vertical-align: bottom;\
-			'); 
+			main.addStyle('.brr-btn', 'display: inline-block; width: 22px; height: 22px; padding: 0; margin: 0 2px 1px 0 !important; cursor: pointer; font: 14px arial; vertical-align: bottom;'); 
 
-			if(win.formatText && win.formatText.rules) {
-				win.formatText.rules.quote = { // добавить правило для цитирования 
-					text: 'Цитата',
-					key: '',
-					multiline: false,
-					exclusiveline: true,
-					prefix: '>',
-					suffix: ''
-				};
-			}
+			// добавить стоковое правило для цитирования
+			win.formatText.rules.quote = { 
+				text: 'Цитата',
+				key: '',
+				multiline: false,
+				exclusiveline: true,
+				prefix: '>',
+				suffix: ''
+			};
 
 			// функция обработки нажатия кнопки
 			win._brr_formatBtn = function(e, idx) {
@@ -2383,7 +2375,7 @@ var main = {
 				s.selectedIndex = idx; // выбор пункта в select, соотв. кнопке
 				a.click(); // имитация нажатия 'wrap'
 				ta.focus(); // фокус на textarea
-				};
+			};
 		}
 
 		if(main.dollStatus == 1) {
@@ -2394,19 +2386,34 @@ var main = {
 
 		// добавление кнопок в панель
 		for(let o of panel.querySelectorAll('option')) {
-			let inp = doc.createElement('input');
-			let style = 'user';
+			let inp = doc.createElement('input'),
+				style = 'user',
+				k = o.innerText.match(/^(.+)(?: \(CTRL \+ ([^)]+)\))$/) || ['', o.innerText]; // извлекаем название и KEY
 			if(o.value in win.formatText.rules) {
 				// стоковое правило 
 				inp.value = o.value == 'quote' ? '>' : o.value[0].toUpperCase(); // имя кнопки по первой букве правила
 				style = o.value;
 			}
-			else
-				inp.value = o.innerText.replace(/.*\(CTRL\s+\+\s+([^(]+)\).*/, '$1'); // пользовательское правило (имя берется из поля KEY)
+			else {
+				// пользовательское правило, вычисление имени кнопки
+				let s = '';
+				if(k.length > 2)
+					s = k[2].trim(); // KEY
+				if(!s) {
+					s = k[1].match(/(.+)\|([^|]+)$/); // выбор из названия после символа '|'
+					if(s) {
+						k[1] = s[1];
+						s = s[2].trim();
+					}
+				}
+				if(!s)
+					s = (k[1].trim())[0]; // первая буква названия
+				inp.value = s || o.value; 
+			}
 			inp.className = 'brr-btn brr-'+style;
-			inp.title = o.innerText.replace(/\(CTRL[^(]+\)/, '');
+			inp.title = k[1];
 			inp.type = 'button';
-			inp.setAttribute('onclick', '_brr_formatBtn(this, '+o.index+');');
+			inp.setAttribute('onclick', '_brr_formatBtn(this, '+o.index+');'); // аттрибут, т.к. форма клонируется
 			panel.appendChild(inp);
 		}
 	},
@@ -2774,18 +2781,22 @@ var main = {
 	// ----------------------------------------------------
 	{
 		// ввод капчи независимо от раскладки
-		for(let c of doc.querySelectorAll('input[name="captcha_text"]')) {
+		let captcha = doc.querySelectorAll('input[name="captcha_text"]');
+		if(!captcha.length) return;
+		for(let c of captcha)
 			c.setAttribute('onkeydown', 'return _brr_capthaKeydown(this, event);'); // через атрибут, т.к. форма клонируется
-		}
 
 		if(!win._brr_capthaKeydown) win._brr_capthaKeydown = function(el, event) {
 			var keys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-			let ev = event || win.event;		
+			let ev = event || win.event;
+
 			if(ev.altKey || ev.ctrlKey) // скипаем, если нажато вместе с ctrl/alt
 				return;
-			if(keys.indexOf(String.fromCharCode(ev.keyCode)) < 0) // проверка скан-кода
+
+			let chKC = String.fromCharCode(ev.keyCode);
+			if(keys.indexOf(chKC) < 0) // проверка скан-кода
 				return;
-			if(keys.indexOf(ev.key.toUpperCase()) >= 0) // тест на английскую раскладку (скан-код должен совпадать с кодом символа)
+			if(ev.key.toUpperCase() === chKC) // тест на английскую раскладку (скан-код должен совпадать с кодом символа)
 				return;
 
 			let val = el.value,
@@ -2810,7 +2821,7 @@ var main = {
 			}
 
 			// добавляем символ в поле ввода с учетом выделения
-			val = val.substr(0, ps) + (String.fromCharCode(ev.keyCode)).toLowerCase() + val.substr(pe);
+			val = val.substr(0, ps) + chKC.toLowerCase() + val.substr(pe);
 			if(el.maxLength > 0 && val.length > el.maxLength) // проверка превышения длины
 				return false;
 			el.value = val;
