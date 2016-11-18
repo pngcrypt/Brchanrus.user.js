@@ -288,6 +288,7 @@ replacer.cfg["main"] = [
 			['reg', 'h2', [
 				['IP detectado como proxy, proxies nao sao permitidos nessa board. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, [что произошла ошибка, свяжитесь с администрацией'],
 				['Senha incorreta', 'Неверный пароль'],
+				['Aguarde (\d+)(.*)antes de apagar isso', 'Подождите $1 сек. перед удалением поста'],
 
 				// сообщения alert (при отключенном javascript)
 				['Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'],
