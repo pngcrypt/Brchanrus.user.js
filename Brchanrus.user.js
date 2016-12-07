@@ -2761,8 +2761,8 @@ var main = {
 		// добавить новые стили
 		// selector - css-селектор; rules - стили без фигурных скобок; index - индекс группы в массиве (по умолчанию 0)		
 		if(!main.style) {
-			main.style = document.createElement("style");
-			main.style.appendChild(document.createTextNode("")); // webkit
+			main.style = doc.createElement("style");
+			main.style.appendChild(doc.createTextNode("")); // webkit
 			doc.head.appendChild(main.style);
 			main.style = main.style.sheet;
 			main._insertRule = "insertRule" in main.style ? 1 : ("addRule" in main.style ? 2 : 0);
@@ -2788,7 +2788,7 @@ var main = {
 
 		if(!win._brr_capthaKeydown) win._brr_capthaKeydown = function(el, event) {
 			var keys = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-			let ev = event || win.event;
+			let ev = event || window.event;
 
 			if(ev.altKey || ev.ctrlKey) // скипаем, если нажато вместе с ctrl/alt
 				return;
@@ -2808,8 +2808,8 @@ var main = {
 				ps = el.selectionStart;
 				pe = el.selectionEnd;
 			}
-			else if(doc.selection) { // ослы
-				let r = doc.selection.createRange();
+			else if(document.selection) { // ослы
+				let r = document.selection.createRange();
 				if(r) {	 
 					ps = el.createTextRange();
 					pe = ps.duplicate();
