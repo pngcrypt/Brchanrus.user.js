@@ -1101,8 +1101,10 @@ replacer.cfg["ban_page"] = [
 				['Seu endereço de IP é', 'Ваш IP адрес:'],
 				['Você foi banido pela seguinte mensagem no', 'Вы были забанены из-за следующего сообщения в'],
 				['Você pode apelar por este ban. Digite seus motivos abaixo', 'Вы можете подать апелляцию. Опишите свои претензии ниже'],
-				[/Você enviou um apelo para este ban (<strong>)(:<T4>)(<\/strong>)/, 'Вы отправили апелляцию к этому бану $1$T$3 ', [RE_TIME, RE_NOBREAK]],
-				['Ele ainda está pendente', 'Находится на рассмотрении']
+				[/Você enviou (um apelo para este ban|o apelo) (<strong>)(:<T4>)(<\/strong>)/, 'Апелляция к бану отправлена $2$T$4 ', [RE_TIME, RE_NOBREAK]],
+				['Ele ainda está pendente', 'Находится на рассмотрении'],
+				['e foi negado. Você não pode apelar este ban novamente', 'и была отклонена. Больше вы не можете это обжаловать'],
+				[]
 			], [RE_INNER]],
 			['reg', 'span#expires', 'e já expirou. Recarregue a página para continuar.', 'срок его действия истек. Пожалуйста, перезагрузите страницу, чтобы продолжить.'],
 			['att', 'form.ban-appeal input[type="submit"]', 'value', 'Отправить']
@@ -1710,7 +1712,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 				if(time === undefined) time = new Date();
 				let m = matches[RE.time.group].match(RE.time.catch_rx); // захватываем цифры из найденного совпадения
 				if(m) {
-					time.setTime(Date.now()); // по умолчанию текущее
+					time.setTime(Date.now() - TIME_CORR*3600000 - (RE.time.isGMT ? TIME_BR*3600000 : 0)); // по умолчанию текущее время сайта
 					let val;
 					for(let i=0; i<RE.time.in_groups.length; i++) {
 						val = m[i+1];
