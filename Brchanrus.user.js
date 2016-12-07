@@ -302,7 +302,9 @@ replacer.cfg["main"] = [
 				['Falha ao redimensionar a imagem! Details: Killed', 'Не удалось изменить размер изображения!'],
 				['É necessário inserir um assunto ao criar uma thread nessa board.', 'Вы должны ввести тему при создании треда.'],
 				[/(O arquivo <a href="(.*)">já existe<\/a> neste tópico!|O arquivo <a href="(.*)">já existe<\/a>!)/, 'Файл уже был загружен в <a href="$2">этом треде!</a>'],
-				['O tópico especificado não existe', 'Данный тред не существует']
+				['O tópico especificado não existe', 'Данный тред не существует'],
+				['Você não pode apelar novamente', 'Вы не можете апеллировать повторно'],
+				[]
 			]],
 			//['css', 'p > a', 'Назад'],
 			['reg', 'a', [
@@ -504,7 +506,7 @@ replacer.cfg["main"] = [
 
 					[/Fila de denuncias \((\d+)\)/, 'Поступившие жалобы ($1)'],
 					['Lista de bans', 'Список банов'],
-					['Apelos a banimento', 'Аппеляции банов'],
+					['Apelos a banimento', 'Апелляции банов'],
 					['Editar conta', 'Изменить учетную запись'],
 				
 					['Histórico da board', 'История событий доски'],
@@ -933,9 +935,9 @@ replacer.cfg["main"] = [
 		['reg', 'div.ban > h2 > small', /^— por (.+) em (:<T0>)/, '— $1, $T', [RE_MULTI, RE_TIME]] // время объявления
 	]],
 
-	// Админка - аппеляции банов
+	// Админка - апелляции банов
 	[/^mod\.php\?\/ban-appeals/, [
-		['reg', 'head > title, header > h1', 'Apelos a banimento', 'Аппеляции банов', [RE_MULTI]],
+		['reg', 'head > title, header > h1', 'Apelos a banimento', 'Апелляции банов', [RE_MULTI]],
 	]],
 
 	[]
@@ -1090,14 +1092,20 @@ replacer.cfg["ban_page"] = [
 		['css', 'body > div.ban', [
 			['reg', '> h2', 'Você está banido', 'Вы забанены'],
 			['reg', '> p', [
+			    ['Você foi banido de todas as boards pelo seguinte motivo', 'Вы забанены на всех досках по причине'],
 				[/Você foi banido de (.+) pelo seguinte motivo/, 'Вы забанены на доске $1 по причине'],
 				[/Você foi banido de (.+) por um motivo não especificado./, 'Вы забанены на доске $1 (без указания причины)'],
-				[/Sua expulsão foi feita (<strong>)(:<T4>)(<\/strong>) e /, 'Бан был выдан $1$T$3 и ', [RE_TIME, RE_NOBREAK]],
-				[/expira daqui a (.+), que será (<strong>)(:<T4>)(<\/strong>)<script>.+/, 'окончится через $1, $2$T$4', [RE_TIME]],
+				[/Sua expulsão foi feita (<strong>)(:<T4>)(<\/strong>) e /, 'Бан был выдан $1$T$3 ', [RE_TIME, RE_NOBREAK]],
+				['não vai expirar', ' (перманетный)'],
+				[/expira daqui a (.+), que será (<strong>)(:<T4>)(<\/strong>)<script>.+/, 'и окончится через $1, $2$T$4', [RE_TIME]],
 				['Seu endereço de IP é', 'Ваш IP адрес:'],
-				['Você foi banido pela seguinte mensagem no', 'Вы были забанены из-за следующего сообщения в']
+				['Você foi banido pela seguinte mensagem no', 'Вы были забанены из-за следующего сообщения в'],
+				['Você pode apelar por este ban. Digite seus motivos abaixo', 'Вы можете подать апелляцию. Опишите свои претензии ниже'],
+				[/Você enviou um apelo para este ban (<strong>)(:<T4>)(<\/strong>)/, 'Вы отправили апелляцию к этому бану $1$T$3 ', [RE_TIME, RE_NOBREAK]],
+				['Ele ainda está pendente', 'Находится на рассмотрении']
 			], [RE_INNER]],
-			['reg', 'span#expires', 'e já expirou. Recarregue a página para continuar.', 'срок его действия истек. Пожалуйста, перезагрузите страницу, чтобы продолжить.']
+			['reg', 'span#expires', 'e já expirou. Recarregue a página para continuar.', 'срок его действия истек. Пожалуйста, перезагрузите страницу, чтобы продолжить.'],
+			['att', 'form.ban-appeal input[type="submit"]', 'value', 'Отправить']
 		]],
 	]],
 ];
