@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name            BRchan Rusifikator
-// @version         3.4.4
+// @version         3.4.5
 // @namespace       https://brchan.org/*
 // @author          Y0ba, Isset, pngcrypt
 // @updateURL       https://raw.github.com/Isseq/Brchanrus.user.js/master/Brchanrus.meta.js
@@ -60,9 +60,11 @@ const RE_OUTER = 12; // hmtl код, включая найденный элем�
 const RE_SINGLE = 20; // [по умолчанию] однократный (после замены regex исключается из дальнейшего поиска)
 const RE_MULTI = 21; // многократый (поиск во всех элементах)
 
-// режим прерывания поиска по regex
+// режим прерывания
 const RE_NOBREAK = 30; // перебирать все regex независимо от результата (для текущего селектора)
 const RE_BREAK = 31; // [по умолчанию] прерывать перебор на первом найденном regex (для текущего селектора)
+
+const RE_EXISTS = 32; // флаг, задающий, что реплейсер обязательно должен сработать (если нет, то прерывается перебор текущей URL-группы)
 
 // выбор дочернего узла (для 'nod')
 const RE_FIRST = 40; // [по умолчанию] первая нода
@@ -70,12 +72,14 @@ const RE_LAST = 41; // последняя
 
 const RE_TIME = 50; // флаг наличия в regex шаблона для коррекции времени (:<T>...) - подробнее см. в pattern._regexTimeInit
 
-const URL_BREAK = 1000; // флаг для прерывания перебора конфига при совпадении url-regex c url страницы
+const URL_BREAK = 1000; // флаг для прерывания перебора конфига при срабатывании реплейсера, для которого он установлен (текущая url-группа будет обработана до конца)
 
 var _RE_PROP = {};
 _RE_PROP[RE_TEXT] = 'textContent';
 _RE_PROP[RE_INNER] = 'innerHTML';
 _RE_PROP[RE_OUTER] = 'outerHTML';
+
+var _NOT_EXISTS = ': NOT EXISTS : BREAK';
 
 var replacer = {cfg:[], debug:RE_DEBUG};
 
@@ -91,17 +95,12 @@ var replacer = {cfg:[], debug:RE_DEBUG};
 		[url-regexM, [ [replacerM.1], ..., [replacerM.N] ], re_arrM],
 	];
 
-	для дополнительной проверки можно указать css-селектор любого элемента, который должен присутствовать на странице для данного url-regex
-		[url-regex1, "selector1", [ [replacer1.1], ..., [replacer1.N] ], re_arr1],
-
 	где:
 		cfg_name - имя создаваемого конфига
 		url-regex - regex для проверки текущего URL страницы (если совпадает, то происходит обработка вложенной группы реплейсеров)
-		selector - css-селектор (по желанию)
 		replacer - массив с параметрами реплейсера (тип, css-селектор и т.п.)
 				подробнее синтаксис каждого типа реплейсера см. в функциях реплейсеров (nodReplacer, cssReplacer, regReplacer и т.п.)
 		re_arr - массив RE_* модификаторов по умолчанию для всех реплейсеров заданной группы url-regex
-			для url-группы можно задавать модификатор URL_BREAK - прерывает дальнейший перебор конфига при совпадении url-regex с текущим url страницы
 */
 
 replacer.cfg["main"] = [
@@ -127,8 +126,62 @@ replacer.cfg["main"] = [
 		['reg', 'body > footer > p:nth-child(2)', /^Tudo que está escrito nesse.+/, 'Все, что написано на этом форуме, является фикцией. Только дурак будет воспринимать это серьезно.']
 	]],
 
+	// Админка - логин, общие элементы
+	[/^mod\.php\b/, [
+		['reg', 'head > title, header > h1', 'Login', 'Вход', [RE_MULTI]],
+		['reg', 'body > form > table:nth-child(1) th', [
+			['Usuário', 'Логин'],
+			['Senha', 'Пароль']
+		]],
+		['att', 'input[name="login"]', 'value', 'Войти'],
+
+		// Панель уведомлений
+		['reg', 'body > div.top_notice:first-child', /You have(.+)an unread PM/, 'У вас есть$1Новые сообщения', [RE_INNER]],
+
+		// Ошибки
+		['reg', 'body > h2', /Login e\/ou senha inválido\(s\)/, 'Неверный логин или пароль'],
+
+		['reg', 'div.subtitle > p > a', 'Voltar à dashboard', 'Назад к панели управления'],
+		['reg', 'body > div > p > a', 'Voltar', 'Назад'],
+
+		[]
+	]],
+
+	// страница ошибок
+	[/^/, [
+		['reg', 'head > title, header > h1', 'Erro', 'Ошибка', [RE_INNER, RE_MULTI, RE_EXISTS, URL_BREAK]],
+		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
+		['css', 'body > div', [
+			['reg', '> h2', [
+				[/IP detectado como proxy, proxies nao sao permitidos nessa board.+/, 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, что произошла ошибка, свяжитесь с администрацией'],
+				['Senha incorreta', 'Неверный пароль'],
+				[/Aguarde (\d+)(.*)antes de apagar isso/, 'Подождите $1 сек. перед удалением поста'],
+				['Bad board', 'Неверная доска'],
+				['Pagina não encontrada', 'Страница не найдена'],
+				['Login e/ou senha inválido', 'Неверный логин или пароль'],
+				['Banner editing is currently disabled. Please check back later', 'Редактирование баннера отключено. Попробуйте позже'],
+				['Usuário inválido', 'Неверное имя пользователя'],
+				['Board inválida', 'Доска не существует'],
+				['Você não tem permissão para fazer isso', 'У вас нет прав доступа к этой странице'],
+				['Criação de voluntário com nome repetido recusada', 'Модератор с таким именем уже существует'],
+				['IP Blocked - Please check', 'IP Заблокирован. Проверьте на', [RE_INNER]],
+				[]
+			]],
+			['reg', 'a', 'Voltar', 'Назад']
+		]]
+	]],
+
+	// confirm'ы (без js или на отдельной странице)
+	[/^/, [
+		['reg', 'head > title, header > h1', 'Confirmar ação', 'Подтвердите действие', [RE_INNER, RE_MULTI, RE_EXISTS, URL_BREAK]],
+		['reg', 'body > p', 'Tem certeza que deseja fazer isso', 'Вы уверены, что хотите сделать это' ,[RE_INNER]],
+		['reg', 'body > p > a', 'Clique para prosseguir à', 'Нажмите, чтобы продолжить: ', [RE_INNER]],
+		['reg', 'body > p.unimportant', /Você provavelmente está vendo esta mensagem porque seu Javascript.+/, 'Вероятно, вы видите это сообщение, т.к. у вас отключен Javascript. Это мера безопасности необходима для предотвращения CSRF атак.']
+	]],
+
 	// главная
-	[/^/, 'body > div.tabcontents > div#noticias', [
+	[/^/, [
+		['css', 'body > div.tabcontents > div#noticias', null, [RE_EXISTS, URL_BREAK]],
 		['css', 'body > div.ban.oficial', [
 			['reg', '> h2', [
 				['Boards Fixas', 'Постоянные доски'],
@@ -187,10 +240,9 @@ replacer.cfg["main"] = [
 		// Подстановка времени в новостях
 		['reg', 'div#noticias > div > h2 > span' , / at (:<T0>)/, ', $T', [RE_TIME, RE_MULTI]],
 		[]
-	], [URL_BREAK]],
+	]],
 
 	// Любая доска / тред
-	// [/^(mod\.php\?\/)?[^/]+\/?(|(\d+[^/]*|index)\.html|\/res\/.+)$/, [
 	[/^(mod\.php\?\/)?[^/]+\/?([^/]+\.html|\/res\/.+|)$/, [
 		['reg', 'header > div.subtitle > p > a', /Catálogo|Catalog/, 'Каталог тредов'],
 		['css', 'div.banner', [
@@ -279,17 +331,11 @@ replacer.cfg["main"] = [
 	// Ошибки постинга
 	[/^(post|bugs)\.php/, [
 		['reg', 'head > title, header > h1', [
-			['Erro', 'Ошибка'],
 			['Denúncia enviada', 'Жалоба отправлена']
 		], [RE_INNER, RE_MULTI]],
 
-		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
 		['css', 'body > div', [
 			['reg', 'h2', [
-				['IP detectado como proxy, proxies nao sao permitidos nessa board. Se voce acha que essa mensagem e um erro entre em contato com a administracao', 'На этом IP обнаружен прокси. Прокси запрещены на этой доске. Если вы считаете, [что произошла ошибка, свяжитесь с администрацией'],
-				['Senha incorreta', 'Неверный пароль'],
-				[/Aguarde (\d+)(.*)antes de apagar isso/, 'Подождите $1 сек. перед удалением поста'],
-
 				// сообщения alert (при отключенном javascript)
 				['Você deve postar com uma imagem', 'Для создания треда нужно прикрепить файл или видео'],
 				['Você errou o codigo de verificação', 'Неверно введен код капчи', [RE_INNER]],
@@ -306,7 +352,6 @@ replacer.cfg["main"] = [
 				['Você não pode apelar novamente', 'Вы не можете апеллировать повторно'],
 				[]
 			]],
-			//['css', 'p > a', 'Назад'],
 			['reg', 'a', [
 				['Fechar janela', 'Закрыть окно'],
 				['Voltar', 'Назад']
@@ -349,7 +394,7 @@ replacer.cfg["main"] = [
 		['css', 'main > section', [
 			['css', 'h2', 'Статистика'],
 			['reg', 'p', [
-				[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. За последнюю минуту написано $3 постов. Всего было написано $4 постов начиная с', [RE_INNER]],
+				[/Há atualmente (.+) boards públicas, (.+) no total. Na última hora foram feitas (.+) postagens, sendo que (.+) postagens foram feitas em todas as boards desde/, 'В настоящее время доступно $1 публичных досок из $2. Постов за последний час: $3. Всего постов: $4, начиная с', [RE_INNER]],
 				[/Última atualização desta página: (:<T0::G>)/, 'Последнее обновление страницы: $T', [RE_TIME]]
 			]]
 		]],
@@ -451,39 +496,6 @@ replacer.cfg["main"] = [
 	[/^report\.php/, [
 		['reg', 'p', /^Enter reason below/, 'Введите причину жалобы'],
 		['att', 'form > input[name="report"]', 'value', 'Отправить'],
-	]],
-
-	// Админка - логин / ошибки
-	[/^mod\.php\b/, [
-		['reg', 'head > title, header > h1', 'Login', 'Вход', [RE_MULTI]],
-		['reg', 'body > form > table:nth-child(1) th', [
-			['Usuário', 'Логин'],
-			['Senha', 'Пароль']
-		]],
-		['att', 'input[name="login"]', 'value', 'Войти'],
-
-		// Панель уведомлений
-		['reg', 'body > div.top_notice:first-child', /You have(.+)an unread PM/, 'У вас есть$1Новые сообщения', [RE_INNER]],
-
-		// Ошибки
-		['reg', 'head > title, header > h1', 'Erro', 'Ошибка', [RE_MULTI]],
-		['reg', 'body > h2', /Login e\/ou senha inválido\(s\)/, 'Неверный логин или пароль'],
-		['reg', 'header > div.subtitle', 'Um erro ocorreu', 'Произошла ошибка'],
-		['reg', 'body > div > h2', [
-			['Pagina não encontrada', 'Страница не найдена'],
-			['Login e/ou senha inválido', 'Неверный логин или пароль'],
-			['Banner editing is currently disabled. Please check back later', 'Редактирование баннера отключено. Попробуйте позже'],
-			['Usuário inválido', 'Неверное имя пользователя'],
-			['Board inválida', 'Доска не существует'],
-			['Você não tem permissão para fazer isso', 'У вас нет прав доступа к этой странице'],
-			['Criação de voluntário com nome repetido recusada', 'Модератор с таким именем уже существует'],
-			[]
-		]],
-
-		['reg', 'div.subtitle > p > a', 'Voltar à dashboard', 'Назад к панели управления'],
-		['reg', 'body > div > p > a', 'Voltar', 'Назад'],
-
-		[]
 	]],
 
 	// Админка - Главная
@@ -833,7 +845,7 @@ replacer.cfg["main"] = [
 
 
 	// Админка - История событий
-	[/^mod\.php\?\/log\b/, [
+	[/^mod\.php\?\/log\b|^log\.php\?(page=\d+&)?board=/, [
 		['reg', 'head > title, header > h1', 'Histórico da board', 'История событий доски', [RE_MULTI]],
 		['css', 'table.modlog > tbody > tr', [
 			['reg', '> th', [
@@ -1434,67 +1446,32 @@ replacer.process = function(cfg, element, debug, debug_rep)
 	re_opt.debug = !!debug_rep; // отладка по умолчанию
 	let ucnt = 0,
 		matches = 0,
-		re_ind, url_err, url_query, recnt, opt;
+		opt;
 
 	for(let u of this.cfg[cfg]) // перебор всех url-групп в заданном конфиге
 	{		
 		ucnt++;
-
 		if(isArray(u) && !u.length) continue; // empty
 
-		url_err = true;
-		url_query = false;
-		re_ind = 2; // индекс RE-модификаторов в массиве 
-		while(true) {
-			// проверка синтаксиса
-			if(!isArray(u) || u.length < re_ind)
-				break;
-			if(typeof(u[1]) == 'string') {
-				 // расширенный синтаксис (с доп. проверкой страницы по селектору)
-				re_ind = 3;
-				url_query = u[1] === "" ? false : u[1]; // пустой селектор пропускаем
-			}
-			else if(!isArray(u[1]))
-				break;
-			if( u.length > re_ind+1 || (u.length == re_ind+1 && !isArray(u[re_ind])) ) 
-				break;
-			url_err = false;
-			break;
-		}
-		if(url_err)
-		{
+		// проверка синтаксиса
+		if(!isArray(u) || u.length < 2 || u.length > 3 || !isArray(u[1]) || (u.length == 3 && !isArray(u[2]))) {
 			con.error("ERROR: Syntax: URL-Group #"+ucnt+" : ", u);
 			if(isArray(u))
 				continue;
 			else
 				break;
 		}
-
 		if(!main.url.match(u[0])) continue; // проверка url
-		if(url_query !== false) {
-			// доп. проверка страницы по селектору
-			try {
-				if(!doc.querySelector(url_query))
-					continue;
-			} 
-			catch(e) {
-				con.error("ERROR: Bad URL-selector (Group #"+ucnt+") : ", u);
-				if(isArray(u))
-					continue;
-				else
-					break;
-			}
-		}
-		if(debug) con.debug("URL-Match #"+ucnt+":", u[0], (url_query ? "Query: '"+url_query+"'" : ""));
+		if(debug) con.debug("URL-Match #"+ucnt+":", u[0]);
 		matches++;
 
-		opt = this.reOpt(u[re_ind], re_opt); // возможное переопределение модификаторов для url-группы
+		opt = this.reOpt(u[2], re_opt); // возможное переопределение модификаторов для url-группы
 		if(!this.RE)
 			this.RE = {};
 
 		this.RE.count = 0;
 		this.RE.instance = 0;
-		this.processReplacers(element, u[re_ind-1], opt);
+		this.processReplacers(element, u[1], opt);
 
 		if(opt.url_break) {
 			if(debug) con.debug("URL-Break #"+ucnt);
@@ -1578,7 +1555,7 @@ replacer.reOpt = function(re_arr, def)
 	// def - объект опций по умолчанию {prop, single, break, node, debug} 
 	// возвращает объект модифицированных опций 
 
-	if(typeof(def) != 'object')
+	if(typeof(def) != 'object') {
 		def = { // новый объект с параметрами по умолчанию
 			prop: _RE_PROP[RE_TEXT], // имя свойства для замены текста в элементе
 			single: true,		// RE_SINGLE
@@ -1586,8 +1563,11 @@ replacer.reOpt = function(re_arr, def)
 			node: 0,			// RE_FIRST
 			time: false,		// !RE_TIME
 			url_break: false,	// !URL_BREAK
+			exists: false,		// !RE_EXISTS
 			debug: this.debug 	// RE_DEBUG
-		}; 
+		};
+		def.top = def; // top object (main parent)
+	}
 
 	if(!isArray(re_arr))
 		return def; // возвращаем либо ссылку на дефолтный объект, либо новый объект
@@ -1611,6 +1591,7 @@ replacer.reOpt = function(re_arr, def)
 			case RE_TIME: 	opt.time = true; break;
 			case RE_DEBUG: 	opt.debug = RE_DEBUG; break;
 			case URL_BREAK:	opt.url_break = true; break;
+			case RE_EXISTS:	opt.exists = true; break;
 
 			case RE_TEXT:
 			case RE_INNER:
@@ -1649,9 +1630,10 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 	универсальная функция проверки значения по группе regex
 	
 	возвращает: 
-		< 0 - в случае ошибки синтаксиса
-		false - если не осталось активных regex (все сработали)
-		true - в противном случае
+		< 0 - в случае ошибки синтаксиса (код ошибки)
+		  0 - еще остались активные regex
+		  1 - активных regex нет
+		  2 - прерывать перебор реплейсеров URL-группы
 
 	параметры:
 		rx_arr - массив regex: [ [regx1, text1, re_arr1], ..., [regxN, textN, re_arrN] ]
@@ -1676,7 +1658,6 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 
 	 // перебор regex
 	for(let r of rx_arr) {
-		// TODO: убрать r.length < 2 :: если один параметр, то s_rep == null
 		if(!isArray(r) || (r.length && r.length < 2 || r.length > 3) ) { // проверка параметров
 			return -3;
 		}
@@ -1707,7 +1688,7 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 		}
 		else if( (matches=str.match(r[0])) ) {
 			let s_rep = r[1];
-			if(RE.time && RE.time.group) {
+			if(s_rep !== null && RE.time && RE.time.group) {
 				// подстановка времени/даты
 				if(time === undefined) time = new Date();
 				let m = matches[RE.time.group].match(RE.time.catch_rx); // захватываем цифры из найденного совпадения
@@ -1730,8 +1711,8 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 					s_rep = s_rep.replace('$T', main.timeFormat(time, RE.time.isGMT, RE.time.out_format)); // в строке замены меняем $T на форматированное время
 				}
 			}
-			// TODO: если s_rep == null, скипаем
-			callback_set(str.replace(r[0], s_rep), opt); // вызываем внешнюю функцию сохранения измененной строки
+			if(s_rep !== null)
+				callback_set(str.replace(r[0], s_rep), opt); // вызываем внешнюю функцию сохранения измененной строки
 			dbgMsg += ": FOUND";
 			if(opt.single) {
 				RE.instance = this.instanceLocal; // выставляем флаг сработавшего regex
@@ -1742,19 +1723,30 @@ replacer._regexReplacer = function(rx_arr, re_opt, callback_get, callback_set)
 				dobreak = true; // прерываем цикл перебора regex
 				dbgMsg += ": BREAK";
 			}
+			if(opt.url_break)
+				opt.top.url_break = true; // если regex сработал и установлен флаг URL_BREAK, выставляем URL_BREAK для url-группы
 		} // if str.match
-		else 
-			dbgMsg += ": NOT FOUND";
+		else {
+			if(opt.exists) {
+				dbgMsg += _NOT_EXISTS;
+				re_cnt = -1;
+			}
+			else
+				dbgMsg += ": NOT FOUND";
+		}
 
 		if(opt.debug) con.debug("..?: ", [r[0], r[1]], dbgMsg);
+		if(re_cnt < 0) break;
 	} // for r
 
-	if(re_cnt < 1) {
-		// прекращаем перебор элементов, т.к. не осталось активных regex
+	if(re_cnt < 0)
+		return 2;
+	else if(!re_cnt) {
+		// прекращаем перебор regex, т.к. не осталось активных
 		if(re_opt.debug) con.debug("STOP");
-		return false;
+		return 1;
 	}
-	return true;
+	return 0;
 };
 
 // ----------------------------------------------------
@@ -1933,7 +1925,9 @@ replacer.cssReplacer = function(el, p, re_def)
 	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[3])) )
 		return -1;
 
-	let elements;
+	let re_opt = this.reOpt(p[3], re_def), // переопределение модификаторов
+		elements;
+
 	try {
 		if(p[1] === "")
 			elements = [el];
@@ -1943,20 +1937,29 @@ replacer.cssReplacer = function(el, p, re_def)
 		con.error("ERROR: Selector:", p);
 		return true;
 	}		
-	if(!elements.length) return true;
+	if(!elements.length) {
+		if(re_opt.exists) {
+			if(re_opt.debug) con.debug("CSS:", p[1], _NOT_EXISTS);
+			return false;
+		}
+		return true;
+	}
 
 	let extended = isArray(p[2]),
-		re_opt = this.reOpt(p[3], re_def), // переопределение модификаторов
 		dbg1st = 0,
 		ret;
 
+	if(re_opt.url_break)
+		re_opt.top.url_break = true;
 	for(let e of elements)
 	{
 		ret = true;
-		if(re_opt.debug && !dbg1st++) con.group("CSS:", p[1], ":: "+elements.length+" element(s)");
+		if(re_opt.debug && !(dbg1st++)) con.group("CSS:", p[1], ":: "+elements.length+" element(s)");
 		if(!extended) {
-			if(re_opt.debug) con.debug("ELM:", e, ' --> ', p[2]);
-			e[re_opt.prop] = p[2];
+			if(p[2] !== null) {
+				if(re_opt.debug) con.debug("ELM:", e, ' --> ', p[2]);
+				e[re_opt.prop] = p[2];
+			}
 		} 
 		else {
 			// расширенный синтаксис
@@ -2011,7 +2014,8 @@ replacer.attReplacer = function(el, p, re_def)
 	}
 	
 	// выбираем элементы
-	let elements;
+	let elements,
+		re_opt = this.reOpt(p[4], re_def); // переопределение модификаторов группы;
 	try {
 		if(p[1] === "")
 			elements = [el];
@@ -2021,26 +2025,40 @@ replacer.attReplacer = function(el, p, re_def)
 		con.error("ERROR: Selector:", p);
 		return true;
 	}
-	if(!elements.length) return true;
+	if(!elements.length) {
+		if(re_opt.exists) {
+			if(re_opt.debug) con.debug("ATT:", p[1], _NOT_EXISTS);
+			return false;
+		}
+		return true;
+	}
 
-	let re_opt = this.reOpt(p[4], re_def), // переопределение модификаторов группы
-		dbg1st = 0,
-		ret;
+	let dbg1st = 0,
+		ret, attr;
 
+	if(re_opt.url_break)
+		re_opt.top.url_break = true;
 	for(let e of elements) {
-		ret = true;
-		if(re_opt.debug && !dbg1st++) con.group("ATT:", p[1], " ..? ", [p[2]], ":: "+elements.length+" element(s)");
+		ret = 0;
+		if(re_opt.debug && !(dbg1st++)) con.group("ATT:", p[1], " ..? ", [p[2]], ":: "+elements.length+" element(s)");
 
+		attr = e.getAttribute(p[2]);
+		if(re_opt.exists && attr === null) {
+			if(re_opt.debug) con.debug("ELM:", e, _NOT_EXISTS);
+			ret = 2;
+			break;
+		}
 		if(!extended) {
 			// простой синтаксис
-			e.setAttribute(p[2], p[3]);
-			if(re_opt.debug) con.debug("ELM:", e, ' --> ', p[3]);
+			if(p[3] !== null) {
+				e.setAttribute(p[2], p[3]);
+				if(re_opt.debug) con.debug("ELM:", e, ' --> ', p[3]);
+			}
 		}
 		else {
 			// расширенный синтаксис
 			if(re_opt.debug) con.debug("ELM:", e);
-			let attr = e.getAttribute(p[2]);
-			if(!attr) {
+			if(attr === null) {
 				if(re_opt.debug) con.debug("..! NO ATTR"); // атрибут не найден
 			}
 			else {
@@ -2050,13 +2068,13 @@ replacer.attReplacer = function(el, p, re_def)
 					function(str, opt) { attr = str; }	// set
 				);
 				e.setAttribute(p[2], attr);
-				if(ret <= 0)
+				if(ret)
 					break;
 			}
 		}
 	}
 	if(dbg1st) con.groupEnd();
-	return ret < 0 ? ret : true;
+	return ret < 0 ? ret : (ret == 2 ? false : true);
 };
 
 
@@ -2082,7 +2100,9 @@ replacer.nodReplacer = function(el, p, re_def)
 	if(p.length < 3 || p.length > 4 || (p.length == 4 && !isArray(p[3])) )
 		return -1;
 
-	let elements;
+	let re_opt = this.reOpt(p[3], re_def), // переопределение модификаторов
+		elements;
+
 	try {
 		if(p[1] === "")
 			elements = [el];
@@ -2092,19 +2112,32 @@ replacer.nodReplacer = function(el, p, re_def)
 		con.error("ERROR: Selector:", p);
 		return true;
 	}		
-	if(!elements.length) return true;
+	if(!elements.length) {
+		if(re_opt.exists) {
+			if(re_opt.debug) con.debug("NOD:", p[1], _NOT_EXISTS);
+			return false;
+		}
+		return true;
+	}
 
 	let extended = isArray(p[2]),
-		re_opt = this.reOpt(p[3], re_def), // переопределение модификаторов
 		node, dmsg,
 		ret;
 
+	if(re_opt.url_break)
+		re_opt.top.url_break = true;
 	if(re_opt.debug) con.group("NOD:", p[1], ":: "+elements.length+" element(s)");
+
 	for(let e of elements) {
-		ret = true;
+		ret = 0;
 		node = re_opt.node < 0 ? e.lastChild : e.firstChild;
 		dmsg = ': ' + (re_opt.node < 0 ? 'LAST' : 'FIRST') + ' :';
 		if(!node) {
+			if(re_opt.exists) {
+				if(re_opt.debug) con.debug(e, dmsg, _NOT_EXISTS);
+				ret = 2;
+				break;
+			}
 			if(re_opt.debug) con.debug(e, dmsg, ': NO NODE');
 			continue;
 		}
@@ -2115,8 +2148,10 @@ replacer.nodReplacer = function(el, p, re_def)
 				if(re_opt.debug) con.debug(e, dmsg, node, ': BAD NODE TYPE: #'+node.nodeType);
 				continue;
 			}
-			if(re_opt.debug) con.debug(e, dmsg, node[re_opt.prop], " --> ", p[2]);
-			node[re_opt.prop] = p[2];
+			if(p[2] !== null) {
+				if(re_opt.debug) con.debug(e, dmsg, node[re_opt.prop], " --> ", p[2]);
+				node[re_opt.prop] = p[2];
+			}
 		} 
 		else {
 			// расширенный синтаксис
@@ -2129,12 +2164,12 @@ replacer.nodReplacer = function(el, p, re_def)
 				},
 				function(str, opt) { node[opt.prop] = str; } // set
 			);
-			if(ret <= 0)
+			if(ret)
 				break;
 		} // else
 	} // for e
 	if(re_opt.debug) con.groupEnd();
-	return ret < 0 ? ret : true;
+	return ret < 0 ? ret : (ret == 2 ? false : true);
 };
 
 // ----------------------------------------------------
@@ -2180,11 +2215,22 @@ replacer.regReplacer = function(el, p, re_def)
 		return true;
 	}
 	
+	if(!elements.length) {
+		if(re_opt.exists) {
+			if(re_opt.debug) con.debug("NOD:", p[1], _NOT_EXISTS);
+			return false;
+		}
+		return true;
+	}
+
+	if(re_opt.url_break)
+		re_opt.top.url_break = true;
+
 	for(let e of elements)
 	{
-		ret = true;
+		ret = 0;
 		if(re_opt.debug) {
-			if(!dbg1st++) con.group("REG:", p[1], ":: "+elements.length+" element(s)");
+			if(!(dbg1st++)) con.group("REG:", p[1], ":: "+elements.length+" element(s)");
 			con.debug("ELM:", e);
 		}
 
@@ -2193,11 +2239,11 @@ replacer.regReplacer = function(el, p, re_def)
 			function(opt) {	return e[opt.prop]; },		// get
 			function(str, opt) { e[opt.prop] = str; }	// set
 		);
-		if(ret <= 0)
+		if(ret)
 			break;
 	} // for e
 	if(dbg1st) con.groupEnd();	
-	return ret < 0 ? ret : true;
+	return ret < 0 ? ret : (ret == 2 ? false : true);
 };
 
 // ----------------------------------------------------
