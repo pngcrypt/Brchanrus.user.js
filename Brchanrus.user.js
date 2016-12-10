@@ -165,6 +165,9 @@ replacer.cfg["main"] = [
 				['Você não tem permissão para fazer isso', 'У вас нет прав доступа к этой странице'],
 				['Criação de voluntário com nome repetido recusada', 'Модератор с таким именем уже существует'],
 				['IP Blocked - Please check', 'IP Заблокирован. Проверьте на', [RE_INNER]],
+				['This board has public logs disabled. Ask the board owner to enable it', 'Публичные логи на этой доске отключены'],
+				['No board', 'Такого раздела не существует'],
+				['You may only PM users assigned to your board', 'Вы можете отправлять сообщения только в пределах вашей доски'],
 				[]
 			]],
 			['reg', 'a', 'Voltar', 'Назад']
