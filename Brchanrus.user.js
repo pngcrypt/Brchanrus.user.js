@@ -168,6 +168,8 @@ replacer.cfg["main"] = [
 				['This board has public logs disabled. Ask the board owner to enable it', 'Публичные логи на этой доске отключены'],
 				['No board', 'Такого раздела не существует'],
 				['You may only PM users assigned to your board', 'Вы можете отправлять сообщения только в пределах вашей доски'],
+				['Não foi possível encontrar a mensagem', 'Не удалось найти пост'],
+				['Esse post não existe', 'Этот пост не существует'],
 				[]
 			]],
 			['reg', 'a', 'Voltar', 'Назад']
