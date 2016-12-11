@@ -2950,6 +2950,7 @@ var main = {
 		main.addStyle('div.post > p.intro > span.mentioned', 'display: none;'); // скрыть оригинальные ответы
 		main.addStyle('div.post > span.mentioned', 'display: inline-block; font-style: italic;'); // ответы внизу поста
 		main.addStyle('div.post > span.mentioned > a, div.post > span.mentioned > a:visited', 'text-decoration: none;'); // ответы внизу поста
+		main.addStyle('div.post > div.body', 'word-wrap: normal; padding-right: 1.8em;'); // фикс переноса линков 
 		main.addStyle('div.format-text > a, div.format-text > select', 'display: none !important;'); // скрыть кнопки форматирования
 		
 		// фикс заголовков в правилах форматирования
